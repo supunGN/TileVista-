@@ -6,8 +6,9 @@
   "author": "TileVista Team",
   "license": "MIT",
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "frontend",
+    "backend",
+    "shared/*"
   ],
   "scripts": {
     "dev": "turbo run dev",

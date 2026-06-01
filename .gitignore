@@ -22,15 +22,20 @@ pnpm-debug.log*
 # ----------------------------
 # Next.js
 # ----------------------------
-apps/web/.next/
-apps/web/out/
-apps/web/.vercel
+frontend/.next/
+frontend/out/
+frontend/.vercel
 
 # ----------------------------
 # NestJS / TypeScript Build
 # ----------------------------
-apps/api/dist/
-apps/api/build/
+backend/dist/
+backend/build/
+
+# ----------------------------
+# Shared Workspaces Build Outputs
+# ----------------------------
+shared/*/dist/
 
 # ----------------------------
 # Turborepo
@@ -101,5 +106,5 @@ logs/
 # ----------------------------
 # Uploads / Media (runtime)
 # ----------------------------
-apps/server/uploads/
-apps/client/public/uploads/
+backend/uploads/
+frontend/public/uploads/
