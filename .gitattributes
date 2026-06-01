@@ -1,0 +1,11 @@
+# Track large binary 3D assets with Git LFS
+# Run: git lfs install (once per machine)
+# These patterns will be tracked by LFS after running:
+#   git lfs track "assets/**/*.glb"
+
+*.glb filter=lfs diff=lfs merge=lfs -text
+*.gltf filter=lfs diff=lfs merge=lfs -text
+*.hdr  filter=lfs diff=lfs merge=lfs -text
+*.exr  filter=lfs diff=lfs merge=lfs -text
+assets/textures/**/*.png filter=lfs diff=lfs merge=lfs -text
+assets/textures/**/*.jpg filter=lfs diff=lfs merge=lfs -text

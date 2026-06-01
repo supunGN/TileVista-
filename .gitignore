@@ -1,0 +1,105 @@
+# ============================================================
+# TileVista Monorepo — .gitignore
+# Covers: Node.js, Next.js, NestJS, Python, Docker, OS files
+# ============================================================
+
+# ----------------------------
+# Node.js / NPM
+# ----------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm
+.pnp
+.pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# ----------------------------
+# Next.js
+# ----------------------------
+apps/web/.next/
+apps/web/out/
+apps/web/.vercel
+
+# ----------------------------
+# NestJS / TypeScript Build
+# ----------------------------
+apps/api/dist/
+apps/api/build/
+
+# ----------------------------
+# Turborepo
+# ----------------------------
+.turbo/
+.cache/
+
+# ----------------------------
+# Environment Files (NEVER commit secrets)
+# ----------------------------
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+!.env.example
+
+# ----------------------------
+# Database
+# ----------------------------
+*.sqlite
+*.sqlite3
+*.db
+
+# ----------------------------
+# 3D Assets (large binaries — use Git LFS)
+# ----------------------------
+# Uncomment below if NOT using Git LFS:
+# assets/models/*.glb
+# assets/models/*.gltf
+# assets/textures/*.png
+# assets/textures/*.jpg
+# assets/textures/*.hdr
+# assets/textures/*.exr
+
+# ----------------------------
+# Docker
+# ----------------------------
+.docker-data/
+
+# ----------------------------
+# Testing
+# ----------------------------
+coverage/
+*.lcov
+.nyc_output/
+
+# ----------------------------
+# IDE / Editor
+# ----------------------------
+.vscode/settings.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# ----------------------------
+# Logs
+# ----------------------------
+logs/
+*.log
+
+# ----------------------------
+# Uploads / Media (runtime)
+# ----------------------------
+apps/server/uploads/
+apps/client/public/uploads/

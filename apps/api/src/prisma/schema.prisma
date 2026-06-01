@@ -1,0 +1,113 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String           @id @default(uuid())
+  email        String           @unique
+  passwordHash String
+  firstName    String?
+  lastName     String?
+  role         String           @default("CUSTOMER") // ADMIN | CUSTOMER
+  layouts      BathroomLayout[]
+  orders       Order[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model Product {
+  id              String           @id @default(uuid())
+  sku             String           @unique
+  name            String
+  description     String?          @db.VarChar(1000)
+  price           Float
+  discount        Float            @default(0.0) // percentage
+  quantity        Int              @default(0)
+  category        String // TILE | BATHWARE | ACCESSORY
+  imageUrl        String?
+  brand           String
+  color           String?
+  material        String?
+  size            String? // e.g. "600x600mm"
+  isAvailable     Boolean          @default(true)
+  packageProducts PackageProduct[]
+  orderItems      OrderItem[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model ProductPackage {
+  id              String           @id @default(uuid())
+  name            String
+  description     String?          @db.VarChar(1000)
+  discountPercent Float            @default(0.0)
+  price           Float            @default(0.0)
+  imageUrl        String?
+  products        PackageProduct[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model PackageProduct {
+  packageId String
+  package   ProductPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([packageId, productId])
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  userId          String?
+  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status          String      @default("PENDING") // PENDING | CONFIRMED | SHIPPED | DELIVERED | CANCELLED
+  total           Float
+  tax             Float
+  discount        Float
+  shippingAddress String
+  paymentMethod   String
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id              String  @id @default(uuid())
+  orderId         String
+  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity        Int
+  priceAtPurchase Float
+}
+
+model BathroomLayout {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  shape       String // RECTANGLE | L_SHAPE | U_SHAPE
+  width       Float // meters
+  length      Float // meters
+  height      Float // meters
+  wallDesigns Json // Array of customized wall styles & tiles
+  placements  Json // Array of placed bathware product IDs and coordinate coordinates
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model POSSyncLog {
+  id             String   @id @default(uuid())
+  sku            String
+  quantitySynced Int
+  action         String // RESTOCK | SALE | SYNC
+  status         String // SUCCESS | FAILED
+  errorMessage   String?
+  timestamp      DateTime @default(now())
+}
