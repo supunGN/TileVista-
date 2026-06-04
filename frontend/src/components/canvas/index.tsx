@@ -7,6 +7,9 @@ export interface BathroomCanvasProps {
   showGrid?: boolean;
 }
 
+/**
+ * Premium 3D Bathroom Canvas Container Wrapper
+ */
 export const BathroomCanvas: React.FC<BathroomCanvasProps> = ({
   children,
   cameraPosition = [5, 5, 5],
@@ -81,9 +84,9 @@ export const RoomStructure: React.FC<RoomStructureProps> = ({
   wallDesigns = [],
 }) => {
   return (
-    <g id="three-room-structure">
-      <desc>{`Rendering bathroom structure with shape ${shape}, size: ${width}x${length}x${height}m`}</desc>
-    </g>
+    <div id="three-room-structure" style={{ display: 'none' }}>
+      {`Bathroom Shape: ${shape}, Dimensions: ${width}x${length}x${height}m, Walls: ${wallDesigns.length}`}
+    </div>
   );
 };
 
@@ -101,10 +104,9 @@ export const TileMesh: React.FC<TileMeshProps> = ({
   textureUrl,
 }) => {
   return (
-    <mesh>
-      <boxGeometry args={[1, 1, 0.02]} />
-      <meshStandardMaterial color={color} roughness={roughness} />
-    </mesh>
+    <div style={{ display: 'none' }}>
+      {`Tile Mesh: ${tileSize}, Color: ${color}, Roughness: ${roughness}, Texture: ${textureUrl}`}
+    </div>
   );
 };
 
@@ -119,14 +121,8 @@ export const RulerTool: React.FC<RulerToolProps> = ({ start, end }) => {
   );
 
   return (
-    <group>
-      <line>
-        <bufferGeometry />
-        <lineBasicMaterial color="#ef4444" linewidth={3} />
-      </line>
-      <span style={{ color: '#ef4444', fontWeight: 'bold' }}>
-        {`${distance.toFixed(2)}m`}
-      </span>
-    </group>
+    <div style={{ color: '#ef4444', fontWeight: 'bold' }}>
+      {`Distance: ${distance.toFixed(2)}m`}
+    </div>
   );
 };
