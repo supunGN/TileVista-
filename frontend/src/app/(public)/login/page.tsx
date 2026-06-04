@@ -3,10 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../features/auth/AuthContext';
-import { Card } from '../../../components/Card';
-import { Button } from '../../../components/Button';
-import { Input } from '../../../components/Input';
-import { LogIn, ShieldAlert } from 'lucide-react';
+import { LogIn, ShieldAlert, KeyRound } from 'lucide-react';
 
 export default function LoginPage() {
   const { login, isAuthenticated, isLoading } = useAuth();
@@ -33,49 +30,76 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="py-16 px-6 flex justify-center items-center font-outfit">
-      <Card className="w-full max-w-md p-8 border border-glassBorder shadow-premium bg-slate-900/40">
+    <div className="py-16 px-6 flex justify-center items-center font-sans bg-white">
+      <div className="w-full max-w-md p-8 border border-gray-200 bg-white shadow-sm">
+        
+        {/* Header brand details */}
         <div className="text-center mb-8">
-          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 mb-2">
-            Staff Access
+          <span className="inline-flex items-center gap-1 text-[8.5px] font-bold tracking-widest px-3 py-1.5 bg-[#D4C5B9]/15 border border-[#D4C5B9]/30 text-[#1A1A1A] uppercase mb-3">
+            STAFF SECURE ACCESS
           </span>
-          <h2 className="text-3xl font-extrabold text-white">Admin Authentication</h2>
-          <p className="text-xs text-slate-400 mt-2">
-            Access store inventories, quotations database, and sales velocity logs.
+          <h2 className="text-2xl font-semibold text-[#1A1A1A] tracking-wide">Showroom Admin Portal</h2>
+          <p className="text-xs text-gray-500 font-light mt-2 leading-relaxed">
+            Access inventory listings, review quotation databases, and manage POS transactions.
           </p>
         </div>
 
         {error && (
-          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 p-4 rounded-xl text-xs flex gap-2 items-start mb-6">
+          <div className="bg-red-50 border border-red-200 text-red-700 p-4 mb-6 text-xs flex gap-2.5 items-start font-light">
             <ShieldAlert size={16} className="flex-shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Input
-            label="Staff Email Address"
-            type="email"
-            placeholder="admin@tilevista.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Email input */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[9px] font-bold tracking-widest text-gray-500 uppercase">Staff Email Address</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-[#F9F9F7] border border-gray-200 px-4 py-3.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] font-light transition-colors"
+              placeholder="e.g. admin@tilevista.com"
+            />
+          </div>
 
-          <Input
-            label="Security Password"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          {/* Password input */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[9px] font-bold tracking-widest text-gray-500 uppercase">Security Password</label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-[#F9F9F7] border border-gray-200 px-4 py-3.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] font-light transition-colors"
+              placeholder="••••••••"
+            />
+          </div>
 
-          <Button type="submit" className="w-full" variant="primary" disabled={isLoading}>
-            <LogIn size={18} /> {isLoading ? 'Authenticating...' : 'Sign In To Console'}
-          </Button>
+          <button 
+            type="submit" 
+            disabled={isLoading}
+            className="w-full bg-[#1A1A1A] hover:bg-[#D4C5B9] hover:text-[#1A1A1A] text-white font-semibold text-xs tracking-widest uppercase py-4 transition-all duration-300 mt-2 flex items-center justify-center gap-2.5"
+          >
+            {isLoading ? (
+              <span>Authenticating Console...</span>
+            ) : (
+              <>
+                <LogIn size={15} />
+                <span>Sign In To Console</span>
+              </>
+            )}
+          </button>
         </form>
-      </Card>
+
+        <div className="mt-8 text-center text-[10px] text-gray-400 font-light flex items-center justify-center gap-1.5 border-t border-gray-100 pt-5">
+          <KeyRound size={12} />
+          <span>Console Session Synchronized with POS Center</span>
+        </div>
+
+      </div>
     </div>
   );
 }

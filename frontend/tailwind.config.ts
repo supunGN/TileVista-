@@ -10,7 +10,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        outfit: ["var(--font-outfit)", "Inter", "sans-serif"],
+        outfit: ["Inter", "sans-serif"],
         sans: ["Inter", "sans-serif"],
       },
       colors: {
@@ -21,6 +21,12 @@ const config: Config = {
         blueVibrant: "#3b82f6",
         emeraldVibrant: "#10b981",
         roseVibrant: "#ef4444",
+        primary: "#1A1A1A",
+        secondary: "#D4C5B9",
+        brandBlack: "#1A1A1A",
+        brandSand: "#D4C5B9",
+        brandLight: "#F9F9F7",
+        brandGray: "#F3F3F1",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
