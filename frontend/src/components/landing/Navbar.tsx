@@ -1,33 +1,39 @@
 'use client';
 
 import React from 'react';
-import { ShoppingCart, Search, RefreshCw } from 'lucide-react';
+import Link from 'next/link';
+import { ShoppingCart, Search, Phone, MapPin } from 'lucide-react';
 
 interface NavbarProps {
-  onNavigate: (tabId: string) => void;
-  onGoHome: () => void;
   cartCount: number;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onNavigate, onGoHome, cartCount }) => {
+export const Navbar: React.FC<NavbarProps> = ({ cartCount }) => {
   return (
     <header className="w-full flex flex-col z-50 sticky top-0 font-sans">
-      {/* Top Synchronized POS Banner */}
-      <div className="w-full bg-[#1A1A1A] border-b border-gray-800 py-2.5 px-4 text-center flex items-center justify-center gap-2.5 text-xs text-gray-300 tracking-wide font-light">
-        <RefreshCw size={12} className="animate-spin text-emerald-400" />
-        <span>Real-time stock synchronization active with our showroom POS</span>
-        <span className="inline-flex items-center gap-1.5 ml-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span className="text-emerald-400 font-semibold text-[10px] uppercase tracking-widest">Connected</span>
+      {/* Top Contact Bar */}
+      <div className="w-full bg-[#1A1A1A] border-b border-gray-800 py-2.5 px-6 md:px-12 flex flex-col sm:flex-row justify-between items-center gap-2 text-[10.5px] text-gray-300 tracking-wide font-light">
+        <span className="flex items-center gap-1.5 text-gray-400">
+          Premium Tile & Bathware Showroom
         </span>
+        <div className="flex gap-5 items-center flex-wrap justify-center">
+          <span className="flex items-center gap-1.5">
+            <Phone size={11} className="text-[#D4C5B9]" />
+            <a href="tel:+94412223456" className="hover:text-white transition-colors">+94 41 222 3456</a>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <MapPin size={11} className="text-[#D4C5B9]" />
+            <span>No 120, Anagarika Dharmapala Mawatha, Matara</span>
+          </span>
+        </div>
       </div>
 
       {/* Main Navbar */}
       <div className="w-full bg-white/95 backdrop-blur-md border-b border-gray-100 py-3.5 px-6 md:px-12 flex items-center justify-between transition-all duration-300">
         {/* Left: Brand Logotype */}
-        <div 
-          onClick={onGoHome} 
-          className="flex items-center gap-3 cursor-pointer group"
+        <Link 
+          href="/" 
+          className="flex items-center gap-3 group"
           id="logo-brand"
         >
           {/* Minimalist Ceramic Tile Icon */}
@@ -46,34 +52,40 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, onGoHome, cartCount 
               Trade Center
             </span>
           </div>
-        </div>
+        </Link>
 
-        {/* Center: Links */}
+        {/* Center: Hyperlinked Navigation Links */}
         <nav className="hidden md:flex items-center gap-8 lg:gap-10">
-          <button 
-            onClick={onGoHome} 
+          <Link 
+            href="/" 
             className="text-xs font-semibold tracking-widest text-[#1A1A1A] uppercase border-b border-[#1A1A1A] pb-1 hover:opacity-80 transition"
           >
             Home
-          </button>
-          <button 
-            onClick={() => onNavigate('products')} 
+          </Link>
+          <Link 
+            href="/products" 
             className="text-xs font-semibold tracking-widest text-gray-500 uppercase pb-1 hover:text-[#1A1A1A] hover:border-b hover:border-gray-300 transition"
           >
             Shop
-          </button>
-          <button 
-            onClick={() => onNavigate('packages')} 
+          </Link>
+          <Link 
+            href="/packages" 
             className="text-xs font-semibold tracking-widest text-gray-500 uppercase pb-1 hover:text-[#1A1A1A] hover:border-b hover:border-gray-300 transition"
           >
             Packages
-          </button>
-          <button 
-            onClick={() => onNavigate('designer')} 
+          </Link>
+          <Link 
+            href="/designer" 
             className="text-xs font-semibold tracking-widest text-gray-500 uppercase pb-1 hover:text-[#1A1A1A] hover:border-b hover:border-gray-300 transition"
           >
             3D Designer
-          </button>
+          </Link>
+          <Link 
+            href="/contact" 
+            className="text-xs font-semibold tracking-widest text-gray-500 uppercase pb-1 hover:text-[#1A1A1A] hover:border-b hover:border-gray-300 transition"
+          >
+            Contact
+          </Link>
         </nav>
 
         {/* Right: Actions */}
@@ -81,14 +93,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, onGoHome, cartCount 
           {/* Search trigger */}
           <button className="text-gray-700 hover:text-[#1A1A1A] p-1.5 transition-colors relative group">
             <Search size={20} strokeWidth={1.8} />
-            <span className="absolute right-full top-1/2 -translate-y-1/2 mr-2 hidden lg:inline-block px-1.5 py-0.5 text-[9px] font-mono text-gray-400 bg-gray-100 border border-gray-200 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-              ⌘K
-            </span>
           </button>
 
           {/* Cart Icon with badge */}
-          <button 
-            onClick={() => onNavigate('cart')} 
+          <Link 
+            href="/cart" 
             className="text-gray-700 hover:text-[#1A1A1A] p-1.5 transition-colors relative"
             aria-label="Shopping Cart"
           >
@@ -98,12 +107,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, onGoHome, cartCount 
                 {cartCount}
               </span>
             )}
-          </button>
+          </Link>
 
           {/* User profile dot */}
-          <div className="w-8 h-8 rounded-full bg-[#1A1A1A]/5 border border-gray-200 flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors overflow-hidden">
+          <Link 
+            href="/login"
+            className="w-8 h-8 rounded-full bg-[#1A1A1A]/5 border border-gray-200 flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors overflow-hidden"
+          >
             <div className="w-3.5 h-3.5 rounded-full bg-gray-400"></div>
-          </div>
+          </Link>
         </div>
       </div>
     </header>
