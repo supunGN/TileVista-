@@ -75,6 +75,9 @@ model Order {
   items           OrderItem[]
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+  osposItemId     Int?
+  quantity        Int?
+  synchronizedAt  DateTime?
 }
 
 model OrderItem {

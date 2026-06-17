@@ -1,9 +1,13 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { OsposIntegrationService } from '../integrations/ospos/ospos.service';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly osposService: OsposIntegrationService,
+  ) {}
 
   async createOrder(userId: string | null, data: {
     items: { productId: string; quantity: number }[];
@@ -112,6 +116,71 @@ export class OrdersService {
         },
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Approves a showroom order sitting in PENDING_SHOWROOM_CONFIRMATION state,
+   * performs a downstream inventory deduction inside OSPOS, and updates database records.
+   * 
+   * @param orderId Unique target order identifier (mapped to string internally)
+   * @returns Mapped Prisma update payload document
+   */
+  async approvePendingShowroomOrder(orderId: number): Promise<any> {
+    // Wrap database query and external sync inside a safe transactional try/catch context block
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Fetch target order record
+      const order = await tx.order.findUnique({
+        where: { id: String(orderId) },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new NotFoundException(`Order with ID ${orderId} not found`);
+      }
+
+      // Check current status: must be exactly 'PENDING_SHOWROOM_CONFIRMATION'
+      if (order.status !== 'PENDING_SHOWROOM_CONFIRMATION') {
+        throw new BadRequestException('Order has already been processed or finalized');
+      }
+
+      if (order.osposItemId === null || order.quantity === null) {
+        throw new BadRequestException('Order is missing OSPOS item ID or quantity metadata');
+      }
+
+      try {
+        // 2. Outbound sync to OSPOS service layer
+        const syncSuccess = await this.osposService.deductStockInPos(order.osposItemId, order.quantity);
+
+        if (!syncSuccess) {
+          throw new Error('OSPOS stock deduction failed to return success confirmation');
+        }
+
+        // 3. Prisma Transaction Closure
+        return await tx.order.update({
+          where: { id: order.id },
+          data: {
+            status: 'ACCEPTED_AND_SYNCED',
+            synchronizedAt: new Date(),
+          },
+          include: {
+            items: {
+              include: {
+                product: true,
+              },
+            },
+          },
+        });
+      } catch (error) {
+        // Throwing propagates out of transaction, preventing local database state update
+        throw new BadRequestException(`Downstream OSPOS synchronization failed: ${error.message}`);
+      }
     });
   }
 }
