@@ -1,9 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { OsposIntegrationService } from '../integrations/ospos/ospos.service';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(ProductsService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private readonly osposService: OsposIntegrationService,
+  ) {}
 
   async findAll(query: {
     category?: string;
@@ -44,6 +50,49 @@ export class ProductsService {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }
     return product;
+  }
+
+  /**
+   * Fetches a product from the database and merges it with live showroom stock from OSPOS.
+   * If the OSPOS connection fails, it falls back to 0 stock instead of crashing.
+   * 
+   * @param productId The numeric product identifier
+   */
+  async findOneProductWithLiveStock(productId: number) {
+    // 1. Fetch metadata from the local database
+    const product = await this.prisma.product.findFirst({
+      where: {
+        OR: [
+          { id: String(productId) },
+          { sku: { contains: String(productId) } },
+        ],
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found in database`);
+    }
+
+    let liveStock = 0;
+    let isLowStock = false;
+
+    try {
+      // 2. Fetch live stock level from OSPOS concurrently
+      const stockDetails = await this.osposService.fetchStockDetailsFromPos(productId);
+      liveStock = stockDetails.stock;
+      isLowStock = stockDetails.isLowStock;
+    } catch (error) {
+      // Graceful fallback to 0/null stock to ensure the page doesn't crash for the customer
+      this.logger.warn(
+        `OSPOS system offline or failed for product ID ${productId}. Error: ${error.message}. Falling back to 0 stock.`
+      );
+    }
+
+    return {
+      ...product,
+      liveStock,
+      isLowStock,
+    };
   }
 
   async create(data: any) {
