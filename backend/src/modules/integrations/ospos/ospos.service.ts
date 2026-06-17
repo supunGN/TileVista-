@@ -1,6 +1,7 @@
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { IOsposRawStock, OsposStockResponseDto } from './dto/ospos-product.dto';
 
 /**
  * Service to handle communications with the external OSPOS (Open Source Point Of Sale) API.
@@ -23,11 +24,22 @@ export class OsposIntegrationService {
    * @returns A promise resolving to the available inventory quantity as a number
    */
   async fetchLiveStockFromPos(itemId: number): Promise<number> {
+    const details = await this.fetchStockDetailsFromPos(itemId);
+    return details.stock;
+  }
+
+  /**
+   * Fetches the complete, normalized stock details (including low stock calculation) from OSPOS.
+   * 
+   * @param itemId The numerical item ID
+   * @returns A promise resolving to the OsposStockResponseDto
+   */
+  async fetchStockDetailsFromPos(itemId: number): Promise<OsposStockResponseDto> {
     try {
       this.logger.log(`Initiating live inventory request to OSPOS for item: ${itemId}`);
       
       const response = await firstValueFrom(
-        this.httpService.get<{ item_id: number; quantity_available: number }>(
+        this.httpService.get<IOsposRawStock>(
           this.baseUrl,
           {
             params: { item_id: itemId },
@@ -43,14 +55,11 @@ export class OsposIntegrationService {
         throw new Error('OSPOS API returned an empty or invalid response payload');
       }
 
-      const { quantity_available } = response.data;
+      // Normalize raw high-precision string values to typed primitives using the DTO constructor
+      const dto = new OsposStockResponseDto(response.data);
 
-      if (quantity_available === undefined || quantity_available === null) {
-        throw new Error(`The property 'quantity_available' is missing in OSPOS response structure`);
-      }
-
-      this.logger.log(`Successfully fetched stock for item ${itemId}: ${quantity_available}`);
-      return Number(quantity_available);
+      this.logger.log(`Successfully fetched and normalized stock for item ${itemId}: ${dto.stock} (isLowStock: ${dto.isLowStock})`);
+      return dto;
 
     } catch (error) {
       this.logger.error(
