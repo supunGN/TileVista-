@@ -20,17 +20,22 @@ export class OsposIntegrationService {
 
   /**
    * Safe method to fetch live stock from OSPOS for a specific item ID.
+   * If OSPOS is offline, it returns a safe fallback stock level of 0 with isStaleData = true.
    * 
    * @param itemId The numerical item ID
-   * @returns A promise resolving to the available inventory quantity as a number
+   * @returns A promise resolving to an object containing stock level and stale flag
    */
-  async fetchLiveStockFromPos(itemId: number): Promise<number> {
+  async fetchLiveStockFromPos(itemId: number): Promise<{ stock: number; isStaleData: boolean }> {
     const details = await this.fetchStockDetailsFromPos(itemId);
-    return details.stock;
+    return {
+      stock: details.stock,
+      isStaleData: details.isStaleData,
+    };
   }
 
   /**
    * Fetches the complete, normalized stock details (including low stock calculation) from OSPOS.
+   * Seamlessly catches and logs network or server disruptions and returns a fallback state.
    * 
    * @param itemId The numerical item ID
    * @returns A promise resolving to the OsposStockResponseDto
@@ -57,21 +62,26 @@ export class OsposIntegrationService {
       }
 
       // Normalize raw high-precision string values to typed primitives using the DTO constructor
-      const dto = new OsposStockResponseDto(response.data);
+      const dto = new OsposStockResponseDto(response.data, undefined, false);
 
       this.logger.log(`Successfully fetched and normalized stock for item ${itemId}: ${dto.stock} (isLowStock: ${dto.isLowStock})`);
       return dto;
 
     } catch (error) {
+      // Catch network disruption, timeout, refusal, or internal server error seamlessly and log it
       this.logger.error(
-        `Failed to retrieve stock for item ID ${itemId} from OSPOS connection layer. Error: ${error.message}`,
+        `OSPOS network disruption or integration failure for item ID ${itemId}. Returning fallback stock level. Error: ${error.message}`,
         error.stack,
       );
 
-      // Map any network, HTTP, or parser error to NestJS BAD_GATEWAY HttpException as required
-      throw new HttpException(
-        'Failed to connect to showroom inventory network layer',
-        HttpStatus.BAD_GATEWAY,
+      // Return a safe fallback DTO with stock 0 and isStaleData = true
+      return new OsposStockResponseDto(
+        {
+          item_id: itemId,
+          quantity_available: 0,
+        },
+        undefined,
+        true, // isStaleData: true
       );
     }
   }

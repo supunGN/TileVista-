@@ -18,10 +18,11 @@ export class OsposIntegrationController {
    */
   @Get('test-sync/:itemId')
   async testSync(@Param('itemId', ParseIntPipe) itemId: number) {
-    const liveStock = await this.osposService.fetchLiveStockFromPos(itemId);
+    const result = await this.osposService.fetchLiveStockFromPos(itemId);
     return {
       itemId,
-      liveStock,
+      liveStock: result.stock,
+      isStaleData: result.isStaleData,
     };
   }
 }

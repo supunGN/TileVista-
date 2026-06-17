@@ -75,23 +75,27 @@ export class ProductsService {
 
     let liveStock = 0;
     let isLowStock = false;
+    let isStaleData = false;
 
     try {
       // 2. Fetch live stock level from OSPOS concurrently
       const stockDetails = await this.osposService.fetchStockDetailsFromPos(productId);
       liveStock = stockDetails.stock;
       isLowStock = stockDetails.isLowStock;
+      isStaleData = stockDetails.isStaleData;
     } catch (error) {
       // Graceful fallback to 0/null stock to ensure the page doesn't crash for the customer
       this.logger.warn(
         `OSPOS system offline or failed for product ID ${productId}. Error: ${error.message}. Falling back to 0 stock.`
       );
+      isStaleData = true;
     }
 
     return {
       ...product,
       liveStock,
       isLowStock,
+      isStaleData,
     };
   }
 

@@ -29,7 +29,12 @@ export class OsposStockResponseDto {
    */
   isLowStock: boolean;
 
-  constructor(raw: IOsposRawStock, threshold: number = config.lowStockThreshold) {
+  /**
+   * Flag indicating if the stock data is stale (fetched from a fallback state due to connection error).
+   */
+  isStaleData: boolean;
+
+  constructor(raw: IOsposRawStock, threshold: number = config.lowStockThreshold, isStaleData = false) {
     this.itemId = Number(raw.item_id);
     
     // Safely handle both numeric types and high-precision string decimals (e.g., "250.0000")
@@ -39,5 +44,6 @@ export class OsposStockResponseDto {
 
     // Calculate low stock condition dynamically based on the application's configuration
     this.isLowStock = this.stock < threshold;
+    this.isStaleData = isStaleData;
   }
 }
