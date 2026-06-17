@@ -14,7 +14,7 @@ export class OsposIntegrationService {
   // Read OSPOS API configurations from environment variables or use the specified defaults
   private readonly baseUrl = process.env.OSPOS_API_BASE_URL || 'http://localhost/ospos/public/index.php/api/stock';
   private readonly deductUrl = process.env.OSPOS_API_DEDUCT_URL || 'http://localhost/ospos/public/index.php/api/deduct_stock';
-  private readonly authToken = process.env.OSPOS_API_AUTH_TOKEN || 'Bearer your_secret_ospos_token_here';
+  private readonly secretToken = process.env.OSPOS_API_AUTH_TOKEN || 'Bearer your_secret_ospos_token_here';
 
   constructor(private readonly httpService: HttpService) {}
 
@@ -50,7 +50,7 @@ export class OsposIntegrationService {
           {
             params: { item_id: itemId },
             headers: {
-              'Authorization': this.authToken,
+              'Authorization': this.secretToken,
               'Accept': 'application/json',
             },
           },
@@ -109,7 +109,7 @@ export class OsposIntegrationService {
           payload,
           {
             headers: {
-              'Authorization': this.authToken,
+              'Authorization': this.secretToken,
               'Content-Type': 'application/json',
               'Accept': 'application/json',
             },
@@ -136,8 +136,8 @@ export class OsposIntegrationService {
       );
 
       throw new HttpException(
-        'Failed to connect to showroom inventory network layer for stock deduction',
-        HttpStatus.BAD_GATEWAY,
+        'Failed to process downstream inventory allocation mapping',
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
