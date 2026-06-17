@@ -11,16 +11,15 @@ The project organized directories cleanly to decouple frontend customizer grids,
 ```
 tile-vista/
 ├── frontend/                     # Next.js App Router Frontend (Port 3000)
-│   ├── public/                   # Public static files
 │   └── src/
 │       ├── app/                  # Routing pages
-│       ├── features/             # auth, products, cart, packages, designer, analytics
-│       ├── components/           # Glowing Buttons, Cards, Inputs, R3F Canvases
+│       ├── features/             # admin, analytics, auth, cart, designer, packages, products
+│       ├── components/           # UI components, canvas components
 │       └── utils/                # LKR currency formatters, pricing, room validators
 │
 ├── backend/                      # NestJS API Backend (Port 4000)
 │   └── src/
-│       ├── modules/              # auth, users, products, inventory, cart, orders, packages, designer, analytics
+│       ├── modules/              # analytics, auth, cart, designer, inventory, orders, packages, products, users
 │       ├── common/               # JWT guard strategies
 │       └── config/               # Security variables configs
 │
@@ -29,11 +28,8 @@ tile-vista/
 │       ├── schema.prisma         # MySQL data schema
 │       └── seed.ts               # Pre-populated mock catalog products seeder
 │
-├── shared/                       # Shared modules
-│   └── types/                    # Common TypeScript interfaces
-│
-├── docs/                         # Specifications and reports
-└── deployment/                   # Docker and production files
+└── shared/                       # Shared modules
+    └── types/                    # Common TypeScript interfaces
 ```
 
 ---
