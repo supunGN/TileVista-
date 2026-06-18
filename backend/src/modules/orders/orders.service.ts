@@ -5,86 +5,83 @@ import { OsposIntegrationService } from '../integrations/ospos/ospos.service';
 @Injectable()
 export class OrdersService {
   constructor(
-    private prisma: PrismaService,
+    private readonly prisma: PrismaService,
     private readonly osposService: OsposIntegrationService,
   ) {}
 
-  async createOrder(userId: string | null, data: {
-    items: { productId: string; quantity: number }[];
-    shippingAddress: string;
-    paymentMethod: string;
-  }) {
+  /**
+   * Creates a new order using OSPOS items.
+   * Items are identified by osposItemId (integer) and validated against live OSPOS stock.
+   */
+  async createOrder(
+    userId: string | null,
+    data: {
+      items: { osposItemId: number; quantity: number }[];
+      shippingAddress: string;
+      paymentMethod: string;
+    },
+  ) {
     if (!data.items || data.items.length === 0) {
       throw new BadRequestException('Checkout cart cannot be empty');
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      let subtotal = 0;
-      const orderItemsData = [];
+    // Fetch live OSPOS data once to validate all items
+    const allOsposItems = await this.osposService.fetchAllItems();
+    const osposMap = new Map(allOsposItems.map((i) => [i.item_id, i]));
 
-      for (const item of data.items) {
-        const product = await tx.product.findUnique({ where: { id: item.productId } });
-        if (!product) {
-          throw new NotFoundException(`Product ID ${item.productId} not found`);
-        }
-        if (product.quantity < item.quantity) {
-          throw new BadRequestException(`Insufficient stock for product ${product.name}`);
-        }
+    let subtotal = 0;
+    const orderItemsData: {
+      osposItemId: number;
+      itemName: string;
+      quantity: number;
+      priceAtPurchase: number;
+    }[] = [];
 
-        // Deduct inventory stock
-        await tx.product.update({
-          where: { id: product.id },
-          data: { quantity: product.quantity - item.quantity },
-        });
-
-        const discountedPrice = product.price * (1 - product.discount / 100);
-        subtotal += discountedPrice * item.quantity;
-
-        orderItemsData.push({
-          productId: product.id,
-          quantity: item.quantity,
-          priceAtPurchase: discountedPrice,
-        });
+    for (const item of data.items) {
+      const osposItem = osposMap.get(item.osposItemId);
+      if (!osposItem) {
+        throw new NotFoundException(`OSPOS item ID ${item.osposItemId} not found`);
+      }
+      if (osposItem.quantity < item.quantity) {
+        throw new BadRequestException(
+          `Insufficient stock for "${osposItem.name}". Available: ${osposItem.quantity}.`,
+        );
       }
 
-      const taxRate = 0.15;
-      const tax = subtotal * taxRate;
-      const total = subtotal + tax;
-
-      return tx.order.create({
-        data: {
-          userId,
-          status: 'CONFIRMED',
-          total,
-          tax,
-          discount: 0,
-          shippingAddress: data.shippingAddress,
-          paymentMethod: data.paymentMethod,
-          items: {
-            create: orderItemsData,
-          },
-        },
-        include: {
-          items: {
-            include: {
-              product: true,
-            },
-          },
-        },
+      subtotal += osposItem.price * item.quantity;
+      orderItemsData.push({
+        osposItemId: osposItem.item_id,
+        itemName: osposItem.name, // snapshot of name at purchase time
+        quantity: item.quantity,
+        priceAtPurchase: osposItem.price,
       });
+    }
+
+    const taxRate = 0.15;
+    const tax = subtotal * taxRate;
+    const total = subtotal + tax;
+
+    return this.prisma.order.create({
+      data: {
+        userId,
+        status: 'CONFIRMED',
+        total,
+        tax,
+        discount: 0,
+        shippingAddress: data.shippingAddress,
+        paymentMethod: data.paymentMethod,
+        items: {
+          create: orderItemsData,
+        },
+      },
+      include: { items: true },
     });
   }
 
   async getOrder(id: string) {
     const order = await this.prisma.order.findUnique({
       where: { id },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
+      include: { items: true },
     });
     if (!order) {
       throw new NotFoundException(`Order with ID ${id} not found`);
@@ -95,91 +92,63 @@ export class OrdersService {
   async getCustomerOrders(userId: string) {
     return this.prisma.order.findMany({
       where: { userId },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
+      include: { items: true },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async getAllOrders() {
     return this.prisma.order.findMany({
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-      },
+      include: { items: true },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   /**
-   * Approves a showroom order sitting in PENDING_SHOWROOM_CONFIRMATION state,
-   * performs a downstream inventory deduction inside OSPOS, and updates database records.
-   * 
-   * @param orderId Unique target order identifier (mapped to string internally)
-   * @returns Mapped Prisma update payload document
+   * Approves a showroom order, performs downstream OSPOS inventory deduction,
+   * and marks the order as synchronized.
    */
   async approvePendingShowroomOrder(orderId: number): Promise<any> {
-    // Wrap database query and external sync inside a safe transactional try/catch context block
     return this.prisma.$transaction(async (tx) => {
-      // 1. Fetch target order record
       const order = await tx.order.findUnique({
         where: { id: String(orderId) },
-        include: {
-          items: {
-            include: {
-              product: true,
-            },
-          },
-        },
+        include: { items: true },
       });
 
       if (!order) {
         throw new NotFoundException(`Order with ID ${orderId} not found`);
       }
 
-      // Check current status: must be exactly 'PENDING_SHOWROOM_CONFIRMATION'
       if (order.status !== 'PENDING_SHOWROOM_CONFIRMATION') {
         throw new BadRequestException('Order has already been processed or finalized');
       }
 
-      if (order.osposItemId === null || order.quantity === null) {
-        throw new BadRequestException('Order is missing OSPOS item ID or quantity metadata');
-      }
-
       try {
-        // 2. Outbound sync to OSPOS service layer
-        const syncSuccess = await this.osposService.deductStockInPos(order.osposItemId, order.quantity);
-
-        if (!syncSuccess) {
-          throw new Error('OSPOS stock deduction failed to return success confirmation');
+        // Deduct stock in OSPOS for each line item
+        for (const item of order.items) {
+          const syncSuccess = await this.osposService.deductStockInPos(
+            item.osposItemId,
+            item.quantity,
+          );
+          if (!syncSuccess) {
+            throw new Error(
+              `OSPOS stock deduction failed for item ${item.osposItemId}`,
+            );
+          }
         }
 
-        // 3. Prisma Transaction Closure
         return await tx.order.update({
           where: { id: order.id },
           data: {
             status: 'ACCEPTED_AND_SYNCED',
             synchronizedAt: new Date(),
           },
-          include: {
-            items: {
-              include: {
-                product: true,
-              },
-            },
-          },
+          include: { items: true },
         });
       } catch (error) {
-        // Throwing propagates out of transaction, preventing local database state update
-        throw new BadRequestException(`Downstream OSPOS synchronization failed: ${error.message}`);
+        throw new BadRequestException(
+          `Downstream OSPOS synchronization failed: ${error.message}`,
+        );
       }
     });
   }

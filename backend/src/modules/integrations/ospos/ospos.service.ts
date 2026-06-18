@@ -4,6 +4,19 @@ import { firstValueFrom } from 'rxjs';
 import { IOsposRawStock, OsposStockResponseDto } from './dto/ospos-product.dto';
 
 /**
+ * Typed interface for a single OSPOS item returned by GET /api/items.
+ */
+export interface OsposItem {
+  item_id: number;
+  name: string;
+  category: string;
+  sku: string;
+  description: string;
+  price: number;
+  quantity: number;
+}
+
+/**
  * Service to handle communications with the external OSPOS (Open Source Point Of Sale) API.
  * Safely fetches live stock inventory data and provides it to the core orders and analytics modules.
  */
@@ -13,10 +26,35 @@ export class OsposIntegrationService {
 
   // Read OSPOS API configurations from environment variables or use the specified defaults
   private readonly baseUrl = process.env.OSPOS_API_BASE_URL || 'http://localhost/ospos/public/index.php/api/stock';
+  private readonly itemsUrl = process.env.OSPOS_API_ITEMS_URL || 'http://localhost/ospos/public/index.php/api/items';
   private readonly deductUrl = process.env.OSPOS_API_DEDUCT_URL || 'http://localhost/ospos/public/index.php/api/deduct_stock';
   private readonly secretToken = process.env.OSPOS_API_AUTH_TOKEN || 'Bearer your_secret_ospos_token_here';
 
   constructor(private readonly httpService: HttpService) {}
+
+  /**
+   * Fetches all active items from OSPOS with their live quantities.
+   * Returns an empty array and logs a warning if OSPOS is unreachable.
+   */
+  async fetchAllItems(): Promise<OsposItem[]> {
+    try {
+      this.logger.log('Fetching full item catalog from OSPOS...');
+      const response = await firstValueFrom(
+        this.httpService.get<OsposItem[]>(this.itemsUrl, {
+          headers: {
+            Authorization: this.secretToken,
+            Accept: 'application/json',
+          },
+        }),
+      );
+      this.logger.log(`Received ${response.data.length} items from OSPOS.`);
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Failed to fetch item catalog from OSPOS: ${error.message}`);
+      return [];
+    }
+  }
+
 
   /**
    * Safe method to fetch live stock from OSPOS for a specific item ID.

@@ -1,46 +1,83 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { OsposIntegrationService } from '../integrations/ospos/ospos.service';
 
 @Injectable()
 export class PackagesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly osposService: OsposIntegrationService,
+  ) {}
+
+  /**
+   * Enriches a package's item list with live OSPOS data.
+   */
+  private async enrichPackage(pkg: {
+    id: string;
+    name: string;
+    description: string | null;
+    discountPercent: number;
+    price: number;
+    imageUrl: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    items: { osposItemId: number }[];
+  }) {
+    const allOsposItems = await this.osposService.fetchAllItems();
+    const osposMap = new Map(allOsposItems.map((i) => [i.item_id, i]));
+
+    const enrichedItems = pkg.items.map(({ osposItemId }) => ({
+      osposItemId,
+      item: osposMap.get(osposItemId) ?? null,
+    }));
+
+    // Recalculate package price from live OSPOS prices
+    const basePrice = enrichedItems.reduce(
+      (sum, { item }) => sum + (item?.price ?? 0),
+      0,
+    );
+    const calculatedPrice = basePrice * (1 - pkg.discountPercent / 100);
+
+    return {
+      ...pkg,
+      items: enrichedItems,
+      calculatedPrice: Number(calculatedPrice.toFixed(2)),
+    };
+  }
 
   async findAll() {
-    return this.prisma.productPackage.findMany({
-      include: {
-        products: {
-          include: {
-            product: true,
-          },
-        },
-      },
+    const packages = await this.prisma.productPackage.findMany({
+      include: { items: true },
     });
+    return Promise.all(packages.map((pkg) => this.enrichPackage(pkg)));
   }
 
   async findOne(id: string) {
     const pkg = await this.prisma.productPackage.findUnique({
       where: { id },
-      include: {
-        products: {
-          include: {
-            product: true,
-          },
-        },
-      },
+      include: { items: true },
     });
     if (!pkg) {
       throw new NotFoundException(`Package with ID ${id} not found`);
     }
-    return pkg;
+    return this.enrichPackage(pkg);
   }
 
-  async create(data: { name: string; description?: string; discountPercent: number; productIds: string[] }) {
-    const products = await this.prisma.product.findMany({
-      where: { id: { in: data.productIds } },
-    });
+  async create(data: {
+    name: string;
+    description?: string;
+    discountPercent: number;
+    osposItemIds: number[];
+  }) {
+    // Fetch live prices from OSPOS to calculate the package price
+    const allItems = await this.osposService.fetchAllItems();
+    const osposMap = new Map(allItems.map((i) => [i.item_id, i]));
 
-    const basePriceSum = products.reduce((sum, p) => sum + p.price, 0);
-    const discountedPrice = basePriceSum * (1 - data.discountPercent / 100);
+    const basePrice = data.osposItemIds.reduce(
+      (sum, id) => sum + (osposMap.get(id)?.price ?? 0),
+      0,
+    );
+    const discountedPrice = basePrice * (1 - data.discountPercent / 100);
 
     const pkg = await this.prisma.productPackage.create({
       data: {
@@ -51,10 +88,10 @@ export class PackagesService {
       },
     });
 
-    await this.prisma.packageProduct.createMany({
-      data: data.productIds.map((pId) => ({
+    await this.prisma.packageItem.createMany({
+      data: data.osposItemIds.map((osposItemId) => ({
         packageId: pkg.id,
-        productId: pId,
+        osposItemId,
       })),
     });
 
@@ -62,7 +99,7 @@ export class PackagesService {
   }
 
   async remove(id: string) {
-    const pkg = await this.findOne(id);
-    return this.prisma.productPackage.delete({ where: { id: pkg.id } });
+    await this.findOne(id);
+    return this.prisma.productPackage.delete({ where: { id } });
   }
 }

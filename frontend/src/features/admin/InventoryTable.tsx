@@ -1,112 +1,183 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Edit, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { RefreshCw, Info, AlertTriangle, Loader2, Search } from 'lucide-react';
 import { formatCurrency } from '../../utils';
 
-const INITIAL_INVENTORY = [
-  { id: '1', sku: 'TL-MAR-600', name: 'Royal Marble Polished Tile', category: 'TILE', brand: 'Rocell', quantity: 140, price: 3850 },
-  { id: '2', sku: 'BW-BAS-WSH', name: 'Vessel Oval Wash Basin', category: 'BATHWARE', brand: 'Lanka Tiles', quantity: 18, price: 24500 },
-  { id: '3', sku: 'TL-GRN-300', name: 'Forest Green Matte Tile', category: 'TILE', brand: 'Rocell', quantity: 250, price: 2400 },
-];
+interface InventoryItem {
+  osposItemId: number;
+  sku: string;
+  name: string;
+  quantity: number;
+  category: string;
+  price: number;
+}
 
 export const InventoryTable: React.FC = () => {
-  const [inventory, setInventory] = useState(INITIAL_INVENTORY);
-  const [adjustingId, setAdjustingId] = useState<string | null>(null);
-  const [newValue, setNewValue] = useState<number>(0);
-  const [syncing, setSyncing] = useState(false);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState<boolean>(false);
+  const [search, setSearch] = useState<string>('');
 
-  const handleUpdate = (id: string) => {
-    setInventory((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity: newValue } : item))
-    );
-    setAdjustingId(null);
+  const API_BASE = 'http://localhost:4000/api';
+
+  const fetchInventory = async (isSync = false) => {
+    if (isSync) {
+      setSyncing(true);
+    } else {
+      setLoading(true);
+    }
+    setError(null);
+    try {
+      const token = localStorage.getItem('tilevista_admin_token');
+      const response = await fetch(`${API_BASE}/inventory`, {
+        headers: {
+          'Authorization': `Bearer ${token || ''}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to load inventory (${response.status})`);
+      }
+
+      const data = await response.json();
+      setInventory(data);
+      if (isSync) {
+        alert('Inventory successfully synchronized with showroom OSPOS center!');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while loading inventory levels.');
+    } finally {
+      setLoading(false);
+      setSyncing(false);
+    }
   };
+
+  useEffect(() => {
+    fetchInventory();
+  }, []);
 
   const handleSync = () => {
-    setSyncing(true);
-    setTimeout(() => {
-      setSyncing(false);
-      alert('Inventory database successfully synchronized with showroom POS center!');
-    }, 1500);
+    fetchInventory(true);
   };
+
+  const filteredInventory = inventory.filter((item) => {
+    const matchesSearch = 
+      item.name.toLowerCase().includes(search.toLowerCase()) ||
+      item.sku.toLowerCase().includes(search.toLowerCase()) ||
+      item.category.toLowerCase().includes(search.toLowerCase());
+    return matchesSearch;
+  });
 
   return (
     <div className="bg-white border border-gray-200 p-8 shadow-sm">
-      <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
-        <h3 className="text-base font-semibold text-[#1A1A1A] tracking-wider uppercase">Stock Catalogue Levels</h3>
+      
+      {/* Table Header Section */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-gray-100">
+        <div>
+          <h3 className="text-base font-semibold text-[#1A1A1A] tracking-wider uppercase">Stock Catalogue Levels</h3>
+          <p className="text-[10px] text-gray-400 font-light mt-0.5">Live showroom items and real-time physical store quantities.</p>
+        </div>
         
         <button 
           onClick={handleSync}
-          className="border border-gray-300 hover:border-[#1A1A1A] text-[#1A1A1A] font-semibold text-[10px] tracking-wider uppercase px-4 py-2.5 transition-colors flex items-center gap-1.5"
+          disabled={syncing || loading}
+          className="border border-gray-300 hover:border-[#1A1A1A] text-[#1A1A1A] font-semibold text-[10px] tracking-wider uppercase px-4 py-2.5 transition-all flex items-center gap-1.5 disabled:opacity-50"
         >
           <RefreshCw size={12} className={syncing ? 'animate-spin' : ''} /> 
           <span>{syncing ? 'Synchronizing...' : 'Synchronize POS'}</span>
         </button>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs text-gray-600 border-collapse">
-          <thead>
-            <tr className="border-b border-gray-200 text-gray-400 font-bold uppercase tracking-wider">
-              <th className="py-4 px-2">SKU Code</th>
-              <th className="py-4 px-2">Name</th>
-              <th className="py-4 px-2">Category</th>
-              <th className="py-4 px-2">Price</th>
-              <th className="py-4 px-2 text-right">Available Stock</th>
-              <th className="py-4 px-2 text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {inventory.map((item) => (
-              <tr key={item.id} className="hover:bg-[#F9F9F7]/80 transition-colors">
-                <td className="py-4 px-2 font-mono text-red-600 font-medium">{item.sku}</td>
-                <td className="py-4 px-2 font-bold text-[#1A1A1A]">{item.name}</td>
-                <td className="py-4 px-2">
-                  <span className="px-2 py-0.5 text-[8.5px] font-bold tracking-wider uppercase bg-gray-50 border border-gray-200 text-gray-500">
-                    {item.category}
-                  </span>
-                </td>
-                <td className="py-4 px-2 font-mono font-medium text-gray-500">{formatCurrency(item.price)}</td>
-                <td className="py-4 px-2 text-right font-bold font-mono">
-                  {adjustingId === item.id ? (
-                    <div className="flex justify-end items-center gap-2">
-                      <input
-                        type="number"
-                        className="w-16 bg-[#F9F9F7] border border-gray-300 p-1 text-right text-[#1A1A1A] text-xs outline-none focus:border-[#D4C5B9]"
-                        value={newValue}
-                        onChange={(e) => setNewValue(parseInt(e.target.value) || 0)}
-                      />
-                      <button
-                        onClick={() => handleUpdate(item.id)}
-                        className="text-[10px] text-emerald-600 font-bold px-2 py-1 hover:bg-emerald-50 transition"
-                      >
-                        Save
-                      </button>
-                    </div>
-                  ) : (
-                    <span className={item.quantity <= 20 ? 'text-red-600' : 'text-gray-700'}>
-                      {item.quantity} units
-                    </span>
-                  )}
-                </td>
-                <td className="py-4 px-2 text-center">
-                  <button
-                    onClick={() => {
-                      setAdjustingId(item.id);
-                      setNewValue(item.quantity);
-                    }}
-                    className="p-2 text-gray-400 hover:text-[#1A1A1A] hover:bg-gray-50 transition"
-                    aria-label="Edit stock"
-                  >
-                    <Edit size={14} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Info notice about stock updates */}
+      <div className="mb-6 p-4 bg-[#F9F9F7] border border-gray-200 flex items-start gap-3">
+        <Info size={16} className="text-[#D4C5B9] shrink-0 mt-0.5" />
+        <div className="text-[11px] text-gray-500 font-light leading-relaxed">
+          <span className="font-bold text-[#1A1A1A]">Inventory Source of Truth:</span> Stock counts, unit prices, names, and SKU identifiers are fetched dynamically from the legacy OSPOS register system. All stock deductions, additions, and edits must be performed directly within OSPOS.
+        </div>
       </div>
+
+      {/* Search Filter */}
+      <div className="relative mb-6">
+        <input
+          type="text"
+          placeholder="Filter inventory by name, SKU code, or category..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full bg-[#F9F9F7] border border-gray-200 px-4 py-2.5 pl-9 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] font-light transition-colors"
+        />
+        <Search size={13} className="text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+      </div>
+
+      {/* Main Table Content */}
+      {loading ? (
+        <div className="py-20 flex flex-col items-center justify-center text-gray-400 gap-3">
+          <Loader2 className="animate-spin text-[#D4C5B9]" size={28} />
+          <span className="text-xs font-light tracking-wider uppercase font-mono">Querying OSPOS database...</span>
+        </div>
+      ) : error ? (
+        <div className="py-12 border border-dashed border-red-200 bg-red-50/20 text-center text-red-650 px-6 rounded-sm">
+          <p className="text-sm font-semibold">{error}</p>
+          <button 
+            onClick={() => fetchInventory()}
+            className="mt-4 px-4 py-2 text-[10px] bg-red-600 hover:bg-red-700 text-white uppercase font-bold tracking-widest"
+          >
+            Retry Sync
+          </button>
+        </div>
+      ) : filteredInventory.length === 0 ? (
+        <div className="py-20 text-center border border-dashed border-gray-200 bg-[#F9F9F7]">
+          <p className="text-gray-400 font-light text-xs uppercase tracking-wider">No matching stock items</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-gray-600 border-collapse">
+            <thead>
+              <tr className="border-b border-gray-200 text-gray-400 font-bold uppercase tracking-wider text-[10px]">
+                <th className="py-4 px-2">ID</th>
+                <th className="py-4 px-2">SKU Code</th>
+                <th className="py-4 px-2">Name</th>
+                <th className="py-4 px-2">Category</th>
+                <th className="py-4 px-2">Unit Price</th>
+                <th className="py-4 px-2 text-right">Available Stock</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredInventory.map((item) => {
+                const isLowStock = item.quantity <= 20;
+                return (
+                  <tr key={item.osposItemId} className="hover:bg-[#F9F9F7]/80 transition-colors">
+                    <td className="py-4 px-2 font-mono text-gray-400">{item.osposItemId}</td>
+                    <td className="py-4 px-2 font-mono text-red-600 font-medium">{item.sku}</td>
+                    <td className="py-4 px-2 font-bold text-[#1A1A1A]">{item.name}</td>
+                    <td className="py-4 px-2">
+                      <span className="px-2 py-0.5 text-[8.5px] font-bold tracking-wider uppercase bg-gray-50 border border-gray-200 text-gray-500">
+                        {item.category}
+                      </span>
+                    </td>
+                    <td className="py-4 px-2 font-mono font-medium text-gray-500">
+                      {formatCurrency(item.price)}
+                    </td>
+                    <td className="py-4 px-2 text-right font-bold font-mono">
+                      {isLowStock ? (
+                        <span className="inline-flex items-center gap-1 text-red-600 font-bold">
+                          <AlertTriangle size={11} className="fill-red-50" />
+                          <span>{item.quantity} units</span>
+                        </span>
+                      ) : (
+                        <span className="text-gray-700">
+                          {item.quantity} units
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

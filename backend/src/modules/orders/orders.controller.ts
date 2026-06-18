@@ -11,7 +11,7 @@ export class OrdersController {
     @Body()
     body: {
       userId?: string;
-      items: { productId: string; quantity: number }[];
+      items: { osposItemId: number; quantity: number }[];
       shippingAddress: string;
       paymentMethod: string;
     }

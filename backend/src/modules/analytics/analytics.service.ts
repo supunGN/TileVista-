@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { OsposIntegrationService } from '../integrations/ospos/ospos.service';
+import { config } from '../../config';
 
 @Injectable()
 export class AnalyticsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly osposService: OsposIntegrationService,
+  ) {}
 
   async getAdminDashboardStats() {
     const salesAggregate = await this.prisma.order.aggregate({
@@ -14,34 +19,38 @@ export class AnalyticsService {
     const totalRevenue = salesAggregate._sum.total || 0;
     const totalOrders = salesAggregate._count.id || 0;
 
+    // Group order items by OSPOS item_id to find fast-moving items
     const orderItems = await this.prisma.orderItem.groupBy({
-      by: ['productId'],
-      _sum: { quantity: true },
+      by: ['osposItemId'],
+      _sum: { quantity: true, priceAtPurchase: true },
       orderBy: { _sum: { quantity: 'desc' } },
       take: 5,
     });
 
-    const fastMovingItems = [];
-    for (const item of orderItems) {
-      const product = await this.prisma.product.findUnique({
-        where: { id: item.productId },
-      });
-      if (product) {
-        fastMovingItems.push({
-          productId: product.id,
-          productName: product.name,
-          sku: product.sku,
-          category: product.category,
-          unitsSold: item._sum.quantity || 0,
-          revenue: (item._sum.quantity || 0) * product.price,
-          currentStock: product.quantity,
-        });
-      }
-    }
+    // Fetch OSPOS live items once for metadata lookups
+    const allOsposItems = await this.osposService.fetchAllItems();
+    const osposItemMap = new Map(allOsposItems.map((i) => [i.item_id, i]));
 
-    const restockAlertsCount = await this.prisma.product.count({
-      where: { quantity: { lte: 10 } },
-    });
+    const fastMovingItems = orderItems
+      .map((item) => {
+        const osposItem = osposItemMap.get(item.osposItemId);
+        if (!osposItem) return null;
+        return {
+          osposItemId: item.osposItemId,
+          itemName: osposItem.name,
+          sku: osposItem.sku,
+          category: osposItem.category,
+          unitsSold: item._sum.quantity || 0,
+          revenue: Number((item._sum.priceAtPurchase || 0).toFixed(2)),
+          currentStock: osposItem.quantity,
+        };
+      })
+      .filter(Boolean);
+
+    // Low stock alerts come from OSPOS live quantities
+    const restockAlertsCount = allOsposItems.filter(
+      (i) => i.quantity <= config.lowStockThreshold,
+    ).length;
 
     const orders = await this.prisma.order.findMany({
       select: { createdAt: true, total: true },

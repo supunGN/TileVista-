@@ -31,20 +31,15 @@ export default function PublicLayout({
     <div className="flex flex-col min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#D4C5B9] selection:text-[#1A1A1A]">
 
       {/* 1. Top Contact Bar */}
-      <div className="w-full bg-[#1A1A1A] border-b border-gray-800 py-2.5 px-6 md:px-12 flex flex-col sm:flex-row justify-between items-center gap-2 text-[10.5px] text-gray-300 tracking-wide font-light">
-        <span className="flex items-center gap-1.5 text-gray-400">
-          Premium Tile & Bathware Showroom
+      <div className="w-full bg-[#1A1A1A] border-b border-gray-800 py-2.5 px-6 md:px-12 flex items-center justify-center gap-6 text-[10.5px] text-gray-300 tracking-wide font-light flex-wrap">
+        <span className="flex items-center gap-1.5">
+          <Phone size={11} className="text-[#D4C5B9]" />
+          <a href="tel:+94412223456" className="hover:text-white transition-colors">+94 41 222 3456</a>
         </span>
-        <div className="flex gap-5 items-center flex-wrap justify-center">
-          <span className="flex items-center gap-1.5">
-            <Phone size={11} className="text-[#D4C5B9]" />
-            <a href="tel:+94412223456" className="hover:text-white transition-colors">+94 41 222 3456</a>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <MapPin size={11} className="text-[#D4C5B9]" />
-            <span>No 120, Anagarika Dharmapala Mawatha, Matara</span>
-          </span>
-        </div>
+        <span className="flex items-center gap-1.5">
+          <MapPin size={11} className="text-[#D4C5B9]" />
+          <span>No 120, Anagarika Dharmapala Mawatha, Matara</span>
+        </span>
       </div>
 
       {/* 2. Main Navigation Bar */}

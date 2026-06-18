@@ -6,10 +6,10 @@ import { formatCurrency } from '../../utils';
 
 export const AnalyticsFeature: React.FC = () => {
   return (
-    <div className="p-8 bg-[#F9F9F7] text-[#1A1A1A] min-h-screen font-sans">
-      <div className="mb-8">
+    <div className="font-sans space-y-6">
+      <div>
         <span className="text-[9px] font-bold tracking-widest text-[#D4C5B9] uppercase">Store Console</span>
-        <h1 className="text-3xl font-semibold tracking-tight text-[#1A1A1A] mt-1">Business Analytics</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-[#1A1A1A] mt-1.5">Business Analytics</h1>
         <p className="text-xs text-gray-500 font-light mt-1">Review showroom trends, sales metrics, and stock velocities.</p>
       </div>
 

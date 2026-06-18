@@ -1,54 +1,70 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { OsposIntegrationService } from '../integrations/ospos/ospos.service';
 
+/**
+ * CartService manages in-memory user carts.
+ * Item validation is done against live OSPOS stock.
+ * Cart items are keyed by OSPOS item_id (integer).
+ */
 @Injectable()
 export class CartService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly osposService: OsposIntegrationService,
+  ) {}
 
-  // Mock in-memory user carts
-  private userCarts = new Map<string, { productId: string; quantity: number }[]>();
+  // In-memory cart store: userId -> array of { osposItemId, quantity }
+  private userCarts = new Map<string, { osposItemId: number; quantity: number }[]>();
 
   async getCart(userId: string) {
     const items = this.userCarts.get(userId) || [];
-    const populated = [];
+    if (items.length === 0) return [];
 
-    for (const item of items) {
-      const product = await this.prisma.product.findUnique({ where: { id: item.productId } });
-      if (product) {
-        populated.push({
-          productId: item.productId,
-          product,
+    // Fetch all OSPOS items in one call to avoid N+1
+    const allOsposItems = await this.osposService.fetchAllItems();
+    const osposItemMap = new Map(allOsposItems.map((i) => [i.item_id, i]));
+
+    return items
+      .map((item) => {
+        const osposItem = osposItemMap.get(item.osposItemId);
+        if (!osposItem) return null;
+        return {
+          osposItemId: item.osposItemId,
+          item: osposItem,
           quantity: item.quantity,
-        });
-      }
-    }
-    return populated;
+          lineTotal: osposItem.price * item.quantity,
+        };
+      })
+      .filter(Boolean);
   }
 
-  async addToCart(userId: string, productId: string, quantity: number) {
-    const product = await this.prisma.product.findUnique({ where: { id: productId } });
-    if (!product) {
-      throw new BadRequestException('Product not found in catalogue');
+  async addToCart(userId: string, osposItemId: number, quantity: number) {
+    const allItems = await this.osposService.fetchAllItems();
+    const item = allItems.find((i) => i.item_id === osposItemId);
+
+    if (!item) {
+      throw new BadRequestException(`Item ${osposItemId} not found in OSPOS catalogue.`);
     }
-    if (product.quantity < quantity) {
-      throw new BadRequestException('Insufficient stock quantity');
+    if (item.quantity < quantity) {
+      throw new BadRequestException(
+        `Insufficient stock for "${item.name}". Available: ${item.quantity}.`,
+      );
     }
 
     const current = this.userCarts.get(userId) || [];
-    const index = current.findIndex((item) => item.productId === productId);
+    const index = current.findIndex((i) => i.osposItemId === osposItemId);
     if (index > -1) {
       current[index].quantity += quantity;
     } else {
-      current.push({ productId, quantity });
+      current.push({ osposItemId, quantity });
     }
 
     this.userCarts.set(userId, current);
     return this.getCart(userId);
   }
 
-  async removeFromCart(userId: string, productId: string) {
+  async removeFromCart(userId: string, osposItemId: number) {
     const current = this.userCarts.get(userId) || [];
-    const filtered = current.filter((item) => item.productId !== productId);
+    const filtered = current.filter((item) => item.osposItemId !== osposItemId);
     this.userCarts.set(userId, filtered);
     return this.getCart(userId);
   }

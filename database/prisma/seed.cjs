@@ -1,9 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting database seeding with redesigned schema...');
+  console.log('🌱 Starting database seeding with JS cjs script...');
 
   // 1. Clean existing records in dependency order
   await prisma.packageItem.deleteMany();
@@ -18,7 +18,7 @@ async function main() {
   const admin = await prisma.user.create({
     data: {
       email: 'admin@tilevista.com',
-      passwordHash: 'admin123', // Development plaintext password
+      passwordHash: 'admin123', // plaintext password
       firstName: 'TileVista',
       lastName: 'Administrator',
       role: 'ADMIN',
