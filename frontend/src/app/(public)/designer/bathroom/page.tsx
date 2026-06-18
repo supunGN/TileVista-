@@ -20,7 +20,7 @@ import {
   Menu,
 } from 'lucide-react';
 
-// ─── TYPES ──────────────────────────────────────────────────────────────────
+// ─── TYPES 
 
 type RoomShape = 'rectangular' | 'l-shape';
 type UnitSystem = 'feet' | 'cm';
@@ -74,14 +74,14 @@ const FLOOR_TILES = [
 ];
 
 const ITEM_CATALOG = [
-  { type: 'sink',            name: 'Vanity Cabinet Sink',   cost: 249.99, isWallMounted: false },
-  { type: 'bathtub',         name: 'Freestanding Bath',     cost: 599.99, isWallMounted: false },
-  { type: 'shower',          name: 'Walk-In Shower Box',    cost: 449.99, isWallMounted: false },
-  { type: 'toilet',          name: 'Wall-Hung Toilet',      cost: 199.99, isWallMounted: false },
-  { type: 'towel_rail',      name: 'Chrome Towel Ladder',   cost: 119.99, isWallMounted: true  },
-  { type: 'washing_machine', name: 'Eco Wash Machine',      cost: 349.99, isWallMounted: false },
-  { type: 'light',           name: 'Vanity Mirror Light',   cost:  79.99, isWallMounted: true  },
-  { type: 'plant',           name: 'Deco Ceramic Plant',    cost:  44.99, isWallMounted: false },
+  { type: 'sink', name: 'Vanity Cabinet Sink', cost: 249.99, isWallMounted: false },
+  { type: 'bathtub', name: 'Freestanding Bath', cost: 599.99, isWallMounted: false },
+  { type: 'shower', name: 'Walk-In Shower Box', cost: 449.99, isWallMounted: false },
+  { type: 'toilet', name: 'Wall-Hung Toilet', cost: 199.99, isWallMounted: false },
+  { type: 'towel_rail', name: 'Chrome Towel Ladder', cost: 119.99, isWallMounted: true },
+  { type: 'washing_machine', name: 'Eco Wash Machine', cost: 349.99, isWallMounted: false },
+  { type: 'light', name: 'Vanity Mirror Light', cost: 79.99, isWallMounted: true },
+  { type: 'plant', name: 'Deco Ceramic Plant', cost: 44.99, isWallMounted: false },
 ];
 
 const INITIAL_WALL_DESIGN: WallSplitDesign = {
@@ -401,9 +401,9 @@ function BathroomScene({
   // Room polygon (x, z) world space
   const polygon = useMemo((): [number, number][] => {
     if (state.shape === 'l-shape') {
-      return [[-w/2,-d/2],[w/2,-d/2],[w/2,0],[w*0.1,0],[w*0.1,d/2],[-w/2,d/2]];
+      return [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, 0], [w * 0.1, 0], [w * 0.1, d / 2], [-w / 2, d / 2]];
     }
-    return [[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]];
+    return [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]];
   }, [state.shape, w, d]);
 
   // Floor geometry
@@ -455,7 +455,7 @@ function BathroomScene({
   useEffect(() => { setNumWalls(walls.length); }, [walls.length, setNumWalls]);
 
   const raycasterRef = useMemo(() => new THREE.Raycaster(), []);
-  const floorPlane   = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
+  const floorPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
 
   const getFloorHit = useCallback((e: PointerEvent): THREE.Vector3 | null => {
     const rect = gl.domElement.getBoundingClientRect();
@@ -480,8 +480,8 @@ function BathroomScene({
       if (itemToMove.isWallMounted) {
         // Snap to nearest wall
         let closestWallIdx = 0;
-        let closestDist    = Infinity;
-        let closestOffset  = 0;
+        let closestDist = Infinity;
+        let closestOffset = 0;
 
         walls.forEach((wall, idx) => {
           const dx = wall.p2[0] - wall.p1[0];
@@ -583,7 +583,7 @@ function BathroomScene({
     const dx = wall.p2[0] - wall.p1[0];
     const dz = wall.p2[1] - wall.p1[1];
     const nx = -(dz / wall.len);
-    const nz =  (dx / wall.len);
+    const nz = (dx / wall.len);
     const viewDist = Math.max(w, d) * 0.8;
     camera.position.set(wall.cx + nx * viewDist, h * 0.5, wall.cz + nz * viewDist);
     controls.target.set(wall.cx, h * 0.5, wall.cz);
@@ -610,7 +610,7 @@ function BathroomScene({
       <ambientLight intensity={0.35} />
       <directionalLight position={[w * 0.4, h * 1.2, d * 0.9]} intensity={0.5} castShadow />
       <spotLight position={[-w * 0.2, h - 0.2, -d * 0.2]} angle={Math.PI / 3} penumbra={0.8} intensity={2.0} castShadow />
-      <spotLight position={[ w * 0.2, h - 0.2,  d * 0.2]} angle={Math.PI / 3} penumbra={0.8} intensity={2.0} castShadow />
+      <spotLight position={[w * 0.2, h - 0.2, d * 0.2]} angle={Math.PI / 3} penumbra={0.8} intensity={2.0} castShadow />
 
       {/* Floor */}
       <mesh geometry={floorGeom} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
@@ -628,9 +628,9 @@ function BathroomScene({
         if (!isVisible) return null;
 
         const design = state.wallDesigns[i] || INITIAL_WALL_DESIGN;
-        const split  = design.splitMode;
-        const repX   = Math.max(1, Math.round(wall.len * 0.8));
-        const repY   = Math.max(1, Math.round(h * 0.8));
+        const split = design.splitMode;
+        const repX = Math.max(1, Math.round(wall.len * 0.8));
+        const repY = Math.max(1, Math.round(h * 0.8));
 
         if (split === 'full') {
           return (
@@ -665,7 +665,7 @@ function BathroomScene({
 
         if (split === 'vertical') {
           const wCenter = 2.4;
-          const wSides  = (wall.len - wCenter) / 2;
+          const wSides = (wall.len - wCenter) / 2;
           return (
             <group key={`w-${i}`} position={[wall.cx, h / 2, wall.cz]} rotation={[0, wall.rotY, 0]}>
               <mesh position={[0, 0, 0.002]}>
@@ -706,14 +706,14 @@ function BathroomScene({
               setOrbitEnabled(false);
             }}
           >
-            {item.type === 'sink'            && <SinkModel           selected={isSelected} />}
-            {item.type === 'bathtub'         && <BathtubModel        selected={isSelected} />}
-            {item.type === 'shower'          && <ShowerModel         selected={isSelected} />}
-            {item.type === 'toilet'          && <ToiletModel         selected={isSelected} />}
-            {item.type === 'towel_rail'      && <TowelRailModel      selected={isSelected} />}
+            {item.type === 'sink' && <SinkModel selected={isSelected} />}
+            {item.type === 'bathtub' && <BathtubModel selected={isSelected} />}
+            {item.type === 'shower' && <ShowerModel selected={isSelected} />}
+            {item.type === 'toilet' && <ToiletModel selected={isSelected} />}
+            {item.type === 'towel_rail' && <TowelRailModel selected={isSelected} />}
             {item.type === 'washing_machine' && <WashingMachineModel selected={isSelected} />}
-            {item.type === 'light'           && <WallLightModel      selected={isSelected} />}
-            {item.type === 'plant'           && <PlantModel          selected={isSelected} />}
+            {item.type === 'light' && <WallLightModel selected={isSelected} />}
+            {item.type === 'plant' && <PlantModel selected={isSelected} />}
           </group>
         );
       })}
@@ -721,14 +721,14 @@ function BathroomScene({
       {/* Placing-item ghost */}
       {isPlacingItem && (
         <group position={isPlacingItem.position} rotation={[0, isPlacingItem.rotation, 0]}>
-          {isPlacingItem.type === 'sink'            && <SinkModel           selected />}
-          {isPlacingItem.type === 'bathtub'         && <BathtubModel        selected />}
-          {isPlacingItem.type === 'shower'          && <ShowerModel         selected />}
-          {isPlacingItem.type === 'toilet'          && <ToiletModel         selected />}
-          {isPlacingItem.type === 'towel_rail'      && <TowelRailModel      selected />}
+          {isPlacingItem.type === 'sink' && <SinkModel selected />}
+          {isPlacingItem.type === 'bathtub' && <BathtubModel selected />}
+          {isPlacingItem.type === 'shower' && <ShowerModel selected />}
+          {isPlacingItem.type === 'toilet' && <ToiletModel selected />}
+          {isPlacingItem.type === 'towel_rail' && <TowelRailModel selected />}
           {isPlacingItem.type === 'washing_machine' && <WashingMachineModel selected />}
-          {isPlacingItem.type === 'light'           && <WallLightModel      selected />}
-          {isPlacingItem.type === 'plant'           && <PlantModel          selected />}
+          {isPlacingItem.type === 'light' && <WallLightModel selected />}
+          {isPlacingItem.type === 'plant' && <PlantModel selected />}
         </group>
       )}
 
@@ -805,8 +805,8 @@ function CustomiseRoomDrawer({
         <div className="space-y-4">
           <h3 className="text-[10px] font-bold tracking-widest text-gray-400 uppercase border-b border-gray-100 pb-1.5">Room Dimensions</h3>
           {[
-            { label: 'Width',  val: widthFt,  key: 'widthFt'  as const },
-            { label: 'Depth',  val: depthFt,  key: 'depthFt'  as const },
+            { label: 'Width', val: widthFt, key: 'widthFt' as const },
+            { label: 'Depth', val: depthFt, key: 'depthFt' as const },
             { label: 'Height', val: heightFt, key: 'heightFt' as const },
           ].map(({ label, val, key }) => (
             <div key={key} className="flex flex-col gap-1.5">
@@ -881,9 +881,9 @@ function CustomiseRoomDrawer({
           {/* Split mode */}
           <div className="grid grid-cols-3 gap-1.5 text-center">
             {[
-              { id: 'full'       as const, label: 'Single' },
+              { id: 'full' as const, label: 'Single' },
               { id: 'horizontal' as const, label: 'Horiz.' },
-              { id: 'vertical'   as const, label: 'Vert.' },
+              { id: 'vertical' as const, label: 'Vert.' },
             ].map(mode => {
               const active = (wallDesigns[selectedWallIdx]?.splitMode || 'full') === mode.id;
               return (
@@ -1072,19 +1072,19 @@ function SummaryModal({ items, total, onClose }: { items: PlacedItem[]; total: n
 
 export default function BathroomPlannerPage() {
   const router = useRouter();
-  const [state, setState]             = useState<DesignState>(INITIAL);
-  const [topView, setTopView]         = useState(false);
+  const [state, setState] = useState<DesignState>(INITIAL);
+  const [topView, setTopView] = useState(false);
   const [activeSideView, setActiveSideView] = useState<number | null>(null);
   const [zoomTrigger, setZoomTrigger] = useState<'in' | 'out' | null>(null);
-  const [numWalls, setNumWalls]       = useState(0);
+  const [numWalls, setNumWalls] = useState(0);
 
-  const [placedItems, setPlacedItems]   = useState<PlacedItem[]>([]);
+  const [placedItems, setPlacedItems] = useState<PlacedItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [isPlacingItem, setIsPlacingItem]   = useState<PlacedItem | null>(null);
+  const [isPlacingItem, setIsPlacingItem] = useState<PlacedItem | null>(null);
 
-  const [activeCategory, setActiveCategory]         = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [showRoomCustomizer, setShowRoomCustomizer] = useState(false);
-  const [showSummaryModal, setShowSummaryModal]     = useState(false);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
 
   // ── orbit enable lives in parent so both Scene + UI can toggle it ──
   const [orbitEnabled, setOrbitEnabled] = useState(true);
@@ -1095,7 +1095,7 @@ export default function BathroomPlannerPage() {
   const update = (p: Partial<DesignState>) => setState(prev => ({ ...prev, ...p }));
 
   const selectedItem = useMemo(() => placedItems.find(i => i.id === selectedItemId), [placedItems, selectedItemId]);
-  const totalPrice   = useMemo(() => placedItems.reduce((s, i) => s + i.cost, 0), [placedItems]);
+  const totalPrice = useMemo(() => placedItems.reduce((s, i) => s + i.cost, 0), [placedItems]);
 
   const recordHistory = (next: PlacedItem[]) => {
     setUndoStack(prev => [...prev, placedItems]);
@@ -1227,24 +1227,23 @@ export default function BathroomPlannerPage() {
         {/* Category icons */}
         <div className="bg-black rounded-xl p-1.5 shadow-2xl flex flex-col gap-1.5 border border-white/10">
           {[
-            { id: 'sink',            label: 'Wash Basin',     icon: SINK_ICON },
-            { id: 'bathtub',         label: 'Bathtubs',       icon: BATHTUB_ICON },
-            { id: 'towel_rail',      label: 'Towel Rails',    icon: TOWEL_RAIL_ICON },
-            { id: 'shower',          label: 'Shower Cabin',   icon: SHOWER_ICON },
-            { id: 'toilet',          label: 'Toilets',        icon: TOILET_ICON },
-            { id: 'washing_machine', label: 'Wash Machines',  icon: WASHING_MACHINE_ICON },
-            { id: 'light',           label: 'Lighting',       icon: LIGHT_ICON },
-            { id: 'plant',           label: 'Plants & Decor', icon: ACCESSORIES_ICON },
+            { id: 'sink', label: 'Wash Basin', icon: SINK_ICON },
+            { id: 'bathtub', label: 'Bathtubs', icon: BATHTUB_ICON },
+            { id: 'towel_rail', label: 'Towel Rails', icon: TOWEL_RAIL_ICON },
+            { id: 'shower', label: 'Shower Cabin', icon: SHOWER_ICON },
+            { id: 'toilet', label: 'Toilets', icon: TOILET_ICON },
+            { id: 'washing_machine', label: 'Wash Machines', icon: WASHING_MACHINE_ICON },
+            { id: 'light', label: 'Lighting', icon: LIGHT_ICON },
+            { id: 'plant', label: 'Plants & Decor', icon: ACCESSORIES_ICON },
           ].map(cat => (
             <button
               key={cat.id}
               id={`btn-cat-${cat.id}`}
               onClick={() => setActiveCategory(activeCategory === cat.id ? null : cat.id)}
-              className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
-                activeCategory === cat.id
-                  ? 'bg-white text-black'
-                  : 'text-gray-400 hover:text-white hover:bg-white/10'
-              }`}
+              className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${activeCategory === cat.id
+                ? 'bg-white text-black'
+                : 'text-gray-400 hover:text-white hover:bg-white/10'
+                }`}
               title={cat.label}
             >
               {cat.icon}
@@ -1376,9 +1375,8 @@ export default function BathroomPlannerPage() {
         <button
           id="btn-dollhouse"
           onClick={() => setTopView(false)}
-          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${
-            !topView ? 'bg-[#1A1A1A] text-white shadow-md' : 'text-gray-600 hover:text-[#1A1A1A] hover:bg-gray-100/50'
-          }`}
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${!topView ? 'bg-[#1A1A1A] text-white shadow-md' : 'text-gray-600 hover:text-[#1A1A1A] hover:bg-gray-100/50'
+            }`}
         >
           <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
@@ -1392,9 +1390,8 @@ export default function BathroomPlannerPage() {
         <button
           id="btn-topview"
           onClick={() => setTopView(true)}
-          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${
-            topView ? 'bg-[#1A1A1A] text-white shadow-md' : 'text-gray-600 hover:text-[#1A1A1A] hover:bg-gray-100/50'
-          }`}
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase transition-all duration-300 ${topView ? 'bg-[#1A1A1A] text-white shadow-md' : 'text-gray-600 hover:text-[#1A1A1A] hover:bg-gray-100/50'
+            }`}
         >
           <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5">
             <circle cx="12" cy="12" r="10" />

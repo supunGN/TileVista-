@@ -21,7 +21,7 @@ export default function DesignerPage() {
 
   return (
     <div className="py-8 font-sans max-w-7xl mx-auto space-y-12 select-none">
-      
+
       {/* Header */}
       <div className="border-b border-gray-100 pb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
@@ -39,14 +39,14 @@ export default function DesignerPage() {
 
       {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        
+
         {/* Room Planner → 3D PAGE */}
-        <div 
+        <div
           onClick={goToRoomPlanner}
           className="flex flex-col bg-white border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300 cursor-pointer group"
         >
           <div className="relative w-full aspect-[4/3] bg-gray-50 overflow-hidden">
-            <div 
+            <div
               className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-[1.03]"
               style={{
                 backgroundImage: `url('https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&q=80&w=800')`
@@ -71,12 +71,12 @@ export default function DesignerPage() {
         </div>
 
         {/* Bathroom Planner */}
-        <div 
+        <div
           onClick={goToBathroomPlanner}
           className="flex flex-col bg-white border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300 cursor-pointer group"
         >
           <div className="relative w-full aspect-[4/3] bg-gray-50 overflow-hidden">
-            <div 
+            <div
               className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-[1.03]"
               style={{
                 backgroundImage: `url('https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800')`
@@ -96,12 +96,12 @@ export default function DesignerPage() {
         </div>
 
         {/* Kitchen Planner */}
-        <div 
+        <div
           onClick={() => handlePlannerAlert('Kitchen Planner')}
           className="flex flex-col bg-white border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300 cursor-pointer group"
         >
           <div className="relative w-full aspect-[4/3] bg-gray-50 overflow-hidden">
-            <div 
+            <div
               className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-[1.03]"
               style={{
                 backgroundImage: `url('https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&q=80&w=800')`
