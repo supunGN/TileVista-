@@ -31,7 +31,7 @@ export const PlannerIntro: React.FC<PlannerIntroProps> = ({ onStartDesign }) => 
             
             <button
               onClick={onStartDesign}
-              className="mt-4 flex items-center justify-center gap-3 bg-[#1A1A1A] hover:bg-[#D4C5B9] hover:text-[#1A1A1A] text-white font-semibold text-xs tracking-[0.15em] uppercase px-8 py-4.5 transition-all duration-300 shadow-sm"
+              className="mt-4 flex items-center justify-center gap-3 bg-[#1A1A1A] hover:bg-[#D4C5B9] hover:text-[#1A1A1A] text-white font-semibold text-xs tracking-[0.15em] uppercase px-8 py-4 transition-all duration-300 shadow-sm"
             >
               <Ruler size={15} />
               <span>START YOUR CUSTOM DESIGN</span>

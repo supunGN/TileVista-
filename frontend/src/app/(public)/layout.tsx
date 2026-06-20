@@ -99,7 +99,7 @@ export default function PublicLayout({
               aria-label="Shopping Cart"
             >
               <ShoppingCart size={20} strokeWidth={1.8} />
-              <span className="absolute -top-1 -right-1 w-4.5 h-4.5 bg-[#D4C5B9] text-white text-[9px] font-bold rounded-full flex items-center justify-center border border-white">
+              <span className="absolute -top-1.5 -right-0.5 bg-[#D4C5B9] text-white text-[8px] font-bold rounded-[6px] w-[10px] h-[17px] flex items-center justify-center leading-none">
                 1
               </span>
             </Link>
