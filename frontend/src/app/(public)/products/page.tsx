@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Search, ShoppingCart, Eye, Sparkles, Loader2, RefreshCw } from 'lucide-react';
 
 interface UnifiedItem {
@@ -188,7 +189,7 @@ export default function ProductsPage() {
                 className="flex flex-col bg-white border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 group"
               >
                 {/* Product Image badge */}
-                <div className="relative w-full h-[220px] bg-gray-50 overflow-hidden">
+                <Link href={`/products/${p.itemId}`} className="relative w-full h-[220px] bg-gray-50 overflow-hidden block">
                   <div 
                     className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-103"
                     style={{ backgroundImage: `url('${imageUrl}')` }}
@@ -206,7 +207,7 @@ export default function ProductsPage() {
                       <span>3D Canvas Ready</span>
                     </span>
                   )}
-                </div>
+                </Link>
 
                 {/* Details */}
                 <div className="p-6 flex flex-col flex-1">
@@ -217,9 +218,11 @@ export default function ProductsPage() {
                     <span className="text-[9px] text-gray-400 font-mono">{p.sku}</span>
                   </div>
 
-                  <h3 className="text-base font-semibold text-[#1A1A1A] tracking-wide mb-2 line-clamp-1">
-                    {p.name}
-                  </h3>
+                  <Link href={`/products/${p.itemId}`}>
+                    <h3 className="text-base font-semibold text-[#1A1A1A] tracking-wide mb-2 line-clamp-1 hover:text-[#D4C5B9] transition-colors">
+                      {p.name}
+                    </h3>
+                  </Link>
 
                   <p className="text-xs text-gray-500 font-light leading-relaxed mb-6 flex-1 line-clamp-2">
                     {p.description || 'Premium selection showroom article, sourced and imported to fit contemporary architecture projects.'}
@@ -255,14 +258,23 @@ export default function ProductsPage() {
                       </div>
                     </div>
 
-                    <button 
-                      onClick={() => handleAddToCart(p.name)}
-                      disabled={p.quantity <= 0}
-                      className="bg-[#1A1A1A] hover:bg-[#D4C5B9] hover:text-[#1A1A1A] text-white p-3.5 transition-all duration-300 disabled:opacity-30 disabled:hover:bg-[#1A1A1A] disabled:hover:text-white"
-                      aria-label="Add to cart"
-                    >
-                      <ShoppingCart size={15} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <Link 
+                        href={`/products/${p.itemId}`}
+                        className="border border-gray-200 hover:border-[#1A1A1A] text-gray-500 hover:text-[#1A1A1A] p-3.5 transition-all duration-300 flex items-center justify-center"
+                        aria-label="View Details"
+                      >
+                        <Eye size={15} />
+                      </Link>
+                      <button 
+                        onClick={() => handleAddToCart(p.name)}
+                        disabled={p.quantity <= 0}
+                        className="bg-[#1A1A1A] hover:bg-[#D4C5B9] hover:text-[#1A1A1A] text-white p-3.5 transition-all duration-300 disabled:opacity-30 disabled:hover:bg-[#1A1A1A] disabled:hover:text-white"
+                        aria-label="Add to cart"
+                      >
+                        <ShoppingCart size={15} />
+                      </button>
+                    </div>
                   </div>
 
                 </div>
