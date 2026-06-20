@@ -1,0 +1,49 @@
+# Tile Vista Development Journey
+
+This file documents the journey of refactoring and migrating the **Tile Vista** backend, implementing integrations, handling schema updates, and enhancing system resilience.
+
+---
+
+## 1. Initial State & Scope
+We started with a mock database setup (`tilevista_db`) and a basic structure for the catalog and items. The target was to:
+1. **OSPOS Point of Sale Integration**: Query stock balances live from OSPOS and normalize high-precision string numeric values (e.g. `"250.0000"`) into TypeScript numbers.
+2. **Transactional Deductions**: Implement transaction boundaries to deduct stock from OSPOS during online order confirmations, rolling back database changes if the OSPOS connection fails.
+3. **Resilience**: Ensure Storefront stability when local OSPOS instances (e.g., local XAMPP computers) are offline by using graceful timeouts and default fallback states (`stock = 0`, `isStaleData = true`).
+4. **Database Schema Migration**: Swap out mock tables for a normalized, production-ready 28-table database schema from [tilevista.sql](file:///d:/Documents/TileVista/database/tilevista.sql).
+5. **Architectural Naming Conventions**: Align database naming from `items` to `products`, but retain public API routing under `/items` to prevent breaking the Next.js frontend app.
+
+---
+
+## 2. Refactoring Steps & Implementation Path
+
+### Phase 1: OSPOS Integration & Resilience
+- **OSPOS Service & DTO**: Created `OsposIntegrationService` and `OsposStockResponseDto` to encapsulate Axios requests to OSPOS, handling token authentication, timeouts, and logging. If OSPOS fails, it catches errors and returns fallback quantities.
+- **Resilient Catalog Mapping**: Added `isStaleData` flag to `UnifiedItemDto` and implemented fallback try/catch blocks in `ProductsService.findAll` and `ProductsService.findOne`. If OSPOS is unreachable, local database records are still retrieved and returned with fallback stock metadata, preventing web frontend crashes.
+
+### Phase 2: Schema Migration & Prisma Integration
+- **Database Introspection**: Updated database connections to target the new `tilevista` schema, pulling the 28 new tables (`products`, `product_assets`, `asset_transformations`, `tags`, `orders`, `order_items`, `users`, `room_designs`, etc.) via `npx prisma db pull`.
+- **Regenerating Client**: Executed `prisma generate` to establish static type safety across the new models.
+
+### Phase 3: Service-by-Service Refactoring
+- **Auth & Users Service**: Refactored query calls to target the new `users` table instead of `user`. Handled field mappings (`user_id` -> `id`, `first_name` -> `firstName`, etc.) and preserved uppercase role enums (`CUSTOMER`/`ADMIN`) inside JWT tokens for frontend validation guards.
+- **3D Room Designer**: Refactored `designer.service.ts` to map mock geometry models and layouts to the new `room_designs` table.
+- **Product Module Consolidation**: Restored the primary `ProductsModule`, deprecated and deleted the temporary `items` module, and mapped the GET `/items` and `/admin/items` endpoints in `ProductsController` to `ProductsService`.
+- **Orders & Checkout**: Refactored `OrdersService` to target `orders` and `order_items` tables, fetched OSPOS prices and stock live during checkout, and mapped order status enums to match lowercase MySQL database values.
+- **Packages Service**: Refactored `packages.service.ts` to query `packages` and `package_items` tables and look up local product UUIDs using OSPOS item IDs.
+- **Analytics Service**: Refactored `analytics.service.ts` to aggregate revenue using `subtotal` from `order_items`, sum up total sales using `total_amount`, and group items using `ospos_item_id`.
+
+---
+
+## 3. Verification & Build
+The entire backend codebase has been validated using the TypeScript compiler:
+```bash
+npm run build
+```
+The build executes successfully without any compilation errors.
+
+---
+
+## 4. Current State & Code Cleanliness
+* **Branch**: Dev branch `feature/ospos-integration`.
+* **Codebase Health**: Redundant files from the old `items` module were fully deleted. There are no duplicate functions, files, or unused imports.
+* **Commit**: Commits have been created to save all refactoring progress cleanly.

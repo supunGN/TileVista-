@@ -1,85 +1,95 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { OsposIntegrationService } from '../integrations/ospos/ospos.service';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly osposService: OsposIntegrationService,
+  ) {}
 
+  /**
+   * Creates an online product purchase order.
+   * Validates product names, pricing, and stock availability directly from OSPOS.
+   */
   async createOrder(userId: string | null, data: {
-    items: { productId: string; quantity: number }[];
-    shippingAddress: string;
-    paymentMethod: string;
+    items: { osposItemId: number; quantity: number }[];
+    shippingAddress?: string;
+    paymentMethod?: string;
   }) {
     if (!data.items || data.items.length === 0) {
       throw new BadRequestException('Checkout cart cannot be empty');
     }
 
+    // Resolve user_id: order requires a valid non-null user in the database
+    let targetUserId = userId;
+    if (!targetUserId) {
+      const defaultUser = await this.prisma.users.findFirst();
+      if (!defaultUser) {
+        throw new NotFoundException('No active users found to associate with this order');
+      }
+      targetUserId = defaultUser.user_id;
+    }
+
+    // Fetch all OSPOS items to validate quantities and prices live
+    const allOsposItems = await this.osposService.fetchAllItems();
+    const osposItemMap = new Map(allOsposItems.map((item) => [item.item_id, item]));
+
     return this.prisma.$transaction(async (tx) => {
-      let subtotal = 0;
+      let totalAmount = 0;
       const orderItemsData = [];
 
       for (const item of data.items) {
-        const product = await tx.product.findUnique({ where: { id: item.productId } });
-        if (!product) {
-          throw new NotFoundException(`Product ID ${item.productId} not found`);
+        const osposItem = osposItemMap.get(item.osposItemId);
+        if (!osposItem) {
+          throw new NotFoundException(`OSPOS Item ID ${item.osposItemId} not found`);
         }
-        if (product.quantity < item.quantity) {
-          throw new BadRequestException(`Insufficient stock for product ${product.name}`);
+        if (osposItem.quantity < item.quantity) {
+          throw new BadRequestException(`Insufficient stock for product ${osposItem.name}`);
         }
 
-        // Deduct inventory stock
-        await tx.product.update({
-          where: { id: product.id },
-          data: { quantity: product.quantity - item.quantity },
-        });
-
-        const discountedPrice = product.price * (1 - product.discount / 100);
-        subtotal += discountedPrice * item.quantity;
+        const subtotal = osposItem.price * item.quantity;
+        totalAmount += subtotal;
 
         orderItemsData.push({
-          productId: product.id,
+          order_item_id: crypto.randomUUID(),
+          ospos_item_id: item.osposItemId,
+          product_name_snapshot: osposItem.name,
           quantity: item.quantity,
-          priceAtPurchase: discountedPrice,
+          unit_price: osposItem.price,
+          subtotal: subtotal,
         });
       }
 
-      const taxRate = 0.15;
-      const tax = subtotal * taxRate;
-      const total = subtotal + tax;
+      const orderId = crypto.randomUUID();
+      const orderRef = `ORD-${Date.now()}`;
 
-      return tx.order.create({
+      return tx.orders.create({
         data: {
-          userId,
-          status: 'CONFIRMED',
-          total,
-          tax,
-          discount: 0,
-          shippingAddress: data.shippingAddress,
-          paymentMethod: data.paymentMethod,
-          items: {
+          order_id: orderId,
+          order_reference: orderRef,
+          user_id: targetUserId,
+          total_amount: totalAmount,
+          status: 'pending', // lowercase mysql enum
+          payment_status: 'pending', // lowercase mysql enum
+          approval_type: 'auto',
+          order_items: {
             create: orderItemsData,
           },
         },
         include: {
-          items: {
-            include: {
-              product: true,
-            },
-          },
+          order_items: true,
         },
       });
     });
   }
 
   async getOrder(id: string) {
-    const order = await this.prisma.order.findUnique({
-      where: { id },
+    const order = await this.prisma.orders.findUnique({
+      where: { order_id: id },
       include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
+        order_items: true,
       },
     });
     if (!order) {
@@ -89,29 +99,71 @@ export class OrdersService {
   }
 
   async getCustomerOrders(userId: string) {
-    return this.prisma.order.findMany({
-      where: { userId },
+    return this.prisma.orders.findMany({
+      where: { user_id: userId },
       include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
+        order_items: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
     });
   }
 
   async getAllOrders() {
-    return this.prisma.order.findMany({
+    return this.prisma.orders.findMany({
       include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
+        order_items: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  /**
+   * Approves a showroom order sitting in pending state,
+   * performs a downstream inventory deduction inside OSPOS, and updates database records.
+   */
+  async approvePendingShowroomOrder(orderId: string): Promise<any> {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Fetch target order record
+      const order = await tx.orders.findUnique({
+        where: { order_id: orderId },
+        include: {
+          order_items: true,
+        },
+      });
+
+      if (!order) {
+        throw new NotFoundException(`Order with ID ${orderId} not found`);
+      }
+
+      // Check current status: must be exactly 'pending'
+      if (order.status !== 'pending') {
+        throw new BadRequestException('Order has already been processed or finalized');
+      }
+
+      try {
+        // Deduct OSPOS stock for each item in the order
+        for (const item of order.order_items) {
+          const syncSuccess = await this.osposService.deductStockInPos(item.ospos_item_id, item.quantity);
+          if (!syncSuccess) {
+            throw new Error(`OSPOS stock deduction failed for item ID ${item.ospos_item_id}`);
+          }
+        }
+
+        // 3. Prisma Transaction Closure - update local database status to 'approved'
+        return await tx.orders.update({
+          where: { order_id: order.order_id },
+          data: {
+            status: 'approved',
+            confirmed_at: new Date(),
+          },
+          include: {
+            order_items: true,
+          },
+        });
+      } catch (error) {
+        // Throwing propagates out of transaction, preventing local database state update
+        throw new BadRequestException(`Downstream OSPOS synchronization failed: ${error.message}`);
+      }
     });
   }
 }

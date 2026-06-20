@@ -40,28 +40,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, pass: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Mock validation matching database/prisma/seed.ts credentials
-      if (email === 'admin@tilevista.com' && pass === 'admin123') {
-        const mockUser: UserSession = {
-          id: 'admin-uuid',
-          email: 'admin@tilevista.com',
-          role: 'ADMIN',
-          firstName: 'TileVista',
-          lastName: 'Administrator',
-        };
-        const mockToken = 'mock-jwt-admin-token-xyz';
+      const response = await fetch('http://localhost:4000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, pass }),
+      });
 
-        localStorage.setItem('tilevista_admin_token', mockToken);
-        localStorage.setItem('tilevista_admin_user', JSON.stringify(mockUser));
-
-        setToken(mockToken);
-        setUser(mockUser);
+      if (!response.ok) {
         setIsLoading(false);
-        return true;
+        return false;
       }
+
+      const data = await response.json();
+      const token = data.access_token;
+      const userPayload: UserSession = data.user;
+
+      localStorage.setItem('tilevista_admin_token', token);
+      localStorage.setItem('tilevista_admin_user', JSON.stringify(userPayload));
+
+      setToken(token);
+      setUser(userPayload);
       setIsLoading(false);
-      return false;
-    } catch {
+      return true;
+    } catch (error) {
+      console.error('Login error:', error);
       setIsLoading(false);
       return false;
     }

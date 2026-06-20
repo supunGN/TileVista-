@@ -1,6 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
+import { users_role } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -10,10 +12,28 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (user && user.passwordHash === pass) {
-      const { passwordHash, ...result } = user;
-      return result;
+    const user = await this.prisma.users.findUnique({ where: { email } });
+    if (user) {
+      let isMatch = false;
+      try {
+        isMatch = await bcrypt.compare(pass, user.password_hash);
+      } catch (err) {
+        isMatch = false;
+      }
+      if (!isMatch) {
+        // Fallback for development database seed raw passwords
+        isMatch = pass === user.password_hash;
+      }
+      if (isMatch) {
+        const { password_hash, ...result } = user;
+        return {
+          id: user.user_id,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          role: user.role.toUpperCase(), // Normalize role to uppercase ('CUSTOMER' / 'ADMIN')
+        };
+      }
     }
     return null;
   }
@@ -33,22 +53,33 @@ export class AuthService {
   }
 
   async register(email: string, pass: string, firstName: string, lastName: string) {
-    const exists = await this.prisma.user.findUnique({ where: { email } });
+    const exists = await this.prisma.users.findUnique({ where: { email } });
     if (exists) {
       throw new BadRequestException('Email is already registered');
     }
 
-    const user = await this.prisma.user.create({
+    const hashedPassword = await bcrypt.hash(pass, 10);
+
+    const user = await this.prisma.users.create({
       data: {
+        user_id: crypto.randomUUID(),
         email,
-        passwordHash: pass,
-        firstName,
-        lastName,
-        role: 'CUSTOMER',
+        password_hash: hashedPassword,
+        first_name: firstName,
+        last_name: lastName,
+        role: users_role.customer,
+        status: 'active',
       },
     });
 
-    const { passwordHash, ...result } = user;
+    const result = {
+      id: user.user_id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      role: 'CUSTOMER',
+    };
+    
     return this.login(result);
   }
 }
