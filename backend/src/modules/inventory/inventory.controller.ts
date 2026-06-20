@@ -18,7 +18,7 @@ export class InventoryController {
   }
 
   @Put('stock')
-  async adjustStock(@Body() body: { sku: string; change: number }) {
-    return this.inventoryService.updateStock(body.sku, body.change);
+  async adjustStock(@Body() body: { osposItemId: number; change: number }) {
+    return this.inventoryService.updateStock(Number(body.osposItemId), body.change);
   }
 }

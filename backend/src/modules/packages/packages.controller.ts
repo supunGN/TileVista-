@@ -24,7 +24,7 @@ export class PackagesController {
       name: string;
       description?: string;
       discountPercent: number;
-      productIds: string[];
+      osposItemIds: number[];
     }
   ) {
     return this.packagesService.create(body);

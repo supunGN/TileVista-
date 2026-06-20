@@ -1,72 +1,145 @@
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
 import * as React from 'react';
 import { BathroomShape, WallDesign } from '@tilevista/types';
 
+
+
 export interface BathroomCanvasProps {
-  children?: React.ReactNode;
+  width?: number;
+  length?: number;
+  height?: number;
+  shape?: 'RECTANGLE' | 'L_SHAPE';
   cameraPosition?: [number, number, number];
-  showGrid?: boolean;
 }
 
 /**
- * Premium 3D Bathroom Canvas Container Wrapper
+ * 3D Bathroom Canvas
  */
 export const BathroomCanvas: React.FC<BathroomCanvasProps> = ({
-  children,
+  width = 2.4,
+  length = 3,
+  height = 2.7,
+  shape = 'RECTANGLE',
   cameraPosition = [5, 5, 5],
-  showGrid = true,
 }) => {
   return (
-    <div
-      style={{
-        width: '100%',
-        height: '100%',
-        position: 'relative',
-        background: 'radial-gradient(circle, #1e293b 0%, #0f172a 100%)',
-        borderRadius: '24px',
-        overflow: 'hidden',
-        boxShadow: 'inset 0 0 80px rgba(0,0,0,0.6)',
-      }}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          top: '20px',
-          left: '20px',
-          color: '#ffffff',
-          fontFamily: "'Outfit', sans-serif",
-          zIndex: 10,
-        }}
-      >
-        <span style={{ fontSize: '1.25rem', fontWeight: 600, textTransform: 'uppercase' }}>
-          3D Virtual Showroom Canvas
-        </span>
-        <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginTop: '4px' }}>
-          OrbitControls: Enabled | Real-Time Lighting Active
-        </div>
-      </div>
+    <div style={{ width: '100%', height: '100%' }}>
+      <Canvas camera={{ position: cameraPosition }}>
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[5, 10, 5]} intensity={1} />
 
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          color: 'rgba(255, 255, 255, 0.1)',
-        }}
-      >
-        <svg width="200" height="200" viewBox="0 0 100 100" fill="currentColor">
-          <path d="M50 15 L80 35 L80 65 L50 85 L20 65 L20 35 Z" fill="none" stroke="currentColor" strokeWidth="2" />
-          <path d="M50 15 L50 85" stroke="currentColor" strokeWidth="1" />
-          <path d="M20 35 L80 65" stroke="currentColor" strokeWidth="1" />
-          <path d="M80 35 L20 65" stroke="currentColor" strokeWidth="1" />
-        </svg>
-      </div>
+        <Room
+  width={width}
+  length={length}
+  height={height}
+  shape={shape}
+/>
 
-      <div style={{ display: 'none' }}>{children}</div>
+        <OrbitControls />
+      </Canvas>
     </div>
   );
 };
+
+/**
+ * Room Geometry (this is the important part)
+ */
+type RoomProps = {
+  width: number;
+  length: number;
+  height: number;
+  shape?: 'RECTANGLE' | 'L_SHAPE';
+};
+
+function Room({
+  width,
+  length,
+  height,
+  shape = 'RECTANGLE',
+}: RoomProps) {
+  const wallThickness = 0.1;
+
+  // rectangle room
+  if (shape === 'RECTANGLE') {
+    return (
+      <group>
+        {/* floor */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[width, length]} />
+          <meshStandardMaterial color="#d1d5db" />
+        </mesh>
+
+        {/* back wall */}
+        <mesh position={[0, height / 2, -length / 2]}>
+          <boxGeometry args={[width, height, wallThickness]} />
+          <meshStandardMaterial color="white" />
+        </mesh>
+
+        {/* front wall */}
+        <mesh position={[0, height / 2, length / 2]}>
+          <boxGeometry args={[width, height, wallThickness]} />
+          <meshStandardMaterial color="white" />
+        </mesh>
+
+        {/* left wall */}
+        <mesh position={[-width / 2, height / 2, 0]}>
+          <boxGeometry args={[wallThickness, height, length]} />
+          <meshStandardMaterial color="white" />
+        </mesh>
+
+        {/* right wall */}
+        <mesh position={[width / 2, height / 2, 0]}>
+          <boxGeometry args={[wallThickness, height, length]} />
+          <meshStandardMaterial color="white" />
+        </mesh>
+      </group>
+    );
+  }
+
+  // L-shape room (two connected rectangles)
+  const cutSize = width * 0.4;
+
+  return (
+    <group>
+      {/* MAIN AREA */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-cutSize / 2, 0, 0]}>
+        <planeGeometry args={[width - cutSize, length]} />
+        <meshStandardMaterial color="#d1d5db" />
+      </mesh>
+
+      {/* EXTENSION AREA */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[width / 2 - cutSize / 2, 0, length / 2 - cutSize / 2]}
+      >
+        <planeGeometry args={[cutSize, length - cutSize]} />
+        <meshStandardMaterial color="#d1d5db" />
+      </mesh>
+
+      {/* SIMPLE WALLS (outer boundary only) */}
+      <mesh position={[0, height / 2, -length / 2]}>
+        <boxGeometry args={[width, height, wallThickness]} />
+        <meshStandardMaterial color="white" />
+      </mesh>
+
+      <mesh position={[0, height / 2, length / 2]}>
+        <boxGeometry args={[width, height, wallThickness]} />
+        <meshStandardMaterial color="white" />
+      </mesh>
+
+      <mesh position={[-width / 2, height / 2, 0]}>
+        <boxGeometry args={[wallThickness, height, length]} />
+        <meshStandardMaterial color="white" />
+      </mesh>
+
+      <mesh position={[width / 2, height / 2, 0]}>
+        <boxGeometry args={[wallThickness, height, length]} />
+        <meshStandardMaterial color="white" />
+      </mesh>
+    </group>
+  );
+}
 
 export interface RoomStructureProps {
   shape: BathroomShape;

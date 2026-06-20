@@ -11,12 +11,12 @@ export class CartController {
   }
 
   @Post(':userId')
-  async add(@Param('userId') userId: string, @Body() body: { productId: string; quantity: number }) {
-    return this.cartService.addToCart(userId, body.productId, body.quantity);
+  async add(@Param('userId') userId: string, @Body() body: { osposItemId: number; quantity: number }) {
+    return this.cartService.addToCart(userId, Number(body.osposItemId), body.quantity);
   }
 
-  @Delete(':userId/:productId')
-  async remove(@Param('userId') userId: string, @Param('productId') productId: string) {
-    return this.cartService.removeFromCart(userId, productId);
+  @Delete(':userId/:osposItemId')
+  async remove(@Param('userId') userId: string, @Param('osposItemId') osposItemId: string) {
+    return this.cartService.removeFromCart(userId, Number(osposItemId));
   }
 }

@@ -10,7 +10,14 @@ export default function PublicLayout({
 }: {
   children: React.ReactNode;
 }) {
+
   const pathname = usePathname();
+
+  const isWorkspace = pathname === '/designer/room' || pathname === '/designer/bathroom';
+
+  if (isWorkspace) {
+    return <div className="min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#D4C5B9] selection:text-[#1A1A1A]">{children}</div>;
+  }
 
   const navigation = [
     { name: 'Home', href: '/' },
@@ -22,28 +29,23 @@ export default function PublicLayout({
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#D4C5B9] selection:text-[#1A1A1A]">
-      
+
       {/* 1. Top Contact Bar */}
-      <div className="w-full bg-[#1A1A1A] border-b border-gray-800 py-2.5 px-6 md:px-12 flex flex-col sm:flex-row justify-between items-center gap-2 text-[10.5px] text-gray-300 tracking-wide font-light">
-        <span className="flex items-center gap-1.5 text-gray-400">
-          Premium Tile & Bathware Showroom
+      <div className="w-full bg-[#1A1A1A] border-b border-gray-800 py-2.5 px-6 md:px-12 flex items-center justify-center gap-6 text-[10.5px] text-gray-300 tracking-wide font-light flex-wrap">
+        <span className="flex items-center gap-1.5">
+          <Phone size={11} className="text-[#D4C5B9]" />
+          <a href="tel:+94412223456" className="hover:text-white transition-colors">+94 41 222 3456</a>
         </span>
-        <div className="flex gap-5 items-center flex-wrap justify-center">
-          <span className="flex items-center gap-1.5">
-            <Phone size={11} className="text-[#D4C5B9]" />
-            <a href="tel:+94412223456" className="hover:text-white transition-colors">+94 41 222 3456</a>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <MapPin size={11} className="text-[#D4C5B9]" />
-            <span>No 120, Anagarika Dharmapala Mawatha, Matara</span>
-          </span>
-        </div>
+        <span className="flex items-center gap-1.5">
+          <MapPin size={11} className="text-[#D4C5B9]" />
+          <span>No 120, Anagarika Dharmapala Mawatha, Matara</span>
+        </span>
       </div>
 
       {/* 2. Main Navigation Bar */}
       <header className="w-full bg-white/95 backdrop-blur-md border-b border-gray-100 py-3.5 px-6 md:px-12 sticky top-0 z-50 transition-all duration-300">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          
+
           {/* Left: Brand Logotype */}
           <Link href="/" className="flex items-center gap-3 group">
             {/* Minimalist Ceramic Tile Icon */}
@@ -53,7 +55,7 @@ export default function PublicLayout({
               </div>
               <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-[#D4C5B9]"></div>
             </div>
-            
+
             <div className="flex flex-col">
               <span className="font-extrabold text-[15px] md:text-[17px] tracking-[0.15em] text-[#1A1A1A] leading-none uppercase">
                 Alahapperuma
@@ -72,11 +74,10 @@ export default function PublicLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`text-xs font-semibold tracking-widest uppercase pb-1 transition-all ${
-                    active
+                  className={`text-xs font-semibold tracking-widest uppercase pb-1 transition-all ${active
                       ? 'text-[#1A1A1A] border-b border-[#1A1A1A]'
                       : 'text-gray-500 hover:text-[#1A1A1A] hover:border-b hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   {item.name}
                 </Link>
@@ -92,19 +93,19 @@ export default function PublicLayout({
             </button>
 
             {/* Cart Icon with badge */}
-            <Link 
-              href="/cart" 
+            <Link
+              href="/cart"
               className="text-gray-700 hover:text-[#1A1A1A] p-1.5 transition-colors relative"
               aria-label="Shopping Cart"
             >
               <ShoppingCart size={20} strokeWidth={1.8} />
-              <span className="absolute -top-1 -right-1 w-4.5 h-4.5 bg-[#D4C5B9] text-white text-[9px] font-bold rounded-full flex items-center justify-center border border-white">
+              <span className="absolute -top-1.5 -right-0.5 bg-[#D4C5B9] text-white text-[8px] font-bold rounded-[6px] w-[10px] h-[17px] flex items-center justify-center leading-none">
                 1
               </span>
             </Link>
 
             {/* User profile Link */}
-            <Link 
+            <Link
               href="/login"
               className="w-8 h-8 rounded-full bg-[#1A1A1A]/5 border border-gray-200 flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors overflow-hidden"
             >
@@ -122,10 +123,10 @@ export default function PublicLayout({
       {/* 4. Footer */}
       <footer className="bg-[#1A1A1A] text-white pt-16 pb-8 border-t border-gray-800 font-sans mt-auto">
         <div className="max-w-7xl mx-auto px-6 md:px-12">
-          
+
           {/* Row 1: Brand & Horizontal Nav Links */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between pb-10 border-b border-gray-800/80 gap-8">
-            
+
             {/* Brand Logo Group */}
             <Link href="/" className="flex items-center gap-3 group">
               {/* Minimalist Ceramic Tile Icon */}
@@ -135,7 +136,7 @@ export default function PublicLayout({
                 </div>
                 <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-[#D4C5B9]"></div>
               </div>
-              
+
               <div className="flex flex-col">
                 <span className="font-bold text-[14px] tracking-[0.15em] text-white leading-none uppercase">
                   Alahapperuma
@@ -159,7 +160,7 @@ export default function PublicLayout({
 
           {/* Row 2: Contact Info Breakdown */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-12 border-b border-gray-800/80 text-gray-300">
-            
+
             {/* Phone */}
             <div className="flex items-start gap-3">
               <div className="p-2 bg-white/5 border border-white/10 text-[#D4C5B9] mt-0.5">

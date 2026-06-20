@@ -9,6 +9,7 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { PackagesModule } from './modules/packages/packages.module';
 import { DesignerModule } from './modules/designer/designer.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { OsposIntegrationModule } from './modules/integrations/ospos/ospos.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     PackagesModule,
     DesignerModule,
     AnalyticsModule,
+    OsposIntegrationModule,
   ],
 })
 export class AppModule {}

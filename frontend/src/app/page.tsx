@@ -23,7 +23,7 @@ export default function Home() {
   };
 
   return (
-    <div className="bg-white min-h-screen text-[#1A1A1A] font-sans selection:bg-[#D4C5B9] selection:text-[#1A1A1A] overflow-x-hidden">
+    <div className="flex flex-col min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#D4C5B9] selection:text-[#1A1A1A]">
       {/* Navigation Bar */}
       <Navbar 
         cartCount={cartCount} 
