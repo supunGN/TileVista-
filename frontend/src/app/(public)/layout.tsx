@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ShoppingCart, Search, RefreshCw, Phone, Mail, MapPin } from 'lucide-react';
+import { useAuth } from '../../features/auth/AuthContext';
 
 export default function PublicLayout({
   children,
@@ -12,6 +13,8 @@ export default function PublicLayout({
 }) {
 
   const pathname = usePathname();
+  const { user, isAuthenticated, logout } = useAuth();
+
 
   const isWorkspace = pathname === '/designer/room' || pathname === '/designer/bathroom';
 
@@ -105,14 +108,30 @@ export default function PublicLayout({
             </Link>
 
             {/* User profile Link */}
-            <Link
-              href="/login"
-              className="w-8 h-8 rounded-full bg-[#1A1A1A]/5 border border-gray-200 flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors overflow-hidden"
-            >
-              <div className="w-3.5 h-3.5 rounded-full bg-gray-400"></div>
-            </Link>
+            {isAuthenticated && user ? (
+              <div className="flex items-center gap-2.5">
+                <span className="text-[11px] text-gray-500 font-light hidden sm:inline">
+                  Hello, <span className="font-semibold text-[#1A1A1A]">{user.firstName || user.email.split('@')[0]}</span>
+                </span>
+                <button
+                  onClick={logout}
+                  className="text-[9px] font-bold tracking-wider text-gray-400 hover:text-red-600 uppercase border border-gray-200 px-2.5 py-1.5 hover:border-red-200 transition-colors bg-[#F9F9F7]"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="w-8 h-8 rounded-full bg-[#1A1A1A]/5 border border-gray-200 flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors overflow-hidden"
+                aria-label="User Profile Login"
+              >
+                <div className="w-3.5 h-3.5 rounded-full bg-gray-400"></div>
+              </Link>
+            )}
           </div>
         </div>
+
       </header>
 
       {/* 3. Render Viewport Page Content */}

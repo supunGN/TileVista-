@@ -5,15 +5,15 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  private mapUser(user: any) {
+  private mapUserResponse(user: any) {
     const { password_hash, ...result } = user;
     return {
       id: user.user_id,
+      email: user.email,
       firstName: user.first_name,
       lastName: user.last_name,
-      email: user.email,
       phone: user.phone,
-      role: user.role.toUpperCase(),
+      role: user.role ? user.role.toUpperCase() : 'CUSTOMER',
       status: user.status,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
@@ -21,15 +21,17 @@ export class UsersService {
   }
 
   async findOne(id: string) {
-    const user = await this.prisma.users.findUnique({ where: { user_id: id } });
+    const user = await this.prisma.users.findUnique({
+      where: { user_id: id },
+    });
     if (!user) {
       throw new NotFoundException('User profile not found');
     }
-    return this.mapUser(user);
+    return this.mapUserResponse(user);
   }
 
   async findAll() {
-    const usersList = await this.prisma.users.findMany();
-    return usersList.map((u) => this.mapUser(u));
+    const dbUsers = await this.prisma.users.findMany();
+    return dbUsers.map((user) => this.mapUserResponse(user));
   }
 }
