@@ -40,6 +40,8 @@ export class UnifiedItemDto {
   notes: string | null;
   /** True if a TileVista asset catalog entry exists for this OSPOS item */
   hasAssetEntry: boolean;
+  /** Flag indicating if the stock data is stale (fetched from fallback state) */
+  isStaleData?: boolean;
 }
 
 export class UpsertAssetDto {

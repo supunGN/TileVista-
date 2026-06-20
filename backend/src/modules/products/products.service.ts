@@ -18,6 +18,7 @@ export class ProductsService {
   private buildUnifiedItem(
     osposItem: OsposItem,
     dbProduct: any | null,
+    isStaleData = false,
   ): UnifiedItemDto {
     const dto = new UnifiedItemDto();
     dto.itemId = osposItem.item_id;
@@ -27,6 +28,7 @@ export class ProductsService {
     dto.description = osposItem.description ?? null;
     dto.price = osposItem.price;
     dto.quantity = osposItem.quantity;
+    dto.isStaleData = isStaleData;
 
     if (dbProduct && dbProduct.product_assets) {
       const asset = dbProduct.product_assets;
@@ -88,8 +90,24 @@ export class ProductsService {
 
     const productMap = new Map(dbProducts.map((p) => [p.ospos_item_id, p]));
 
+    if (osposItems.length === 0 && dbProducts.length > 0) {
+      this.logger.warn('OSPOS connection failed or returned no items. Returning local database product records with fallback stock status.');
+      return dbProducts.map((dbProduct) => {
+        const fallbackOsposItem: OsposItem = {
+          item_id: dbProduct.ospos_item_id,
+          name: `Product ${dbProduct.ospos_item_id}`,
+          category: 'Unknown',
+          sku: '',
+          description: 'Live catalog details temporarily unavailable.',
+          price: 0,
+          quantity: 0,
+        };
+        return this.buildUnifiedItem(fallbackOsposItem, dbProduct, true);
+      });
+    }
+
     return osposItems.map((item) =>
-      this.buildUnifiedItem(item, productMap.get(item.item_id) ?? null),
+      this.buildUnifiedItem(item, productMap.get(item.item_id) ?? null, false),
     );
   }
 
@@ -118,10 +136,23 @@ export class ProductsService {
 
     const osposItem = osposItems.find((i) => i.item_id === osposItemId);
     if (!osposItem) {
+      if (dbProduct) {
+        this.logger.warn(`OSPOS item details not available for product ID ${osposItemId}. Returning local database metadata with fallback stock status.`);
+        const fallbackOsposItem: OsposItem = {
+          item_id: osposItemId,
+          name: `Product ${osposItemId}`,
+          category: 'Unknown',
+          sku: '',
+          description: 'Live details temporarily unavailable.',
+          price: 0,
+          quantity: 0,
+        };
+        return this.buildUnifiedItem(fallbackOsposItem, dbProduct, true);
+      }
       throw new NotFoundException(`Product with ID ${osposItemId} not found.`);
     }
 
-    return this.buildUnifiedItem(osposItem, dbProduct);
+    return this.buildUnifiedItem(osposItem, dbProduct, false);
   }
 
   /**
