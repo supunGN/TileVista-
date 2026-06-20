@@ -12,50 +12,58 @@ export class PackagesService {
   /**
    * Enriches a package's item list with live OSPOS data.
    */
-  private async enrichPackage(pkg: {
-    id: string;
-    name: string;
-    description: string | null;
-    discountPercent: number;
-    price: number;
-    imageUrl: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-    items: { osposItemId: number }[];
-  }) {
+  private async enrichPackage(pkg: any) {
     const allOsposItems = await this.osposService.fetchAllItems();
     const osposMap = new Map(allOsposItems.map((i) => [i.item_id, i]));
 
-    const enrichedItems = pkg.items.map(({ osposItemId }) => ({
-      osposItemId,
-      item: osposMap.get(osposItemId) ?? null,
+    const enrichedItems = pkg.package_items.map((pi: any) => ({
+      osposItemId: pi.products.ospos_item_id,
+      item: osposMap.get(pi.products.ospos_item_id) ?? null,
+      quantity: pi.quantity,
     }));
 
     // Recalculate package price from live OSPOS prices
     const basePrice = enrichedItems.reduce(
-      (sum, { item }) => sum + (item?.price ?? 0),
+      (sum: number, { item, quantity }: any) => sum + (item?.price ?? 0) * quantity,
       0,
     );
-    const calculatedPrice = basePrice * (1 - pkg.discountPercent / 100);
+    const calculatedPrice = basePrice * (1 - Number(pkg.discount_percentage) / 100);
 
     return {
-      ...pkg,
+      id: pkg.package_id,
+      name: pkg.package_name,
+      description: pkg.description,
+      imageUrl: pkg.cover_image,
+      discountPercent: Number(pkg.discount_percentage),
       items: enrichedItems,
       calculatedPrice: Number(calculatedPrice.toFixed(2)),
+      createdAt: pkg.created_at,
     };
   }
 
   async findAll() {
-    const packages = await this.prisma.productPackage.findMany({
-      include: { items: true },
+    const packages = await this.prisma.packages.findMany({
+      include: {
+        package_items: {
+          include: {
+            products: true,
+          },
+        },
+      },
     });
     return Promise.all(packages.map((pkg) => this.enrichPackage(pkg)));
   }
 
   async findOne(id: string) {
-    const pkg = await this.prisma.productPackage.findUnique({
-      where: { id },
-      include: { items: true },
+    const pkg = await this.prisma.packages.findUnique({
+      where: { package_id: id },
+      include: {
+        package_items: {
+          include: {
+            products: true,
+          },
+        },
+      },
     });
     if (!pkg) {
       throw new NotFoundException(`Package with ID ${id} not found`);
@@ -69,7 +77,6 @@ export class PackagesService {
     discountPercent: number;
     osposItemIds: number[];
   }) {
-    // Fetch live prices from OSPOS to calculate the package price
     const allItems = await this.osposService.fetchAllItems();
     const osposMap = new Map(allItems.map((i) => [i.item_id, i]));
 
@@ -79,27 +86,66 @@ export class PackagesService {
     );
     const discountedPrice = basePrice * (1 - data.discountPercent / 100);
 
-    const pkg = await this.prisma.productPackage.create({
+    const packageId = crypto.randomUUID();
+
+    let categoryId = '';
+    const defaultCategory = await this.prisma.categories.findFirst();
+    if (defaultCategory) {
+      categoryId = defaultCategory.category_id;
+    } else {
+      categoryId = crypto.randomUUID();
+      await this.prisma.categories.create({
+        data: {
+          category_id: categoryId,
+          category_name: 'General',
+          description: 'Default category',
+        }
+      });
+    }
+
+    const packageItemsData = [];
+    for (const osposItemId of data.osposItemIds) {
+      let product = await this.prisma.products.findUnique({
+        where: { ospos_item_id: osposItemId }
+      });
+
+      if (!product) {
+        product = await this.prisma.products.create({
+          data: {
+            product_id: crypto.randomUUID(),
+            ospos_item_id: osposItemId,
+            category_id: categoryId,
+            is_active: true,
+          }
+        });
+      }
+
+      packageItemsData.push({
+        package_id: packageId,
+        product_id: product.product_id,
+        quantity: 1,
+      });
+    }
+
+    const pkg = await this.prisma.packages.create({
       data: {
-        name: data.name,
+        package_id: packageId,
+        package_name: data.name,
         description: data.description,
-        discountPercent: data.discountPercent,
-        price: discountedPrice,
+        discount_percentage: data.discountPercent,
+        status: 'active',
       },
     });
 
-    await this.prisma.packageItem.createMany({
-      data: data.osposItemIds.map((osposItemId) => ({
-        packageId: pkg.id,
-        osposItemId,
-      })),
+    await this.prisma.package_items.createMany({
+      data: packageItemsData,
     });
 
-    return this.findOne(pkg.id);
+    return this.findOne(pkg.package_id);
   }
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.productPackage.delete({ where: { id } });
+    return this.prisma.packages.delete({ where: { package_id: id } });
   }
 }

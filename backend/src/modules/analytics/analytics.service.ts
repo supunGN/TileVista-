@@ -11,18 +11,18 @@ export class AnalyticsService {
   ) {}
 
   async getAdminDashboardStats() {
-    const salesAggregate = await this.prisma.order.aggregate({
-      _sum: { total: true },
-      _count: { id: true },
+    const salesAggregate = await this.prisma.orders.aggregate({
+      _sum: { total_amount: true },
+      _count: { order_id: true },
     });
 
-    const totalRevenue = salesAggregate._sum.total || 0;
-    const totalOrders = salesAggregate._count.id || 0;
+    const totalRevenue = Number(salesAggregate._sum.total_amount || 0);
+    const totalOrders = salesAggregate._count.order_id || 0;
 
     // Group order items by OSPOS item_id to find fast-moving items
-    const orderItems = await this.prisma.orderItem.groupBy({
-      by: ['osposItemId'],
-      _sum: { quantity: true, priceAtPurchase: true },
+    const orderItems = await this.prisma.order_items.groupBy({
+      by: ['ospos_item_id'],
+      _sum: { quantity: true, subtotal: true },
       orderBy: { _sum: { quantity: 'desc' } },
       take: 5,
     });
@@ -33,15 +33,15 @@ export class AnalyticsService {
 
     const fastMovingItems = orderItems
       .map((item) => {
-        const osposItem = osposItemMap.get(item.osposItemId);
+        const osposItem = osposItemMap.get(item.ospos_item_id);
         if (!osposItem) return null;
         return {
-          osposItemId: item.osposItemId,
+          osposItemId: item.ospos_item_id,
           itemName: osposItem.name,
           sku: osposItem.sku,
           category: osposItem.category,
           unitsSold: item._sum.quantity || 0,
-          revenue: Number((item._sum.priceAtPurchase || 0).toFixed(2)),
+          revenue: Number(Number(item._sum.subtotal || 0).toFixed(2)),
           currentStock: osposItem.quantity,
         };
       })
@@ -52,17 +52,18 @@ export class AnalyticsService {
       (i) => i.quantity <= config.lowStockThreshold,
     ).length;
 
-    const orders = await this.prisma.order.findMany({
-      select: { createdAt: true, total: true },
-      orderBy: { createdAt: 'asc' },
+    const orders = await this.prisma.orders.findMany({
+      select: { created_at: true, total_amount: true },
+      orderBy: { created_at: 'asc' },
     });
 
     const salesTrendMap = new Map<string, { revenue: number; orderCount: number }>();
     orders.forEach((o) => {
-      const dateStr = o.createdAt.toISOString().split('T')[0];
+      const dateStr = (o.created_at || new Date()).toISOString().split('T')[0];
+      const revenueVal = Number(o.total_amount);
       const existing = salesTrendMap.get(dateStr) || { revenue: 0, orderCount: 0 };
       salesTrendMap.set(dateStr, {
-        revenue: existing.revenue + o.total,
+        revenue: existing.revenue + revenueVal,
         orderCount: existing.orderCount + 1,
       });
     });

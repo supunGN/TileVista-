@@ -1,7 +1,7 @@
 /**
- * The unified DTO representing a merged OSPOS item + TileVista asset catalog entry.
+ * The unified DTO representing a merged OSPOS item + TileVista asset entry.
  * Live pricing, stock, SKU, name, and category come from OSPOS.
- * Visual and 3D asset data come from the TileVista ItemAssetCatalog table.
+ * Visual and 3D asset data come from the TileVista product_assets and related tables.
  */
 export class UnifiedItemDto {
   /** OSPOS item_id — the single source of truth identifier */
@@ -19,7 +19,7 @@ export class UnifiedItemDto {
   /** Live quantity at location 1 from OSPOS */
   quantity: number;
 
-  // ── Asset Catalog Fields (from TileVista ItemAssetCatalog) ─────────────
+  // ── Asset Catalog Fields (from TileVista product_assets) ─────────────
   /** Full URL to the product image, or null if no image uploaded */
   imageUrl: string | null;
   /** Full URL to the GLB 3D model file, or null if not uploaded */
