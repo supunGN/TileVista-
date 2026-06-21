@@ -17,51 +17,104 @@ interface CuratedPackage {
 
 const SHOWROOM_PACKAGES: CuratedPackage[] = [
   {
-    id: 'pkg-minimalist-oasis',
-    name: 'The Minimalist Oasis',
-    badge: 'Scandinavian Functional',
-    description: 'Embrace the calm of Scandinavian design. Combining textured warm sand porcelain slabs, premium matte black water controllers, and a floating natural oak washbasin vanity.',
-    discountPrice: 450000,
-    originalPrice: 550000,
-    image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=800',
+    id: 'pkg-essential-comfort',
+    name: 'Essential Comfort Package',
+    badge: 'Budget Range',
+    description: 'A practical and affordable bathroom solution designed for modern homes. This package combines durable tiles with essential bathroom fixtures to create a clean and functional space.',
+    discountPrice: 350000,
+    originalPrice: 400000,
+    image: '/images/packages/essential-comfort-package.jpeg',
     items: [
-      'Warm Muted Sand Floor Tiles (600x600mm) — 45 sq.m',
-      'Soft Cream Textured Wall Tiles (300x600mm) — 32 sq.m',
-      'Floating Natural Oak Washbasin Vanity with Ceramic Top',
-      'Matte Black Wall-Mounted Rainfall Shower System',
-      'Minimalist Circular Backlit LED Wall Mirror'
+      'Light Beige Floor Tiles (600×600mm) — 45 sq.m',
+      'Soft Ivory Wall Tiles (300×600mm) — 32 sq.m',
+      'Ceramic Wash Basin with Pedestal',
+      'Close-Coupled Water Closet',
+      'Frameless Rectangular Wall Mirror'
     ]
   },
   {
-    id: 'pkg-classic-marble',
-    name: 'Classic Marble Luxury',
-    badge: 'Premium Luxury',
-    description: 'Indulge in Italian elegance. Grand scale Statuario marble slabs, double floating marble basins, gold-plated rainfall controllers, and a freestanding oval soaking tub.',
-    discountPrice: 750000,
-    originalPrice: 880000,
-    image: 'https://images.unsplash.com/photo-1600566752355-35792bedcfea?auto=format&fit=crop&q=80&w=800',
+    id: 'pkg-everyday-living',
+    name: 'Everyday Living Package',
+    badge: 'Budget Range',
+    description: 'A simple and stylish bathroom package that balances affordability and modern design for everyday family use.',
+    discountPrice: 380000,
+    originalPrice: 420000,
+    image: '/images/packages/everyday-living-package.jpeg',
     items: [
-      'Statuario White Polished Marble Floor Slabs (800x800mm) — 50 sq.m',
-      'Matching Carrara White Polished Wall Tiles (400x800mm) — 36 sq.m',
-      'Double Floating White Statuario Marble Wash Basin Vanity',
-      '18-Karat Gold Plated Rainfall Shower System',
-      'Premium Stone Composite Freestanding Soaking Tub'
+      'Warm Grey Floor Tiles (600×600mm) — 45 sq.m',
+      'White Gloss Wall Tiles (300×600mm) — 32 sq.m',
+      'Compact Countertop Wash Basin',
+      'Modern Water Closet',
+      'Minimalist LED Wall Mirror'
     ]
   },
   {
-    id: 'pkg-urban-industrial',
-    name: 'Urban Industrial',
-    badge: 'Modern Architectural',
-    description: 'Sleek, structural, and raw. Dark basalt textured floor tiles, raw concrete-style wall panels, black steel structural trims, and rainfall matte controllers.',
-    discountPrice: 390000,
-    originalPrice: 460000,
-    image: 'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&q=80&w=800',
+    id: 'pkg-elegant-living',
+    name: 'Elegant Living Package',
+    badge: 'Medium Range',
+    description: 'A balanced combination of comfort and style featuring premium finishes and contemporary bathroom fixtures.',
+    discountPrice: 550000,
+    originalPrice: 650000,
+    image: '/images/packages/elegant-living-package.jpeg',
     items: [
-      'Charcoal Gray Basalt Matte Floor Tiles (600x600mm) — 40 sq.m',
-      'Raw Concrete Texture Accent Wall Panels (600x1200mm) — 28 sq.m',
-      'Bespoke Matte Black Steel Floating Basin Frame with Concrete Top',
-      'Satin Black Rainfall Shower Column & Hand Shower Unit',
-      'Gunmetal Gray Linear Thermostatic Shower Controller'
+      'Stone Finish Floor Tiles (600×600mm) — 45 sq.m',
+      'Marble Effect Wall Tiles (300×600mm) — 32 sq.m',
+      'Floating Vanity Wash Basin Cabinet',
+      'Dual Flush Water Closet',
+      'Backlit LED Mirror',
+      'Matte Black Shower Set'
+    ]
+  },
+  {
+    id: 'pkg-contemporary-comfort',
+    name: 'Contemporary Comfort Package',
+    badge: 'Medium Range',
+    description: 'Designed for homeowners seeking a refined bathroom with modern aesthetics and enhanced functionality.',
+    discountPrice: 600000,
+    originalPrice: 700000,
+    image: '/images/packages/contemporary-comfort-package.jpeg',
+    items: [
+      'Light Concrete Finish Floor Tiles (600×600mm) — 45 sq.m',
+      'Textured Decorative Wall Tiles (300×600mm) — 32 sq.m',
+      'Countertop Ceramic Wash Basin',
+      'Concealed-Cistern Water Closet',
+      'Round LED Mirror',
+      'Rainfall Shower System'
+    ]
+  },
+  {
+    id: 'pkg-signature-white-luxury',
+    name: 'Signature White Luxury Package',
+    badge: 'Premium Range',
+    description: 'A sophisticated bathroom package inspired by modern luxury hotels, combining elegant white finishes with premium fixtures for a timeless appearance.',
+    discountPrice: 850000,
+    originalPrice: 950000,
+    image: '/images/packages/signature-white-luxury-package.jpeg',
+    items: [
+      'Polished White Porcelain Floor Tiles (800×800mm) — 45 sq.m',
+      'White Marble Effect Wall Tiles (600×1200mm) — 32 sq.m',
+      'Floating White Vanity Wash Basin Cabinet',
+      'Wall-Hung Water Closet with Concealed Cistern',
+      'Large Backlit Smart LED Mirror',
+      'Premium Rainfall Shower System'
+    ]
+  },
+  {
+    id: 'pkg-grand-marble-suite',
+    name: 'Grand Marble Suite Package',
+    badge: 'Premium Range',
+    description: 'A complete luxury bathroom solution designed for high-end residences, featuring elegant marble finishes, premium sanitary ware, and a freestanding bathtub.',
+    discountPrice: 1200000,
+    originalPrice: 1350000,
+    image: '/images/packages/grand-marble-suite-package.jpeg',
+    items: [
+      'Premium Statuario White Porcelain Floor Tiles (800×800mm) — 45 sq.m',
+      'Full Height White Marble Effect Wall Tiles (600×1200mm) — 32 sq.m',
+      'Designer Floating White Vanity with Countertop Wash Basin',
+      'Wall-Hung Water Closet with Concealed Cistern',
+      'Smart Touch-Control LED Mirror',
+      'Luxury Rainfall Shower System',
+      'Freestanding Oval Acrylic Bathtub'
     ]
   }
 ];

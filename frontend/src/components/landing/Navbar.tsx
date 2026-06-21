@@ -15,16 +15,16 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount }) => {
       <div className="w-full bg-[#1A1A1A] border-b border-gray-800 py-2.5 px-6 md:px-12 flex items-center justify-center gap-6 text-[10.5px] text-gray-300 tracking-wide font-light flex-wrap font-sans">
         <span className="flex items-center gap-1.5">
           <Phone size={11} className="text-[#D4C5B9]" />
-          <a href="tel:+94412223456" className="hover:text-white transition-colors">+94 41 222 3456</a>
+          <a href="tel:+94770834361" className="hover:text-white transition-colors">+94 77 083 4361</a>
         </span>
         <span className="flex items-center gap-1.5">
           <MapPin size={11} className="text-[#D4C5B9]" />
-          <span>No 120, Anagarika Dharmapala Mawatha, Matara</span>
+          <span>Pannagamuwa, Weerawila, Hambantota, Sri Lanka</span>
         </span>
       </div>
 
       {/* 2. Main Sticky Navbar — direct sibling of top bar so sticky applies to full-page scroll */}
-      <header className="w-full bg-white/95 backdrop-blur-md border-b border-gray-100 py-3.5 px-6 md:px-12 sticky top-0 z-50 transition-all duration-300 font-sans">
+      <header className="w-full bg-white/60 backdrop-blur-xl shadow-sm border-b border-white/20 py-3.5 px-6 md:px-12 sticky top-0 z-50 transition-all duration-300 font-sans">
         <div className="max-w-7xl mx-auto flex items-center justify-between w-full">
           
           {/* Left: Brand Logotype */}
@@ -33,12 +33,8 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount }) => {
             className="flex items-center gap-3 group"
             id="logo-brand"
           >
-            {/* Minimalist Ceramic Tile Icon */}
-            <div className="w-9 h-9 border-2 border-[#1A1A1A] flex items-center justify-center p-1 relative overflow-hidden transition-all duration-300 group-hover:bg-[#1A1A1A]">
-              <div className="w-full h-full border border-dashed border-[#1A1A1A] group-hover:border-white transition-all duration-300 flex items-center justify-center">
-                <span className="text-[10px] font-bold text-[#1A1A1A] group-hover:text-white transition-colors duration-300">A</span>
-              </div>
-              <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-[#D4C5B9]"></div>
+            <div className="w-10 h-10 relative overflow-hidden flex-shrink-0">
+              <img src="/images/ui/logo.svg" alt="Alahapperuma Trade Center Logo" className="w-full h-full object-contain" />
             </div>
             
             <div className="flex flex-col">
