@@ -25,10 +25,8 @@ export class OsposIntegrationService {
   private readonly logger = new Logger(OsposIntegrationService.name);
 
   // Read OSPOS API configurations from environment variables or use the specified defaults
-  private readonly baseUrl = process.env.OSPOS_API_BASE_URL || 'http://localhost/ospos/public/index.php/api/stock';
-  private readonly itemsUrl = process.env.OSPOS_API_ITEMS_URL || 'http://localhost/ospos/public/index.php/api/items';
-  private readonly deductUrl = process.env.OSPOS_API_DEDUCT_URL || 'http://localhost/ospos/public/index.php/api/deduct_stock';
-  private readonly secretToken = process.env.OSPOS_API_AUTH_TOKEN || 'Bearer your_secret_ospos_token_here';
+  private readonly baseUrl = process.env.OSPOS_API_BASE_URL || 'http://localhost/ospos/public/index.php/api/tilevista';
+  private readonly secretToken = process.env.OSPOS_API_TOKEN || 'Bearer your_secret_ospos_token_here';
 
   constructor(private readonly httpService: HttpService) {}
 
@@ -40,7 +38,7 @@ export class OsposIntegrationService {
     try {
       this.logger.log('Fetching full item catalog from OSPOS...');
       const response = await firstValueFrom(
-        this.httpService.get<OsposItem[]>(this.itemsUrl, {
+        this.httpService.get<OsposItem[]>(`${this.baseUrl}/items`, {
           headers: {
             Authorization: this.secretToken,
             Accept: 'application/json',
@@ -84,9 +82,8 @@ export class OsposIntegrationService {
       
       const response = await firstValueFrom(
         this.httpService.get<IOsposRawStock>(
-          this.baseUrl,
+          `${this.baseUrl}/stock/${itemId}`,
           {
-            params: { item_id: itemId },
             headers: {
               'Authorization': this.secretToken,
               'Accept': 'application/json',
@@ -120,62 +117,6 @@ export class OsposIntegrationService {
         },
         undefined,
         true, // isStaleData: true
-      );
-    }
-  }
-
-  /**
-   * Decrements stock quantity for a specific item in OSPOS.
-   * Invoked when an online web order transaction goes through.
-   * 
-   * @param itemId The numeric product item ID in OSPOS
-   * @param quantity The quantity to deduct
-   * @returns A promise resolving to true on successful deduction
-   */
-  async deductStockInPos(itemId: number, quantity: number): Promise<boolean> {
-    try {
-      this.logger.log(`Initiating stock deduction request in OSPOS for item: ${itemId}, quantity: ${quantity}`);
-      
-      const payload = {
-        item_id: itemId,
-        quantity_to_deduct: quantity,
-      };
-
-      const response = await firstValueFrom(
-        this.httpService.post<{ success: boolean; new_stock: number }>(
-          this.deductUrl,
-          payload,
-          {
-            headers: {
-              'Authorization': this.secretToken,
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-          },
-        ),
-      );
-
-      if (!response || !response.data) {
-        throw new Error('OSPOS API returned an empty or invalid response payload during stock deduction');
-      }
-
-      const isSuccess = response.data.success === true;
-      if (!isSuccess) {
-        throw new Error(`OSPOS stock deduction reported failure: ${JSON.stringify(response.data)}`);
-      }
-
-      this.logger.log(`Successfully deducted ${quantity} units for item ${itemId}. New stock level: ${response.data.new_stock}`);
-      return true;
-
-    } catch (error) {
-      this.logger.error(
-        `Failed to deduct stock for item ID ${itemId} in OSPOS. Error: ${error.message}`,
-        error.stack,
-      );
-
-      throw new HttpException(
-        'Failed to process downstream inventory allocation mapping',
-        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

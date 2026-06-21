@@ -12,6 +12,7 @@ export class OrdersService {
   /**
    * Creates an online product purchase order.
    * Validates product names, pricing, and stock availability directly from OSPOS.
+   * Incorporates active reservations to check effective available stock.
    */
   async createOrder(userId: string | null, data: {
     items: { osposItemId: number; quantity: number }[];
@@ -37,6 +38,25 @@ export class OrdersService {
     const osposItemMap = new Map(allOsposItems.map((item) => [item.item_id, item]));
 
     return this.prisma.$transaction(async (tx) => {
+      // Fetch active reservations for the items being ordered
+      const itemIds = data.items.map((i) => i.osposItemId);
+      const activeReservations = await tx.inventory_reservations.findMany({
+        where: {
+          ospos_item_id: { in: itemIds },
+          status: 'active',
+          expires_at: { gte: new Date() },
+        },
+      });
+
+      // Group active reservations by item ID
+      const reservedQuantities = new Map<number, number>();
+      for (const res of activeReservations) {
+        reservedQuantities.set(
+          res.ospos_item_id,
+          (reservedQuantities.get(res.ospos_item_id) || 0) + res.quantity
+        );
+      }
+
       let totalAmount = 0;
       const orderItemsData = [];
 
@@ -45,8 +65,13 @@ export class OrdersService {
         if (!osposItem) {
           throw new NotFoundException(`OSPOS Item ID ${item.osposItemId} not found`);
         }
-        if (osposItem.quantity < item.quantity) {
-          throw new BadRequestException(`Insufficient stock for product ${osposItem.name}`);
+
+        const reservedQty = reservedQuantities.get(item.osposItemId) || 0;
+        const effectiveStock = osposItem.quantity - reservedQty;
+        if (effectiveStock < item.quantity) {
+          throw new BadRequestException(
+            `Insufficient stock for product ${osposItem.name} (OSPOS stock: ${osposItem.quantity}, reserved: ${reservedQty}, requested: ${item.quantity})`
+          );
         }
 
         const subtotal = osposItem.price * item.quantity;
@@ -65,6 +90,10 @@ export class OrdersService {
       const orderId = crypto.randomUUID();
       const orderRef = `ORD-${Date.now()}`;
 
+      const reservationTtlHours = Number(process.env.RESERVATION_TTL_HOURS) || 24;
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + reservationTtlHours);
+
       return tx.orders.create({
         data: {
           order_id: orderId,
@@ -77,9 +106,19 @@ export class OrdersService {
           order_items: {
             create: orderItemsData,
           },
+          inventory_reservations: {
+            create: orderItemsData.map((item) => ({
+              reservation_id: crypto.randomUUID(),
+              ospos_item_id: item.ospos_item_id,
+              quantity: item.quantity,
+              expires_at: expiresAt,
+              status: 'active',
+            })),
+          },
         },
         include: {
           order_items: true,
+          inventory_reservations: true,
         },
       });
     });
@@ -90,6 +129,7 @@ export class OrdersService {
       where: { order_id: id },
       include: {
         order_items: true,
+        inventory_reservations: true,
       },
     });
     if (!order) {
@@ -103,6 +143,7 @@ export class OrdersService {
       where: { user_id: userId },
       include: {
         order_items: true,
+        inventory_reservations: true,
       },
       orderBy: { created_at: 'desc' },
     });
@@ -112,6 +153,7 @@ export class OrdersService {
     return this.prisma.orders.findMany({
       include: {
         order_items: true,
+        inventory_reservations: true,
       },
       orderBy: { created_at: 'desc' },
     });
@@ -119,7 +161,7 @@ export class OrdersService {
 
   /**
    * Approves a showroom order sitting in pending state,
-   * performs a downstream inventory deduction inside OSPOS, and updates database records.
+   * releases reservations by marking them as 'completed', and updates status.
    */
   async approvePendingShowroomOrder(orderId: string): Promise<any> {
     return this.prisma.$transaction(async (tx) => {
@@ -140,30 +182,55 @@ export class OrdersService {
         throw new BadRequestException('Order has already been processed or finalized');
       }
 
-      try {
-        // Deduct OSPOS stock for each item in the order
-        for (const item of order.order_items) {
-          const syncSuccess = await this.osposService.deductStockInPos(item.ospos_item_id, item.quantity);
-          if (!syncSuccess) {
-            throw new Error(`OSPOS stock deduction failed for item ID ${item.ospos_item_id}`);
-          }
-        }
+      // Update associated active reservations to 'completed'
+      await tx.inventory_reservations.updateMany({
+        where: { order_id: orderId, status: 'active' },
+        data: { status: 'completed' },
+      });
 
-        // 3. Prisma Transaction Closure - update local database status to 'approved'
-        return await tx.orders.update({
-          where: { order_id: order.order_id },
-          data: {
-            status: 'approved',
-            confirmed_at: new Date(),
-          },
-          include: {
-            order_items: true,
-          },
-        });
-      } catch (error) {
-        // Throwing propagates out of transaction, preventing local database state update
-        throw new BadRequestException(`Downstream OSPOS synchronization failed: ${error.message}`);
+      // Update local database status to 'approved'
+      return await tx.orders.update({
+        where: { order_id: order.order_id },
+        data: {
+          status: 'approved',
+          confirmed_at: new Date(),
+        },
+        include: {
+          order_items: true,
+        },
+      });
+    });
+  }
+
+  /**
+   * Cancels a showroom order, releasing any active stock reservations.
+   */
+  async cancelOrder(orderId: string): Promise<any> {
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.orders.findUnique({
+        where: { order_id: orderId },
+      });
+
+      if (!order) {
+        throw new NotFoundException(`Order with ID ${orderId} not found`);
       }
+
+      if (order.status === 'cancelled') {
+        throw new BadRequestException('Order is already cancelled');
+      }
+
+      // Update associated active reservations to 'expired' (released)
+      await tx.inventory_reservations.updateMany({
+        where: { order_id: orderId, status: 'active' },
+        data: { status: 'expired' },
+      });
+
+      return await tx.orders.update({
+        where: { order_id: orderId },
+        data: {
+          status: 'cancelled',
+        },
+      });
     });
   }
 }
