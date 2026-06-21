@@ -2,7 +2,9 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { users_role } from '@prisma/client';
+import { users_role, users_status } from '@prisma/client';
+import { randomUUID } from 'crypto';
+import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -12,7 +14,9 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.prisma.users.findUnique({ where: { email } });
+    const user = await this.prisma.users.findUnique({
+      where: { email: email.toLowerCase() },
+    });
     if (user) {
       let isMatch = false;
       try {
@@ -31,7 +35,9 @@ export class AuthService {
           email: user.email,
           firstName: user.first_name,
           lastName: user.last_name,
+          phone: user.phone ?? null,
           role: user.role.toUpperCase(), // Normalize role to uppercase ('CUSTOMER' / 'ADMIN')
+          status: user.status ?? 'ACTIVE',
         };
       }
     }
@@ -47,28 +53,59 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        phone: user.phone,
         role: user.role,
+        status: user.status,
       },
     };
   }
 
-  async register(email: string, pass: string, firstName: string, lastName: string) {
-    const exists = await this.prisma.users.findUnique({ where: { email } });
+  async register(dto: RegisterDto) {
+    const { email, password, pass, firstName, first_name, lastName, last_name, phone, role, status } = dto;
+    
+    const resolvedPassword = password || pass;
+    if (!resolvedPassword) {
+      throw new BadRequestException('Password is required');
+    }
+
+    const emailLower = email.toLowerCase();
+    const exists = await this.prisma.users.findUnique({
+      where: { email: emailLower },
+    });
     if (exists) {
       throw new BadRequestException('Email is already registered');
     }
 
-    const hashedPassword = await bcrypt.hash(pass, 10);
+    const hashedPassword = await bcrypt.hash(resolvedPassword, 10);
+    const resolvedFirstName = firstName || first_name || '';
+    const resolvedLastName = lastName || last_name || '';
+
+    let resolvedRole: users_role = users_role.customer;
+    if (role) {
+      const lowerRole = role.toLowerCase();
+      if (lowerRole === 'admin' || lowerRole === 'administrator') {
+        resolvedRole = users_role.admin;
+      }
+    }
+
+    let resolvedStatus: users_status = users_status.active;
+    if (status) {
+      const lowerStatus = status.toLowerCase();
+      if (lowerStatus === 'inactive') {
+        resolvedStatus = users_status.inactive;
+      }
+    }
 
     const user = await this.prisma.users.create({
       data: {
-        user_id: crypto.randomUUID(),
-        email,
+        user_id: randomUUID(),
+        email: emailLower,
         password_hash: hashedPassword,
-        first_name: firstName,
-        last_name: lastName,
-        role: users_role.customer,
-        status: 'active',
+        first_name: resolvedFirstName,
+        last_name: resolvedLastName,
+        phone: phone || null,
+        role: resolvedRole,
+        status: resolvedStatus,
       },
     });
 
@@ -77,9 +114,9 @@ export class AuthService {
       email: user.email,
       firstName: user.first_name,
       lastName: user.last_name,
-      role: 'CUSTOMER',
+      role: user.role.toUpperCase(),
     };
-    
     return this.login(result);
   }
 }
+

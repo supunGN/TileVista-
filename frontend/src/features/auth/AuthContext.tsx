@@ -16,6 +16,13 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, pass: string) => Promise<boolean>;
+  register: (dto: {
+    email: string;
+    pass: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+  }) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -40,28 +47,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, pass: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:4000/api/auth/login', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+      const res = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, pass }),
+        body: JSON.stringify({ email, password: pass }),
       });
 
-      if (!response.ok) {
+      if (!res.ok) {
         setIsLoading(false);
         return false;
       }
 
-      const data = await response.json();
-      const token = data.access_token;
-      const userPayload: UserSession = data.user;
+      const data = await res.json();
+      const userSession: UserSession = {
+        id: data.user.id,
+        email: data.user.email,
+        role: data.user.role,
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+      };
 
-      localStorage.setItem('tilevista_admin_token', token);
-      localStorage.setItem('tilevista_admin_user', JSON.stringify(userPayload));
+      localStorage.setItem('tilevista_admin_token', data.access_token);
+      localStorage.setItem('tilevista_admin_user', JSON.stringify(userSession));
 
-      setToken(token);
-      setUser(userPayload);
+      setToken(data.access_token);
+      setUser(userSession);
       setIsLoading(false);
       return true;
     } catch (error) {
@@ -70,6 +83,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
   };
+
+  const register = async (dto: {
+    email: string;
+    pass: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+  }): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+      const { pass, ...rest } = dto;
+      
+      const res = await fetch(`${apiUrl}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...rest,
+          password: pass,
+        }),
+      });
+
+      if (!res.ok) {
+        setIsLoading(false);
+        return false;
+      }
+
+      const data = await res.json();
+      const userSession: UserSession = {
+        id: data.user.id,
+        email: data.user.email,
+        role: data.user.role,
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+      };
+
+      localStorage.setItem('tilevista_admin_token', data.access_token);
+      localStorage.setItem('tilevista_admin_user', JSON.stringify(userSession));
+
+      setToken(data.access_token);
+      setUser(userSession);
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      console.error('Registration error:', error);
+      setIsLoading(false);
+      return false;
+    }
+  };
+
 
   const logout = () => {
     localStorage.removeItem('tilevista_admin_token');
@@ -86,6 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!token,
         isLoading,
         login,
+        register,
         logout,
       }}
     >
@@ -102,3 +168,4 @@ export const useAuth = () => {
   return context;
 };
 export default AuthContext;
+
