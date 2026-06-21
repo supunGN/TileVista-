@@ -14,12 +14,8 @@ export const Footer: React.FC = () => {
           
           {/* Brand Logo Group wrapped in standard Link */}
           <Link href="/" className="flex items-center gap-3 group">
-            {/* Minimalist Ceramic Tile Icon in white/sand */}
-            <div className="w-8 h-8 border-2 border-white/60 flex items-center justify-center p-1 relative overflow-hidden transition-all duration-300 group-hover:border-[#D4C5B9]">
-              <div className="w-full h-full border border-dashed border-white/30 group-hover:border-[#D4C5B9]/60 transition-all duration-300 flex items-center justify-center">
-                <span className="text-[9px] font-bold text-white group-hover:text-[#D4C5B9] transition-colors duration-300">A</span>
-              </div>
-              <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-[#D4C5B9]"></div>
+            <div className="w-10 h-10 relative overflow-hidden flex-shrink-0">
+              <img src="/images/ui/logo.svg" alt="Alahapperuma Trade Center Logo" className="w-full h-full object-contain" />
             </div>
             
             <div className="flex flex-col">
@@ -51,13 +47,13 @@ export const Footer: React.FC = () => {
             <div className="p-2 bg-white/5 border border-white/10 text-[#D4C5B9] mt-0.5">
               <Phone size={14} />
             </div>
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold tracking-widest text-[#D4C5B9] uppercase">Showroom Phone</span>
-              <a href="tel:+94412223456" className="text-sm font-medium tracking-wide mt-1.5 hover:text-white transition-colors">
-                +94 41 222 3456
-              </a>
-              <span className="text-[10px] text-gray-500 font-light mt-0.5">Available during working hours</span>
-            </div>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-bold tracking-widest text-[#D4C5B9] uppercase">Showroom Phone</span>
+                <a href="tel:+94770834361" className="text-sm font-medium tracking-wide mt-1.5 hover:text-white transition-colors">
+                  +94 77 083 4361
+                </a>
+                <span className="text-[10px] text-gray-500 font-light mt-0.5">Available during working hours</span>
+              </div>
           </div>
 
           {/* Email */}
@@ -79,13 +75,13 @@ export const Footer: React.FC = () => {
             <div className="p-2 bg-white/5 border border-white/10 text-[#D4C5B9] mt-0.5">
               <MapPin size={14} />
             </div>
-            <div className="flex flex-col">
-              <span className="text-[9px] font-bold tracking-widest text-[#D4C5B9] uppercase">Postal Address</span>
-              <span className="text-sm font-medium tracking-wide mt-1.5 leading-relaxed">
-                No 120, Anagarika Dharmapala Mawatha, <br />
-                Matara, Sri Lanka
-              </span>
-            </div>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-bold tracking-widest text-[#D4C5B9] uppercase">Postal Address</span>
+                <span className="text-sm font-medium tracking-wide mt-1.5 leading-relaxed">
+                  Pannagamuwa, Weerawila, <br />
+                  Hambantota, Sri Lanka
+                </span>
+              </div>
           </div>
 
         </div>

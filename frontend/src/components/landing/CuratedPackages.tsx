@@ -11,22 +11,54 @@ interface CuratedPackagesProps {
 export const CuratedPackages: React.FC<CuratedPackagesProps> = ({ onVisualizePackage, onAddToCart }) => {
   const packages = [
     {
-      id: 'pkg-minimalist-oasis',
-      name: 'The Minimalist Oasis',
-      description: 'A warm, Scandinavian-inspired bathroom retreat. Featuring textured warm sand porcelain slabs, premium matte black water controllers, and a floating natural oak washbasin vanity.',
-      discountPrice: 450000,
-      originalPrice: 550000,
-      image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=800',
-      badge: 'Scandinavian Functional'
+      id: 'pkg-essential-comfort',
+      name: 'Essential Comfort Package',
+      description: 'A practical and affordable bathroom solution designed for modern homes. This package combines durable tiles with essential bathroom fixtures to create a clean and functional space.',
+      includedElements: [
+        'Light Beige Floor Tiles (600×600mm) — 45 sq.m',
+        'Soft Ivory Wall Tiles (300×600mm) — 32 sq.m',
+        'Ceramic Wash Basin with Pedestal',
+        'Close-Coupled Water Closet',
+        'Frameless Rectangular Wall Mirror'
+      ],
+      discountPrice: 350000,
+      originalPrice: 400000,
+      image: '/images/packages/essential-comfort-package.jpeg',
+      badge: 'Budget Range'
     },
     {
-      id: 'pkg-classic-marble',
-      name: 'Classic Marble Luxury',
-      description: 'Opulence defined by grand Italian Statuario marble panels, double undermount porcelain sinks, gold-plated hardware, and a freestanding oval acrylic soaking bathtub.',
-      discountPrice: 750000,
-      originalPrice: 880000,
-      image: 'https://images.unsplash.com/photo-1600566752355-35792bedcfea?auto=format&fit=crop&q=80&w=800',
-      badge: 'Premium Luxury'
+      id: 'pkg-elegant-living',
+      name: 'Elegant Living Package',
+      description: 'A balanced combination of comfort and style featuring premium finishes and contemporary bathroom fixtures.',
+      includedElements: [
+        'Stone Finish Floor Tiles (600×600mm) — 45 sq.m',
+        'Marble Effect Wall Tiles (300×600mm) — 32 sq.m',
+        'Floating Vanity Wash Basin Cabinet',
+        'Dual Flush Water Closet',
+        'Backlit LED Mirror',
+        'Matte Black Shower Set'
+      ],
+      discountPrice: 550000,
+      originalPrice: 650000,
+      image: '/images/packages/elegant-living-package.jpeg',
+      badge: 'Medium Range'
+    },
+    {
+      id: 'pkg-signature-white-luxury',
+      name: 'Signature White Luxury Package',
+      description: 'A sophisticated bathroom package inspired by modern luxury hotels, combining elegant white finishes with premium fixtures for a timeless appearance.',
+      includedElements: [
+        'Polished White Porcelain Floor Tiles (800×800mm) — 45 sq.m',
+        'White Marble Effect Wall Tiles (600×1200mm) — 32 sq.m',
+        'Floating White Vanity Wash Basin Cabinet',
+        'Wall-Hung Water Closet with Concealed Cistern',
+        'Large Backlit Smart LED Mirror',
+        'Premium Rainfall Shower System'
+      ],
+      discountPrice: 850000,
+      originalPrice: 950000,
+      image: '/images/packages/signature-white-luxury-package.jpeg',
+      badge: 'Premium Range'
     }
   ];
 
@@ -50,7 +82,7 @@ export const CuratedPackages: React.FC<CuratedPackagesProps> = ({ onVisualizePac
           </div>
           
           <button 
-            onClick={() => onVisualizePackage('pkg-minimalist-oasis')} 
+            onClick={() => onVisualizePackage('pkg-essential-comfort')} 
             className="flex items-center gap-1 text-[11px] font-bold tracking-wider text-[#1A1A1A] uppercase border-b border-[#1A1A1A] pb-0.5 hover:opacity-75 transition-all"
           >
             <span>VIEW ALL</span>
@@ -58,8 +90,8 @@ export const CuratedPackages: React.FC<CuratedPackagesProps> = ({ onVisualizePac
           </button>
         </div>
 
-        {/* 2-Column Package Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        {/* 3-Column Package Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {packages.map((pkg) => (
             <div 
               key={pkg.id} 
@@ -85,12 +117,21 @@ export const CuratedPackages: React.FC<CuratedPackagesProps> = ({ onVisualizePac
                   {pkg.name}
                 </h3>
                 
-                <p className="text-xs md:text-sm text-gray-500 font-light leading-relaxed tracking-wide mb-6 flex-1">
+                <p className="text-xs md:text-sm text-gray-500 font-light leading-relaxed tracking-wide mb-4">
                   {pkg.description}
                 </p>
+                
+                <div className="mb-6 flex-1">
+                  <h4 className="text-[10px] font-bold tracking-widest text-[#1A1A1A] uppercase mb-2">Included Elements</h4>
+                  <ul className="text-xs text-gray-500 font-light leading-relaxed tracking-wide list-disc pl-4 space-y-1">
+                    {pkg.includedElements.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
 
                 {/* Pricing section */}
-                <div className="border-t border-gray-100 pt-6 mb-6 flex flex-col items-start gap-1">
+                <div className="border-t border-gray-100 pt-6 mb-6 flex flex-col items-start gap-1 mt-auto">
                   <span className="text-[10px] font-bold tracking-widest text-[#D4C5B9] uppercase">LKR Price</span>
                   <div className="flex items-baseline gap-3">
                     <span className="text-xl md:text-2xl font-bold text-red-600">
@@ -103,7 +144,7 @@ export const CuratedPackages: React.FC<CuratedPackagesProps> = ({ onVisualizePac
                 </div>
 
                 {/* CTA Buttons */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-auto">
+                <div className="flex flex-col gap-3">
                   <button 
                     onClick={() => onVisualizePackage(pkg.id)}
                     className="w-full bg-[#1A1A1A] hover:bg-[#2A2A2A] text-white font-semibold text-xs tracking-wider uppercase py-3.5 transition-all duration-300 flex items-center justify-center gap-2"

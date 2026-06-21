@@ -34,7 +34,9 @@ export default function Home() {
         {/* Hero Widescreen Banner */}
         <Hero 
           onLaunchDesigner={() => router.push('/designer')} 
-          onExplorePackages={() => router.push('/packages')} 
+          onExplorePackages={() => router.push('/packages')}
+          onExploreTiles={() => router.push('/products?category=tiles')}
+          onBrowseProducts={() => router.push('/products')}
         />
 
         {/* About Section */}

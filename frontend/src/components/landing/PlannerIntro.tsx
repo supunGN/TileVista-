@@ -16,17 +16,17 @@ export const PlannerIntro: React.FC<PlannerIntroProps> = ({ onStartDesign }) => 
           {/* Left Column: Copywriting & Trigger Button */}
           <div className="lg:col-span-5 flex flex-col items-start gap-5">
             <span className="text-[10px] font-bold tracking-[0.3em] text-[#D4C5B9] uppercase block leading-none">
-              3D PLANNER WORKSPACE
+              3D BATHROOM DESIGNER
             </span>
             
             <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-[#1A1A1A] leading-tight">
-              Your Dimensions. <br />
-              Our Products. <br />
-              Perfect Results.
+              Your Space. <br />
+              Your Style. <br />
+              Your Bathroom.
             </h2>
             
             <p className="text-sm text-gray-500 font-light leading-relaxed tracking-wide mt-2">
-              To design your space, first input your room dimensions. Build your room layout in 2D and see it instantly in interactive 3D, fully customized with our products. Get live volume counts, real-time pricing estimates, and verify alignments before purchase.
+              Create a bathroom layout that matches your own space by defining room dimensions and shape. Customize wall colors, apply floor and wall tiles, add bathroom fixtures, and visualize everything in interactive 3D using products available in our showroom before making a purchase decision.
             </p>
             
             <button
