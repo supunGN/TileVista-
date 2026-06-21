@@ -10,31 +10,31 @@ interface CategoriesProps {
 export const Categories: React.FC<CategoriesProps> = ({ onSelectCategory }) => {
   const categoriesList = [
     {
-      id: 'floor-tiles',
-      title: 'Floor Tiles',
-      subtitle: 'Premium ceramic & granite',
-      image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600',
+      id: 'tiles',
+      title: 'Tiles',
+      subtitle: 'Elegant Designs, Lasting Quality',
+      image: 'images/categories/tiles.jpg',
       categoryTag: 'TILE'
-    },
-    {
-      id: 'wall-tiles',
-      title: 'Wall Tiles',
-      subtitle: 'Elegant mosaic patterns',
-      image: 'https://images.unsplash.com/photo-1501183007986-d0d080b147f9?auto=format&fit=crop&q=80&w=600',
-      categoryTag: 'TILE'
-    },
-    {
-      id: 'bathtubs',
-      title: 'Bathtubs',
-      subtitle: 'Minimalist design freestanding',
-      image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=600',
-      categoryTag: 'BATHWARE'
     },
     {
       id: 'wash-basins',
       title: 'Wash Basins',
-      subtitle: 'Sleek matte counter basins',
-      image: 'https://images.unsplash.com/photo-1620626011761-996317b6979a?auto=format&fit=crop&q=80&w=600',
+      subtitle: 'Style Meets Everyday Comfort',
+      image: 'images/categories/wash-basins.jpg',
+      categoryTag: 'BATHWARE'
+    },
+    {
+      id: 'water-closets',
+      title: 'Water Closets',
+      subtitle: 'Modern Comfort, Reliable Performance',
+      image: 'images/categories/water-closets.jpg',
+      categoryTag: 'BATHWARE'
+    },
+    {
+      id: 'accessories',
+      title: 'Accessories',
+      subtitle: 'Complete Your Bathroom Space',
+      image: 'images/categories/accessories.png',
       categoryTag: 'BATHWARE'
     }
   ];

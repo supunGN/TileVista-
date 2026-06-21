@@ -34,26 +34,22 @@ export default function PublicLayout({
       <div className="w-full bg-[#1A1A1A] border-b border-gray-800 py-2.5 px-6 md:px-12 flex items-center justify-center gap-6 text-[10.5px] text-gray-300 tracking-wide font-light flex-wrap">
         <span className="flex items-center gap-1.5">
           <Phone size={11} className="text-[#D4C5B9]" />
-          <a href="tel:+94412223456" className="hover:text-white transition-colors">+94 41 222 3456</a>
+          <a href="tel:+94770834361" className="hover:text-white transition-colors">+94 77 083 4361</a>
         </span>
         <span className="flex items-center gap-1.5">
           <MapPin size={11} className="text-[#D4C5B9]" />
-          <span>No 120, Anagarika Dharmapala Mawatha, Matara</span>
+          <span>Pannagamuwa, Weerawila, Hambantota, Sri Lanka</span>
         </span>
       </div>
 
       {/* 2. Main Navigation Bar */}
-      <header className="w-full bg-white/95 backdrop-blur-md border-b border-gray-100 py-3.5 px-6 md:px-12 sticky top-0 z-50 transition-all duration-300">
+      <header className="w-full bg-white/60 backdrop-blur-xl shadow-sm border-b border-white/20 py-3.5 px-6 md:px-12 sticky top-0 z-50 transition-all duration-300">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
 
           {/* Left: Brand Logotype */}
           <Link href="/" className="flex items-center gap-3 group">
-            {/* Minimalist Ceramic Tile Icon */}
-            <div className="w-9 h-9 border-2 border-[#1A1A1A] flex items-center justify-center p-1 relative overflow-hidden transition-all duration-300 group-hover:bg-[#1A1A1A]">
-              <div className="w-full h-full border border-dashed border-[#1A1A1A] group-hover:border-white transition-all duration-300 flex items-center justify-center">
-                <span className="text-[10px] font-bold text-[#1A1A1A] group-hover:text-white transition-colors duration-300">A</span>
-              </div>
-              <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-[#D4C5B9]"></div>
+            <div className="w-10 h-10 relative overflow-hidden flex-shrink-0">
+              <img src="/images/ui/logo.svg" alt="Alahapperuma Trade Center Logo" className="w-full h-full object-contain" />
             </div>
 
             <div className="flex flex-col">
@@ -129,12 +125,8 @@ export default function PublicLayout({
 
             {/* Brand Logo Group */}
             <Link href="/" className="flex items-center gap-3 group">
-              {/* Minimalist Ceramic Tile Icon */}
-              <div className="w-8 h-8 border-2 border-white/60 flex items-center justify-center p-1 relative overflow-hidden transition-all duration-300 group-hover:border-[#D4C5B9]">
-                <div className="w-full h-full border border-dashed border-white/30 group-hover:border-[#D4C5B9]/60 transition-all duration-300 flex items-center justify-center">
-                  <span className="text-[9px] font-bold text-white group-hover:text-[#D4C5B9] transition-colors duration-300">A</span>
-                </div>
-                <div className="absolute top-0 right-0 w-1.5 h-1.5 bg-[#D4C5B9]"></div>
+              <div className="w-10 h-10 relative overflow-hidden flex-shrink-0 bg-white/10 p-1 rounded-sm">
+                <img src="/images/ui/logo.svg" alt="Alahapperuma Trade Center Logo" className="w-full h-full object-contain" />
               </div>
 
               <div className="flex flex-col">
@@ -168,8 +160,8 @@ export default function PublicLayout({
               </div>
               <div className="flex flex-col">
                 <span className="text-[9px] font-bold tracking-widest text-[#D4C5B9] uppercase">Showroom Phone</span>
-                <a href="tel:+94412223456" className="text-sm font-medium tracking-wide mt-1.5 hover:text-white transition-colors">
-                  +94 41 222 3456
+                <a href="tel:+94770834361" className="text-sm font-medium tracking-wide mt-1.5 hover:text-white transition-colors">
+                  +94 77 083 4361
                 </a>
                 <span className="text-[10px] text-gray-500 font-light mt-0.5">Available during working hours</span>
               </div>
@@ -197,8 +189,8 @@ export default function PublicLayout({
               <div className="flex flex-col">
                 <span className="text-[9px] font-bold tracking-widest text-[#D4C5B9] uppercase">Postal Address</span>
                 <span className="text-sm font-medium tracking-wide mt-1.5 leading-relaxed">
-                  No 120, Anagarika Dharmapala Mawatha, <br />
-                  Matara, Sri Lanka
+                  Pannagamuwa, Weerawila, <br />
+                  Hambantota, Sri Lanka
                 </span>
               </div>
             </div>

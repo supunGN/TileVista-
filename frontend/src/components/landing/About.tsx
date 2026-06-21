@@ -21,7 +21,7 @@ export const About: React.FC = () => {
 
         {/* Body Description */}
         <p className="text-sm md:text-base text-gray-600 font-light leading-relaxed tracking-wide max-w-3xl mx-auto">
-          For decades, Alahapperuma Trade Center has been a trusted partner in construction, design, and bridging the gap between imagination and reality. The Virtual Showroom system is designed to bring our showroom directly to you. Through cutting-edge 3D visualization, planning your space has never been this accessible, allowing you to walk inside a virtual rendition of your future home.
+          Alahapperuma Trade Center has been serving customers since 2017 with quality tiles and bathroom solutions. From elegant floor and wall tiles to modern bathroom accessories, we provide products that combine style, durability, and value. With TileVista, we bring our showroom experience into the digital world, making it easier to discover, visualize, and plan your ideal space before making a purchase.
         </p>
       </div>
     </section>
