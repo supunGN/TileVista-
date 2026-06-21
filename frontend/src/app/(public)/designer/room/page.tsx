@@ -452,24 +452,29 @@ function RoomScene({
     return new THREE.ShapeGeometry(shape, 3);
   }, [polygon]);
 
-  // Wall segments derived from polygon edges (skip the open front face)
+  // Wall segments derived from polygon edges (ALL walls included for 360° view)
   const walls = useMemo(() => {
     return polygon.flatMap((p, i) => {
       const q = polygon[(i + 1) % polygon.length];
-      if (p[1] >= d / 2 * 0.88 && q[1] >= d / 2 * 0.88) return [];
       const dx  = q[0] - p[0];
       const dz  = q[1] - p[1];
       const len = Math.sqrt(dx * dx + dz * dz);
+      // Inward normal: points towards center of room (interior side)
+      // Polygon vertices go CLOCKWISE (top-down), so inward normal is (-dz, dx)
+      const nx = -dz / len;  // inward X
+      const nz =  dx / len;  // inward Z
       return [{
         p1: p,
         p2: q,
         cx: (p[0]+q[0])/2,
         cz: (p[1]+q[1])/2,
         len,
-        rotY: Math.atan2(-dz, dx)
+        rotY: Math.atan2(-dz, dx),
+        nx,
+        nz,
       }];
     });
-  }, [polygon, d]);
+  }, [polygon]);
 
   // Inform parent of number of walls
   useEffect(() => {
@@ -705,13 +710,44 @@ function RoomScene({
     setZoomTrigger(null);
   }, [zoomTrigger, camera, setZoomTrigger]);
 
-  // Ceiling visibility toggle
+  // Wall material refs (for per-frame opacity control)
+  const wallMatRefs   = useRef<(THREE.MeshStandardMaterial | null)[]>([]);
+  const wallSkirtRefs = useRef<(THREE.MeshStandardMaterial | null)[]>([]);
+
+  // Ceiling visibility + wall smart culling – single useFrame
   const [showCeiling, setShowCeiling] = useState(true);
   useFrame(() => {
-    const shouldShow = !topView && camera.position.y < h * 1.05;
-    if (shouldShow !== showCeiling) {
-      setShowCeiling(shouldShow);
-    }
+    const camY        = camera.position.y;
+    const aboveCeil   = camY > h * 1.05;
+    const shouldShow  = !topView && !aboveCeil;
+    if (shouldShow !== showCeiling) setShowCeiling(shouldShow);
+
+    // Per-wall transparency: fade out when camera is on the exterior side
+    walls.forEach((wall, i) => {
+      const mat   = wallMatRefs.current[i];
+      const skirt = wallSkirtRefs.current[i];
+      if (!mat && !skirt) return;
+
+      // Vector from wall centre to camera (XZ plane)
+      const toCamX = camera.position.x - wall.cx;
+      const toCamZ = camera.position.z - wall.cz;
+      // Dot with inward normal: positive = inside, negative = outside
+      const dot = toCamX * wall.nx + toCamZ * wall.nz;
+
+      // Gradient: opaque when dot >= 1.5, transparent when dot <= 0
+      const target = Math.max(0, Math.min(1, dot / 1.5));
+
+      if (mat) {
+        mat.opacity     = THREE.MathUtils.lerp(mat.opacity, target, 0.22);
+        mat.transparent = true;
+        mat.needsUpdate = true;
+      }
+      if (skirt) {
+        skirt.opacity     = THREE.MathUtils.lerp(skirt.opacity, target, 0.22);
+        skirt.transparent = true;
+        skirt.needsUpdate = true;
+      }
+    });
   });
 
   // Spotlight points within boundary
@@ -780,16 +816,33 @@ function RoomScene({
         <meshStandardMaterial color="#F2F0EC" roughness={1} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Walls */}
+      {/* Walls – fade out when camera is on exterior side */}
       {walls.map((wall, i) => (
         <React.Fragment key={`wall${i}`}>
           <mesh position={[wall.cx, h / 2, wall.cz]} rotation={[0, wall.rotY, 0]}>
             <planeGeometry args={[wall.len, h]} />
-            <meshStandardMaterial color={wc} roughness={0.88} side={THREE.DoubleSide} />
+            <meshStandardMaterial
+              ref={(m) => { wallMatRefs.current[i] = m; }}
+              color={wc}
+              roughness={0.88}
+              side={THREE.DoubleSide}
+              transparent
+              opacity={1}
+              depthWrite={false}
+            />
           </mesh>
+          {/* Skirting board */}
           <mesh position={[wall.cx, 0.18, wall.cz]} rotation={[0, wall.rotY, 0]}>
             <planeGeometry args={[wall.len, 0.36]} />
-            <meshStandardMaterial color={darken(wc, 14)} roughness={0.68} side={THREE.DoubleSide} />
+            <meshStandardMaterial
+              ref={(m) => { wallSkirtRefs.current[i] = m; }}
+              color={darken(wc, 14)}
+              roughness={0.68}
+              side={THREE.DoubleSide}
+              transparent
+              opacity={1}
+              depthWrite={false}
+            />
           </mesh>
         </React.Fragment>
       ))}

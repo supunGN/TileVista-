@@ -30,7 +30,7 @@ export class OsposIntegrationService {
   private readonly deductUrl = process.env.OSPOS_API_DEDUCT_URL || 'http://localhost/ospos/public/index.php/api/deduct_stock';
   private readonly secretToken = process.env.OSPOS_API_AUTH_TOKEN || 'Bearer your_secret_ospos_token_here';
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(private readonly httpService: HttpService) { }
 
   /**
    * Fetches all active items from OSPOS with their live quantities.
@@ -81,7 +81,7 @@ export class OsposIntegrationService {
   async fetchStockDetailsFromPos(itemId: number): Promise<OsposStockResponseDto> {
     try {
       this.logger.log(`Initiating live inventory request to OSPOS for item: ${itemId}`);
-      
+
       const response = await firstValueFrom(
         this.httpService.get<IOsposRawStock>(
           this.baseUrl,
@@ -135,7 +135,7 @@ export class OsposIntegrationService {
   async deductStockInPos(itemId: number, quantity: number): Promise<boolean> {
     try {
       this.logger.log(`Initiating stock deduction request in OSPOS for item: ${itemId}, quantity: ${quantity}`);
-      
+
       const payload = {
         item_id: itemId,
         quantity_to_deduct: quantity,
