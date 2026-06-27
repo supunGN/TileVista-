@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -13,6 +14,10 @@ import { OsposIntegrationModule } from './modules/integrations/ospos/ospos.modul
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '../.env',
+    }),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -27,3 +32,4 @@ import { OsposIntegrationModule } from './modules/integrations/ospos/ospos.modul
   ],
 })
 export class AppModule {}
+

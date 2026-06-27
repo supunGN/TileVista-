@@ -1,3 +1,10 @@
+const path = require('path');
+try {
+  process.loadEnvFile(path.resolve(__dirname, '../../.env'));
+} catch (e) {
+  // Gracefully fallback if the .env file is missing or already loaded
+}
+
 const { PrismaClient } = require('@prisma/client');
 const crypto = require('crypto');
 

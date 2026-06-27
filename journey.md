@@ -61,3 +61,17 @@ During this session, we audited the project structure and addressed a critical a
 * **Cleanup of Temporary/Orphaned Files**:
   * Deleted diagnostic scripts `backend/_check_users.cjs` and `backend/_test_login.cjs`.
   * Highlighted `database/prisma/seed.ts` as a redundant duplicate of `database/prisma/seed.cjs` (CommonJS version), marking it for cleanup to ensure code cleanliness.
+
+---
+
+## 6. June 27, 2026 Session Updates: Environment Consolidation & Seeding Automation
+We optimized workspace hygiene and streamlined the configuration loading processes:
+* **Consolidation of `.env` files**: 
+  * Merged the OSPOS configurations from `backend/.env` into the root `.env` and `.env.example`, establishing a single source of truth configuration at the workspace root.
+  * Installed `@nestjs/config` in the backend and configured it globally inside `AppModule` to load settings from `../.env` (the parent root directory).
+  * Removed the duplicate/redundant local `backend/.env` file.
+* **Database Seeding Improvements**:
+  * Configured `prisma.seed` inside `backend/package.json` to execute `node ../database/prisma/seed.cjs`. This aligns standard `npx prisma db seed` calls to run the correct CommonJS database seeder.
+  * Added programmatic loading (`process.loadEnvFile`) within `database/prisma/seed.cjs` so that running database seed operations inside child processes (e.g., from the Prisma CLI) automatically resolves the `DATABASE_URL` from the workspace root.
+  * Safely deleted the redundant/unused TypeScript seed file (`database/prisma/seed.ts`).
+
