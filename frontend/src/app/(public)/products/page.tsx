@@ -8,6 +8,8 @@ interface UnifiedItem {
   itemId: number;
   name: string;
   category: string;
+  categoryId: number | null;
+  subcategoryId: number | null;
   sku: string;
   description: string | null;
   price: number;
@@ -26,9 +28,11 @@ export default function ProductsPage() {
   const [items, setItems] = useState<UnifiedItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | 'ALL'>('ALL');
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<number | 'ALL'>('ALL');
+  const [categories, setCategories] = useState<any[]>([]);
 
   const API_BASE = 'http://localhost:4000/api';
   const STATIC_BASE = 'http://localhost:4000';
@@ -37,12 +41,21 @@ export default function ProductsPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE}/items`);
-      if (!response.ok) {
-        throw new Error(`Failed to load showroom inventory (${response.status})`);
+      const [itemsResponse, catsResponse] = await Promise.all([
+        fetch(`${API_BASE}/items`),
+        fetch(`${API_BASE}/categories`)
+      ]);
+
+      if (!itemsResponse.ok) {
+        throw new Error(`Failed to load showroom inventory (${itemsResponse.status})`);
       }
-      const data = await response.json();
+      const data = await itemsResponse.json();
       setItems(data);
+
+      if (catsResponse.ok) {
+        const catData = await catsResponse.json();
+        setCategories(catData);
+      }
     } catch (err: any) {
       setError(err.message || 'An error occurred while fetching the catalog.');
     } finally {
@@ -58,13 +71,14 @@ export default function ProductsPage() {
   const enabledItems = items.filter((item) => item.isEnabled);
 
   const filteredProducts = enabledItems.filter((p) => {
-    const matchesSearch = 
-      p.name.toLowerCase().includes(search.toLowerCase()) || 
+    const matchesSearch =
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.sku.toLowerCase().includes(search.toLowerCase()) ||
       (p.description && p.description.toLowerCase().includes(search.toLowerCase()));
-    
-    const matchesCategory = selectedCategory === 'ALL' ? true : p.category.toUpperCase() === selectedCategory.toUpperCase();
-    return matchesSearch && matchesCategory;
+
+    const matchesCategory = selectedCategoryId === 'ALL' ? true : p.categoryId === selectedCategoryId;
+    const matchesSubcategory = selectedSubcategoryId === 'ALL' ? true : p.subcategoryId === selectedSubcategoryId;
+    return matchesSearch && matchesCategory && matchesSubcategory;
   });
 
   const formatLKR = (num: number) => {
@@ -75,7 +89,7 @@ export default function ProductsPage() {
     alert(`Added "${pName}" to your shopping cart!`);
   };
 
-  const categories = ['ALL', ...Array.from(new Set(enabledItems.map((i) => i.category.toUpperCase()).filter(Boolean)))];
+  const activeCategory = categories.find(c => c.id === selectedCategoryId);
 
   // Helper to determine brand/brand fallback
   const getBrand = (name: string) => {
@@ -87,19 +101,12 @@ export default function ProductsPage() {
 
   // Helper to get fallback category images
   const getFallbackImage = (category: string) => {
-    const cat = category.toLowerCase();
-    if (cat.includes('tile')) {
-      return 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600';
-    }
-    if (cat.includes('bath') || cat.includes('basin') || cat.includes('toilet') || cat.includes('sanitary')) {
-      return 'https://images.unsplash.com/photo-1620626011761-996317b6979a?auto=format&fit=crop&q=80&w=600';
-    }
-    return 'https://images.unsplash.com/photo-1615529182904-14819c35db37?auto=format&fit=crop&q=80&w=600';
+    return '/images/placeholder.png';
   };
 
   return (
     <div className="py-8 font-sans max-w-7xl mx-auto space-y-10 px-4">
-      
+
       {/* Title block */}
       <div className="border-b border-gray-100 pb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
@@ -126,8 +133,8 @@ export default function ProductsPage() {
             />
             <Search size={14} className="text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           </div>
-          
-          <button 
+
+          <button
             onClick={fetchProducts}
             disabled={loading}
             className="border border-gray-300 hover:border-[#1A1A1A] text-[#1A1A1A] font-semibold text-xs tracking-wider uppercase px-4 py-3 transition-colors flex items-center gap-1.5 disabled:opacity-50"
@@ -138,22 +145,61 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Category Pills */}
+      {/* Category & Subcategory Pills */}
       {!loading && !error && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-gray-150 pb-6">
-          {categories.map((cat) => (
+        <div className="flex flex-col gap-4 border-b border-gray-150 pb-6">
+          {/* Top-Level Categories */}
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-6 py-2.5 text-xs font-semibold tracking-widest uppercase transition-all duration-300 ${
-                selectedCategory === cat
+              onClick={() => { setSelectedCategoryId('ALL'); setSelectedSubcategoryId('ALL'); }}
+              className={`px-6 py-2.5 text-xs font-semibold tracking-widest uppercase transition-all duration-300 ${selectedCategoryId === 'ALL'
+                ? 'bg-[#1A1A1A] text-white'
+                : 'bg-[#F9F9F7] text-gray-500 hover:text-[#1A1A1A] hover:bg-gray-100'
+                }`}
+            >
+              All Products
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => { setSelectedCategoryId(cat.id); setSelectedSubcategoryId('ALL'); }}
+                className={`px-6 py-2.5 text-xs font-semibold tracking-widest uppercase transition-all duration-300 ${selectedCategoryId === cat.id
                   ? 'bg-[#1A1A1A] text-white'
                   : 'bg-[#F9F9F7] text-gray-500 hover:text-[#1A1A1A] hover:bg-gray-100'
-              }`}
-            >
-              {cat === 'ALL' ? 'All Products' : cat}
-            </button>
-          ))}
+                  }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Subcategories (if category is selected and has subcategories) */}
+          {selectedCategoryId !== 'ALL' && activeCategory && activeCategory.subcategories?.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-50">
+              <span className="text-[10px] text-gray-400 uppercase tracking-widest font-semibold mr-2">Filter by:</span>
+              <button
+                onClick={() => setSelectedSubcategoryId('ALL')}
+                className={`px-4 py-1.5 text-[10px] font-semibold tracking-wider uppercase transition-all duration-300 ${selectedSubcategoryId === 'ALL'
+                  ? 'bg-[#D4C5B9] text-[#1A1A1A]'
+                  : 'bg-white border border-gray-200 text-gray-500 hover:text-[#1A1A1A] hover:border-[#D4C5B9]'
+                  }`}
+              >
+                All {activeCategory.name}
+              </button>
+              {activeCategory.subcategories.map((sub: any) => (
+                <button
+                  key={sub.id}
+                  onClick={() => setSelectedSubcategoryId(sub.id)}
+                  className={`px-4 py-1.5 text-[10px] font-semibold tracking-wider uppercase transition-all duration-300 ${selectedSubcategoryId === sub.id
+                    ? 'bg-[#D4C5B9] text-[#1A1A1A]'
+                    : 'bg-white border border-gray-200 text-gray-500 hover:text-[#1A1A1A] hover:border-[#D4C5B9]'
+                    }`}
+                >
+                  {sub.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -166,7 +212,7 @@ export default function ProductsPage() {
       ) : error ? (
         <div className="py-20 text-center border border-dashed border-red-200 bg-red-50/20 max-w-lg mx-auto p-8 rounded">
           <p className="text-red-650 font-medium text-sm mb-4">{error}</p>
-          <button 
+          <button
             onClick={fetchProducts}
             className="px-6 py-2.5 bg-red-650 hover:bg-red-700 text-white font-bold text-xs tracking-widest uppercase"
           >
@@ -184,17 +230,17 @@ export default function ProductsPage() {
             const imageUrl = p.imageUrl ? `${STATIC_BASE}${p.imageUrl}` : getFallbackImage(p.category);
 
             return (
-              <div 
-                key={p.itemId} 
+              <div
+                key={p.itemId}
                 className="flex flex-col bg-white border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 group"
               >
                 {/* Product Image badge */}
                 <Link href={`/products/${p.itemId}`} className="relative w-full h-[220px] bg-gray-50 overflow-hidden block">
-                  <div 
+                  <div
                     className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-103"
                     style={{ backgroundImage: `url('${imageUrl}')` }}
                   />
-                  
+
                   {/* Category overlay */}
                   <span className="absolute top-4 left-4 z-10 bg-white/95 text-[#1A1A1A] font-bold text-[8px] uppercase tracking-widest px-2.5 py-1 shadow-sm">
                     {p.category}
@@ -240,11 +286,10 @@ export default function ProductsPage() {
                         {p.material}
                       </span>
                     )}
-                    <span className={`text-[9.5px] font-mono px-2 py-0.5 border ${
-                      p.quantity <= 10 
-                        ? 'bg-red-50 text-red-650 border-red-100 font-bold' 
-                        : 'bg-emerald-50 text-emerald-800 border-emerald-100'
-                    }`}>
+                    <span className={`text-[9.5px] font-mono px-2 py-0.5 border ${p.quantity <= 10
+                      ? 'bg-red-50 text-red-650 border-red-100 font-bold'
+                      : 'bg-emerald-50 text-emerald-800 border-emerald-100'
+                      }`}>
                       {p.quantity <= 0 ? 'Out of Stock' : `${p.quantity} Units in Showroom`}
                     </span>
                   </div>
@@ -259,14 +304,14 @@ export default function ProductsPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Link 
+                      <Link
                         href={`/products/${p.itemId}`}
                         className="border border-gray-200 hover:border-[#1A1A1A] text-gray-500 hover:text-[#1A1A1A] p-3.5 transition-all duration-300 flex items-center justify-center"
                         aria-label="View Details"
                       >
                         <Eye size={15} />
                       </Link>
-                      <button 
+                      <button
                         onClick={() => handleAddToCart(p.name)}
                         disabled={p.quantity <= 0}
                         className="bg-[#1A1A1A] hover:bg-[#D4C5B9] hover:text-[#1A1A1A] text-white p-3.5 transition-all duration-300 disabled:opacity-30 disabled:hover:bg-[#1A1A1A] disabled:hover:text-white"

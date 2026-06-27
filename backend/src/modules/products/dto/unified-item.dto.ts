@@ -10,6 +10,10 @@ export class UnifiedItemDto {
   name: string;
   /** Category string from OSPOS (e.g. "Tiles", "Sanitaryware") */
   category: string;
+  /** Category ID from OSPOS */
+  categoryId: number | null;
+  /** Subcategory ID from OSPOS */
+  subcategoryId: number | null;
   /** Item number / SKU from OSPOS */
   sku: string;
   /** Description from OSPOS */

@@ -10,6 +10,8 @@ export interface OsposItem {
   item_id: number;
   name: string;
   category: string;
+  category_id: number | null;
+  subcategory_id: number | null;
   sku: string;
   description: string;
   price: number;
@@ -49,6 +51,28 @@ export class OsposIntegrationService {
       return response.data;
     } catch (error) {
       this.logger.error(`Failed to fetch item catalog from OSPOS: ${error.message}`);
+      return [];
+    }
+  }
+
+
+  /**
+   * Fetches the category tree from OSPOS.
+   */
+  async fetchCategories(): Promise<any[]> {
+    try {
+      this.logger.log('Fetching category tree from OSPOS...');
+      const response = await firstValueFrom(
+        this.httpService.get<any[]>(`${this.baseUrl}/categories`, {
+          headers: {
+            Authorization: this.secretToken,
+            Accept: 'application/json',
+          },
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Failed to fetch categories from OSPOS: ${error.message}`);
       return [];
     }
   }

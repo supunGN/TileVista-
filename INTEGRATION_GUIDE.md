@@ -37,7 +37,7 @@ erDiagram
 All backend endpoints are routed through the NestJS gateway.
 
 ### Data Aggregation Layer
-The backend `ItemsService` fetches live listings from the legacy OSPOS API and merges them with the `ItemAssetCatalog` entries on the fly. The final unified payload is returned to the frontend as a `UnifiedItemDto` array.
+The backend `ProductsService` fetches live listings from the legacy OSPOS API and merges them with the `ItemAssetCatalog` entries on the fly. The final unified payload is returned to the frontend as a `UnifiedItemDto` array.
 
 ### Endpoints Matrix
 | Method | Endpoint | Access Level | Description |

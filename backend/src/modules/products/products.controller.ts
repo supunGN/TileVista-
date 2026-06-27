@@ -48,6 +48,15 @@ export class ProductsController {
   }
 
   /**
+   * GET /api/categories
+   * Returns the category hierarchy from OSPOS.
+   */
+  @Get('categories')
+  async getCategories() {
+    return this.productsService.getCategories();
+  }
+
+  /**
    * GET /api/items/:id
    * Returns a single merged item by OSPOS item_id.
    */

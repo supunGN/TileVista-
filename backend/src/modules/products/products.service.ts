@@ -24,6 +24,8 @@ export class ProductsService {
     dto.itemId = osposItem.item_id;
     dto.name = osposItem.name;
     dto.category = osposItem.category ?? '';
+    dto.categoryId = osposItem.category_id ?? null;
+    dto.subcategoryId = osposItem.subcategory_id ?? null;
     dto.sku = osposItem.sku ?? '';
     dto.description = osposItem.description ?? null;
     dto.price = osposItem.price;
@@ -97,6 +99,8 @@ export class ProductsService {
           item_id: dbProduct.ospos_item_id,
           name: `Product ${dbProduct.ospos_item_id}`,
           category: 'Unknown',
+          category_id: null,
+          subcategory_id: null,
           sku: '',
           description: 'Live catalog details temporarily unavailable.',
           price: 0,
@@ -142,6 +146,8 @@ export class ProductsService {
           item_id: osposItemId,
           name: `Product ${osposItemId}`,
           category: 'Unknown',
+          category_id: null,
+          subcategory_id: null,
           sku: '',
           description: 'Live details temporarily unavailable.',
           price: 0,
@@ -155,6 +161,14 @@ export class ProductsService {
     return this.buildUnifiedItem(osposItem, dbProduct, false);
   }
 
+  /**
+   * Fetches the category hierarchy from OSPOS.
+   */
+  async getCategories(): Promise<any[]> {
+    return this.osposService.fetchCategories();
+  }
+
+  // ─── INTERNAL HELPERS ────────────────────────────────────────────────────────
   /**
    * Safe method used by core modules to fetch product metadata and live stock.
    */

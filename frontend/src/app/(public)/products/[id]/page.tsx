@@ -136,14 +136,7 @@ export default function ProductDetailPage() {
 
   // Image Fallback
   const getFallbackImage = (category: string) => {
-    const cat = category.toLowerCase();
-    if (cat.includes('tile')) {
-      return 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800';
-    }
-    if (cat.includes('bath') || cat.includes('basin') || cat.includes('toilet') || cat.includes('sanitary')) {
-      return 'https://images.unsplash.com/photo-1620626011761-996317b6979a?auto=format&fit=crop&q=80&w=800';
-    }
-    return 'https://images.unsplash.com/photo-1615529182904-14819c35db37?auto=format&fit=crop&q=80&w=800';
+    return '/images/placeholder.png';
   };
 
   const productImageUrl = product.imageUrl ? `${STATIC_BASE}${product.imageUrl}` : getFallbackImage(product.category);
@@ -161,7 +154,7 @@ export default function ProductDetailPage() {
 
   return (
     <div className="py-6 font-sans max-w-7xl mx-auto space-y-12 px-4 selection:bg-[#D4C5B9] selection:text-[#1A1A1A]">
-      
+
       {/* 1. Breadcrumbs Navigation */}
       <nav className="flex items-center gap-2 text-[10px] tracking-widest font-semibold text-gray-400 uppercase">
         <Link href="/" className="hover:text-[#1A1A1A] transition-colors">Home</Link>
@@ -175,14 +168,14 @@ export default function ProductDetailPage() {
 
       {/* 2. Main Product Frame */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-        
+
         {/* Left Column: Image/3D Media Container */}
         <div className="lg:col-span-7 space-y-4">
           <div className="relative w-full aspect-[4/3] bg-gray-55 border border-gray-100 overflow-hidden flex items-center justify-center">
-            
+
             {viewMode === 'image' || !glbFullPath ? (
               // 2D Image View
-              <div 
+              <div
                 className="w-full h-full bg-cover bg-center transition-transform duration-700 hover:scale-105"
                 style={{ backgroundImage: `url('${productImageUrl}')` }}
               />
@@ -233,21 +226,19 @@ export default function ProductDetailPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => setViewMode('image')}
-                className={`flex-1 py-3.5 text-xs font-semibold tracking-widest uppercase border transition-all duration-300 ${
-                  viewMode === 'image'
-                    ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white'
-                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-400 hover:text-[#1A1A1A]'
-                }`}
+                className={`flex-1 py-3.5 text-xs font-semibold tracking-widest uppercase border transition-all duration-300 ${viewMode === 'image'
+                  ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white'
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-400 hover:text-[#1A1A1A]'
+                  }`}
               >
                 Lifestyle Photo View
               </button>
               <button
                 onClick={() => setViewMode('model3d')}
-                className={`flex-1 py-3.5 text-xs font-semibold tracking-widest uppercase border transition-all duration-300 flex items-center justify-center gap-2 ${
-                  viewMode === 'model3d'
-                    ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white'
-                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-400 hover:text-[#1A1A1A]'
-                }`}
+                className={`flex-1 py-3.5 text-xs font-semibold tracking-widest uppercase border transition-all duration-300 flex items-center justify-center gap-2 ${viewMode === 'model3d'
+                  ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white'
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-400 hover:text-[#1A1A1A]'
+                  }`}
               >
                 <Compass size={14} className={viewMode === 'model3d' ? 'animate-spin' : ''} />
                 <span>3D Interactive View</span>
@@ -258,7 +249,7 @@ export default function ProductDetailPage() {
 
         {/* Right Column: Console Details */}
         <div className="lg:col-span-5 flex flex-col gap-6">
-          
+
           {/* Brand, Name, SKU */}
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -267,11 +258,11 @@ export default function ProductDetailPage() {
               </span>
               <span className="text-[9px] text-gray-400 font-mono tracking-wider">SKU: {product.sku}</span>
             </div>
-            
+
             <h1 className="text-2xl md:text-3xl font-semibold text-[#1A1A1A] tracking-tight leading-tight">
               {product.name}
             </h1>
-            
+
             <div className="flex gap-2 items-center pt-2">
               {product.finish && (
                 <span className="text-[9px] font-mono tracking-widest bg-gray-50 border border-gray-200 px-2 py-0.5 text-gray-500 uppercase">
@@ -283,15 +274,14 @@ export default function ProductDetailPage() {
                   {product.material}
                 </span>
               )}
-              
+
               {/* Dynamic stock label */}
-              <span className={`text-[9px] font-mono tracking-widest px-2.5 py-0.5 border uppercase font-bold ${
-                isOutOfStock 
-                  ? 'bg-red-50 text-red-650 border-red-150' 
-                  : isLowStock 
-                    ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                    : 'bg-emerald-50 text-emerald-800 border-emerald-100'
-              }`}>
+              <span className={`text-[9px] font-mono tracking-widest px-2.5 py-0.5 border uppercase font-bold ${isOutOfStock
+                ? 'bg-red-50 text-red-650 border-red-150'
+                : isLowStock
+                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                  : 'bg-emerald-50 text-emerald-800 border-emerald-100'
+                }`}>
                 {isOutOfStock ? 'Sold Out' : isLowStock ? `Low Stock: ${stockLevel} left` : 'Available'}
               </span>
             </div>
@@ -314,7 +304,7 @@ export default function ProductDetailPage() {
 
           {/* Add to Cart Actions */}
           <div className="space-y-4">
-            
+
             {/* Quantity select inputs */}
             {!isOutOfStock && (
               <div className="flex flex-col gap-1.5">
@@ -336,7 +326,8 @@ export default function ProductDetailPage() {
                       const val = parseInt(e.target.value) || 1;
                       setQuantity(Math.min(stockLevel, Math.max(1, val)));
                     }}
-                    className="w-12 h-10 text-center font-mono text-xs text-[#1A1A1A] focus:outline-none"
+                    /* Added the arrow-hiding utilities at the end of className */
+                    className="w-12 h-10 text-center font-mono text-xs text-[#1A1A1A] focus:outline-none bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <button
                     onClick={() => setQuantity(Math.min(stockLevel, quantity + 1))}
@@ -376,7 +367,7 @@ export default function ProductDetailPage() {
 
       {/* 3. Specifications and Description */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 border-t border-gray-100 pt-12">
-        
+
         {/* Description details */}
         <div className="lg:col-span-7 space-y-4">
           <h2 className="text-lg font-bold tracking-wide text-[#1A1A1A] uppercase">
@@ -443,8 +434,8 @@ export default function ProductDetailPage() {
                 Similar Showroom Articles
               </h2>
             </div>
-            <Link 
-              href="/products" 
+            <Link
+              href="/products"
               className="text-[10px] font-bold tracking-widest text-[#1A1A1A] hover:text-[#D4C5B9] uppercase pb-1 border-b border-[#1A1A1A] hover:border-[#D4C5B9] transition-all"
             >
               Browse All
@@ -455,13 +446,13 @@ export default function ProductDetailPage() {
             {relatedItems.map((item) => {
               const itemImage = item.imageUrl ? `${STATIC_BASE}${item.imageUrl}` : getFallbackImage(item.category);
               return (
-                <div 
+                <div
                   key={item.itemId}
                   className="flex flex-col bg-white border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer"
                   onClick={() => router.push(`/products/${item.itemId}`)}
                 >
                   <div className="relative w-full h-[180px] bg-gray-50 overflow-hidden">
-                    <div 
+                    <div
                       className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-103"
                       style={{ backgroundImage: `url('${itemImage}')` }}
                     />
@@ -469,7 +460,7 @@ export default function ProductDetailPage() {
                       {item.category}
                     </span>
                   </div>
-                  
+
                   <div className="p-5 flex flex-col flex-1">
                     <div className="flex justify-between items-baseline mb-2.5">
                       <span className="text-[9px] font-bold text-gray-400 tracking-wider uppercase">

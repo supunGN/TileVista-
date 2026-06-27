@@ -47,3 +47,17 @@ The build executes successfully without any compilation errors.
 * **Branch**: Dev branch `feature/ospos-integration`.
 * **Codebase Health**: Redundant files from the old `items` module were fully deleted. There are no duplicate functions, files, or unused imports.
 * **Commit**: Commits have been created to save all refactoring progress cleanly.
+
+---
+
+## 5. June 27, 2026 Session Updates: Admin Login Resolution & Codebase Audit
+During this session, we audited the project structure and addressed a critical access issue:
+* **Admin Login 401 Unauthorized Issue**: Investigated reports of admin users being unable to log in (returning a 401 response). Discovered that importing `database/tilevista.sql` only creates the relational table definitions but does not populate the initial data. Consequently, the `users` table is left empty.
+  * **Solution**: To log in with default credentials (`admin@tilevista.com` / `admin123`), the database seeder must be run locally to insert mock records:
+    ```bash
+    node database/prisma/seed.cjs
+    ```
+* **OSPOS Integration Architecture Analysis**: Documented how the NestJS backend maps, queries, and deduplicates calls to the external OSPOS API using an HTTP data aggregation design, maintaining full storefront resilience via custom stale stock indicators.
+* **Cleanup of Temporary/Orphaned Files**:
+  * Deleted diagnostic scripts `backend/_check_users.cjs` and `backend/_test_login.cjs`.
+  * Highlighted `database/prisma/seed.ts` as a redundant duplicate of `database/prisma/seed.cjs` (CommonJS version), marking it for cleanup to ensure code cleanliness.
