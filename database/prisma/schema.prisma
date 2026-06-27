@@ -71,13 +71,6 @@ model carts {
   @@index([user_id], map: "fk_cart_user")
 }
 
-model categories {
-  category_id   String     @id @db.Char(36)
-  category_name String     @unique(map: "category_name") @db.VarChar(100)
-  description   String?    @db.Text
-  products      products[]
-}
-
 model design_elements {
   element_id   String       @id @db.Char(36)
   design_id    String       @db.Char(36)
@@ -311,17 +304,14 @@ model product_assets {
 model products {
   product_id       String            @id @db.Char(36)
   ospos_item_id    Int               @unique(map: "ospos_item_id")
-  category_id      String            @db.Char(36)
   is_active        Boolean?          @default(true)
   created_at       DateTime?         @default(now()) @db.DateTime(0)
   updated_at       DateTime?         @default(now()) @db.DateTime(0)
   design_items     design_items[]
   package_items    package_items[]
   product_assets   product_assets?
-  categories       categories        @relation(fields: [category_id], references: [category_id], onUpdate: Restrict, map: "fk_product_category")
   stock_thresholds stock_thresholds?
 
-  @@index([category_id], map: "fk_product_category")
   @@index([ospos_item_id], map: "idx_products_ospos")
 }
 

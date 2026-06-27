@@ -31,11 +31,11 @@ The backend integration service (`OsposIntegrationService`) invokes the followin
    * **Purpose**: Fetches live quantity available for a specific SKU or item ID.
    * **Return Payload**: Captures raw high-precision decimals (e.g. `"250.0000"`), which are parsed and sanitized into floating-point numbers.
 3. **GET `<OSPOS_API_BASE_URL>/categories`**
-   * **Purpose**: Retrieves the hierarchical category taxonomy for catalog classification.
+   * **Purpose**: Retrieves the hierarchical category taxonomy for catalog classification. All frontend category filtering relies on this live data rather than a local database table.
 
 ### Tile Vista Internal Database Mappings (Prisma Schema)
 The integration maps POS data with visual assets via:
-* **Table `products`**: Stores `ospos_item_id` (unique integer mapping to OSPOS primary key) and local `product_id` (UUID).
+* **Table `products`**: Stores `ospos_item_id` (unique integer mapping to OSPOS primary key) and local `product_id` (UUID). (Note: The `category_id` field was removed to rely entirely on live OSPOS categories).
 * **Table `product_assets`**: Links visual properties (`image_url`, `glb_url`, material/color family, visibility status) to `product_id`.
 * **Table `asset_transformations`**: Details 3D model transforms (rotation, scale X/Y/Z).
 

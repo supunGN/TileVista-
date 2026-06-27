@@ -88,21 +88,6 @@ export class PackagesService {
 
     const packageId = crypto.randomUUID();
 
-    let categoryId = '';
-    const defaultCategory = await this.prisma.categories.findFirst();
-    if (defaultCategory) {
-      categoryId = defaultCategory.category_id;
-    } else {
-      categoryId = crypto.randomUUID();
-      await this.prisma.categories.create({
-        data: {
-          category_id: categoryId,
-          category_name: 'General',
-          description: 'Default category',
-        }
-      });
-    }
-
     const packageItemsData = [];
     for (const osposItemId of data.osposItemIds) {
       let product = await this.prisma.products.findUnique({
@@ -114,7 +99,6 @@ export class PackagesService {
           data: {
             product_id: crypto.randomUUID(),
             ospos_item_id: osposItemId,
-            category_id: categoryId,
             is_active: true,
           }
         });

@@ -188,21 +188,6 @@ export class ProductsService {
       include: { product_assets: true }
     });
 
-    let categoryId = '';
-    const defaultCategory = await this.prisma.categories.findFirst();
-    if (defaultCategory) {
-      categoryId = defaultCategory.category_id;
-    } else {
-      categoryId = crypto.randomUUID();
-      await this.prisma.categories.create({
-        data: {
-          category_id: categoryId,
-          category_name: 'General',
-          description: 'Default category',
-        }
-      });
-    }
-
     if (!product) {
       const productId = crypto.randomUUID();
       const assetId = crypto.randomUUID();
@@ -212,7 +197,6 @@ export class ProductsService {
         data: {
           product_id: productId,
           ospos_item_id: osposItemId,
-          category_id: categoryId,
           is_active: dto.isEnabled ?? true,
           product_assets: {
             create: {

@@ -37,7 +37,6 @@ async function main() {
   await prisma.product_assets.deleteMany();
   await prisma.stock_thresholds.deleteMany();
   await prisma.products.deleteMany();
-  await prisma.categories.deleteMany();
   await prisma.tags.deleteMany();
   await prisma.user_addresses.deleteMany();
   await prisma.notifications.deleteMany();
@@ -72,52 +71,11 @@ async function main() {
 
   console.log('✅ Created mock users: admin@tilevista.com and customer@test.com');
 
-  // 3. Create Categories
-  const catFloor = await prisma.categories.create({
-    data: {
-      category_id: 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13',
-      category_name: 'Floor Tiles',
-      description: 'Premium floor tiles for indoor and outdoor spaces.',
-    },
-  });
-
-  const catWall = await prisma.categories.create({
-    data: {
-      category_id: 'c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14',
-      category_name: 'Wall Tiles',
-      description: 'Elegant and durable wall tiles.',
-    },
-  });
-
-  console.log('✅ Created product categories.');
-
-  // 4. Create Products and Assets (corresponding to OSPOS item IDs 1, 2, and 3)
-  const prod1 = await prisma.products.create({
-    data: {
-      product_id: 'p0eebc99-9c0b-4ef8-bb6d-6bb9bd380a01',
-      ospos_item_id: 1,
-      category_id: catWall.category_id,
-      is_active: true,
-    },
-  });
-
-  const asset1 = await prisma.product_assets.create({
-    data: {
-      asset_id: 's0eebc99-9c0b-4ef8-bb6d-6bb9bd380a01',
-      product_id: prod1.product_id,
-      thumbnail_url: '/uploads/images/1.jpg',
-      image_url: '/uploads/images/1.jpg',
-      material_type: 'Porcelain',
-      color_family: 'Onyx',
-      is_visible: true,
-    },
-  });
-
+  // 3. Create Products and Assets (corresponding to OSPOS item ID 2)
   const prod2 = await prisma.products.create({
     data: {
       product_id: 'p0eebc99-9c0b-4ef8-bb6d-6bb9bd380a02',
       ospos_item_id: 2,
-      category_id: catFloor.category_id,
       is_active: true,
     },
   });
@@ -134,31 +92,10 @@ async function main() {
     },
   });
 
-  const prod3 = await prisma.products.create({
-    data: {
-      product_id: 'p0eebc99-9c0b-4ef8-bb6d-6bb9bd380a03',
-      ospos_item_id: 3,
-      category_id: catWall.category_id,
-      is_active: true,
-    },
-  });
-
-  const asset3 = await prisma.product_assets.create({
-    data: {
-      asset_id: 's0eebc99-9c0b-4ef8-bb6d-6bb9bd380a03',
-      product_id: prod3.product_id,
-      thumbnail_url: '/uploads/images/3.jpg',
-      image_url: '/uploads/images/3.jpg',
-      material_type: 'Ceramic',
-      color_family: 'White',
-      is_visible: true,
-    },
-  });
-
-  console.log('✅ Created products and assets mapped to OSPOS items 1, 2, and 3.');
+  console.log('✅ Created product and asset mapped to OSPOS item 2.');
 
   // Create default sizes and transformations for assets to prevent frontend crashes
-  for (const assetId of [asset1.asset_id, asset2.asset_id, asset3.asset_id]) {
+  for (const assetId of [asset2.asset_id]) {
     await prisma.asset_sizes.create({
       data: {
         size_id: crypto.randomUUID(),
@@ -199,7 +136,6 @@ async function main() {
 
   await prisma.package_items.createMany({
     data: [
-      { package_id: pkg.package_id, product_id: prod1.product_id, quantity: 1 },
       { package_id: pkg.package_id, product_id: prod2.product_id, quantity: 1 },
     ],
   });

@@ -6,7 +6,7 @@ This document provides a guide for team members regarding the inventory integrat
 
 ## 1. Architectural Strategy
 
-OSPOS is the **authoritative inventory source of truth**. All stock updates, cashier sales, pricing adjustments, item names, and SKU classifications must be managed inside OSPOS.
+OSPOS is the **authoritative inventory source of truth**. All stock updates, cashier sales, pricing adjustments, item names, category taxonomies, and SKU classifications must be managed inside OSPOS. The local database explicitly does not store categories.
 
 ### Database Division
 * **OSPOS Database (`ospos`):** Manages `ospos_items` (items list, SKU codes, descriptions, and standard pricing) and `ospos_item_quantities` (real-time physical showroom stock).
