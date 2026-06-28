@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, ShoppingCart, Eye, Sparkles, Loader2, RefreshCw } from 'lucide-react';
+import { Search, ShoppingCart, Eye, Sparkles, Loader2, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface UnifiedItem {
   itemId: number;
@@ -24,6 +24,8 @@ interface UnifiedItem {
   isEnabled: boolean;
 }
 
+const ITEMS_PER_PAGE = 9;
+
 export default function ProductsPage() {
   const [items, setItems] = useState<UnifiedItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -33,6 +35,7 @@ export default function ProductsPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | 'ALL'>('ALL');
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<number | 'ALL'>('ALL');
   const [categories, setCategories] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   const API_BASE = 'http://localhost:4000/api';
   const STATIC_BASE = 'http://localhost:4000';
@@ -67,6 +70,11 @@ export default function ProductsPage() {
     fetchProducts();
   }, []);
 
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedCategoryId, selectedSubcategoryId]);
+
   // Filter items that are enabled
   const enabledItems = items.filter((item) => item.isEnabled);
 
@@ -80,6 +88,27 @@ export default function ProductsPage() {
     const matchesSubcategory = selectedSubcategoryId === 'ALL' ? true : p.subcategoryId === selectedSubcategoryId;
     return matchesSearch && matchesCategory && matchesSubcategory;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const getPageNumbers = () => {
+    const pages: (number | '...')[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push('...');
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+        pages.push(i);
+      }
+      if (currentPage < totalPages - 2) pages.push('...');
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   const formatLKR = (num: number) => {
     return `LKR ${num.toLocaleString('en-LK', { minimumFractionDigits: 2 })}`;
@@ -111,13 +140,13 @@ export default function ProductsPage() {
       <div className="border-b border-gray-100 pb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <span className="text-[10px] font-bold tracking-[0.3em] text-[#D4C5B9] uppercase block mb-2">
-            TILE & BATHWARE
+            TILE &amp; BATHWARE
           </span>
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-[#1A1A1A]">
             Browse Showroom Catalogue
           </h1>
           <p className="text-sm text-gray-500 font-light mt-1.5 max-w-xl leading-relaxed">
-            Browse our imported range of European wall & floor tiles, sleek sanitaryware, and premium shower system accessories.
+            Browse our imported range of European wall &amp; floor tiles, sleek sanitaryware, and premium shower system accessories.
           </p>
         </div>
 
@@ -224,89 +253,70 @@ export default function ProductsPage() {
           <p className="text-gray-500 font-light text-sm">No items found matching your search criteria.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredProducts.map((p) => {
-            const finalPrice = p.price;
-            const imageUrl = p.imageUrl ? `${STATIC_BASE}${p.imageUrl}` : getFallbackImage(p.category);
+        <>
+          {/* Product Count & Page Indicator */}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-gray-400 font-mono tracking-wider uppercase">
+              Showing {startIndex + 1}–{Math.min(startIndex + ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} products
+            </span>
+            {totalPages > 1 && (
+              <span className="text-[10px] text-gray-400 font-mono tracking-wider uppercase">
+                Page {currentPage} of {totalPages}
+              </span>
+            )}
+          </div>
 
-            return (
-              <div
-                key={p.itemId}
-                className="flex flex-col bg-white border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 group"
-              >
-                {/* Product Image badge */}
-                <Link href={`/products/${p.itemId}`} className="relative w-full h-[220px] bg-gray-50 overflow-hidden block">
-                  <div
-                    className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-103"
-                    style={{ backgroundImage: `url('${imageUrl}')` }}
-                  />
+          {/* Product Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedProducts.map((p) => {
+              const finalPrice = p.price;
+              const imageUrl = p.imageUrl ? `${STATIC_BASE}${p.imageUrl}` : getFallbackImage(p.category);
 
-                  {/* Category overlay */}
-                  <span className="absolute top-4 left-4 z-10 bg-white/95 text-[#1A1A1A] font-bold text-[8px] uppercase tracking-widest px-2.5 py-1 shadow-sm">
-                    {p.category}
-                  </span>
+              return (
+                <div
+                  key={p.itemId}
+                  className="flex flex-col bg-white border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 group"
+                >
+                  {/* Product Image — square */}
+                  <Link href={`/products/${p.itemId}`} className="relative w-full aspect-square bg-[#F9F9F7] overflow-hidden block">
+                    <div
+                      className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                      style={{ backgroundImage: `url('${imageUrl}')` }}
+                    />
 
-                  {/* 3D Model Availability tag */}
-                  {p.glbUrl && (
-                    <span className="absolute top-4 right-4 z-10 bg-[#1A1A1A] text-[#D4C5B9] font-bold text-[8px] uppercase tracking-widest px-2.5 py-1 flex items-center gap-1 shadow-sm border border-[#D4C5B9]/20">
-                      <Sparkles size={9} />
-                      <span>3D Canvas Ready</span>
+                    {/* Category overlay */}
+                    <span className="absolute top-4 left-4 z-10 bg-white/95 text-[#1A1A1A] font-bold text-[8px] uppercase tracking-widest px-2.5 py-1 shadow-sm">
+                      {p.category}
                     </span>
-                  )}
-                </Link>
 
-                {/* Details */}
-                <div className="p-6 flex flex-col flex-1">
-                  <div className="flex justify-between items-baseline mb-2 gap-4">
-                    <span className="text-[10px] font-semibold text-gray-400 tracking-wider uppercase font-mono">
-                      {getBrand(p.name)}
-                    </span>
-                    <span className="text-[9px] text-gray-400 font-mono">{p.sku}</span>
-                  </div>
-
-                  <Link href={`/products/${p.itemId}`}>
-                    <h3 className="text-base font-semibold text-[#1A1A1A] tracking-wide mb-2 line-clamp-1 hover:text-[#D4C5B9] transition-colors">
-                      {p.name}
-                    </h3>
+                    {/* 3D Model Availability tag */}
+                    {p.glbUrl && (
+                      <span className="absolute top-4 right-4 z-10 bg-[#1A1A1A] text-[#D4C5B9] font-bold text-[8px] uppercase tracking-widest px-2.5 py-1 flex items-center gap-1 shadow-sm border border-[#D4C5B9]/20">
+                        <Sparkles size={9} />
+                        <span>3D Canvas Ready</span>
+                      </span>
+                    )}
                   </Link>
 
-                  <p className="text-xs text-gray-500 font-light leading-relaxed mb-6 flex-1 line-clamp-2">
-                    {p.description || 'Premium selection showroom article, sourced and imported to fit contemporary architecture projects.'}
-                  </p>
+                  {/* Card Details */}
+                  <div className="p-5 flex flex-col flex-1">
+                    {/* Name */}
+                    <Link href={`/products/${p.itemId}`}>
+                      <h3 className="text-sm font-semibold text-[#1A1A1A] tracking-wide mb-1.5 line-clamp-1 hover:text-[#D4C5B9] transition-colors">
+                        {p.name}
+                      </h3>
+                    </Link>
 
-                  {/* Attributes snippet */}
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {p.finish && (
-                      <span className="text-[9.5px] font-mono bg-gray-50 border border-gray-200 px-2 py-0.5 text-gray-500 uppercase">
-                        {p.finish}
-                      </span>
-                    )}
-                    {p.material && (
-                      <span className="text-[9.5px] font-mono bg-gray-50 border border-gray-200 px-2 py-0.5 text-gray-500">
-                        {p.material}
-                      </span>
-                    )}
-                    <span className={`text-[9.5px] font-mono px-2 py-0.5 border ${p.quantity <= 10
-                      ? 'bg-red-50 text-red-650 border-red-100 font-bold'
-                      : 'bg-emerald-50 text-emerald-800 border-emerald-100'
-                      }`}>
-                      {p.quantity <= 0 ? 'Out of Stock' : `${p.quantity} Units in Showroom`}
-                    </span>
-                  </div>
-
-                  {/* Pricing and Cart click triggers */}
-                  <div className="border-t border-gray-100 pt-5 flex items-end justify-between gap-4">
-                    <div className="flex flex-col">
-                      <span className="text-[9px] font-bold tracking-widest text-[#D4C5B9] uppercase leading-none mb-1">Unit Price</span>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-base font-bold text-[#1A1A1A]">{formatLKR(finalPrice)}</span>
-                      </div>
+                    {/* Price */}
+                    <div className="flex items-baseline gap-2 mb-4">
+                      <span className="text-sm font-bold text-[#C8102E]">{formatLKR(finalPrice)}</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    {/* Action buttons */}
+                    <div className="border-t border-gray-100 pt-4 flex items-center justify-between gap-3 mt-auto">
                       <Link
                         href={`/products/${p.itemId}`}
-                        className="border border-gray-200 hover:border-[#1A1A1A] text-gray-500 hover:text-[#1A1A1A] p-3.5 transition-all duration-300 flex items-center justify-center"
+                        className="border border-gray-200 hover:border-[#1A1A1A] text-gray-500 hover:text-[#1A1A1A] p-3 transition-all duration-300 flex items-center justify-center"
                         aria-label="View Details"
                       >
                         <Eye size={15} />
@@ -314,19 +324,65 @@ export default function ProductsPage() {
                       <button
                         onClick={() => handleAddToCart(p.name)}
                         disabled={p.quantity <= 0}
-                        className="bg-[#1A1A1A] hover:bg-[#D4C5B9] hover:text-[#1A1A1A] text-white p-3.5 transition-all duration-300 disabled:opacity-30 disabled:hover:bg-[#1A1A1A] disabled:hover:text-white"
+                        className="flex-1 bg-[#1A1A1A] hover:bg-[#D4C5B9] hover:text-[#1A1A1A] text-white py-3 px-4 transition-all duration-300 disabled:opacity-30 disabled:hover:bg-[#1A1A1A] disabled:hover:text-white flex items-center justify-center gap-2 text-xs font-semibold tracking-wider uppercase"
                         aria-label="Add to cart"
                       >
-                        <ShoppingCart size={15} />
+                        <ShoppingCart size={14} />
+                        <span>Add to Cart</span>
                       </button>
                     </div>
                   </div>
-
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-1 pt-8 pb-4">
+              {/* Previous Button */}
+              <button
+                onClick={() => { setCurrentPage(Math.max(1, currentPage - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                disabled={currentPage === 1}
+                className="w-10 h-10 flex items-center justify-center border border-gray-200 text-gray-500 hover:border-[#1A1A1A] hover:text-[#1A1A1A] transition-all duration-300 disabled:opacity-30 disabled:hover:border-gray-200 disabled:hover:text-gray-500"
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={16} />
+              </button>
+
+              {/* Page Numbers */}
+              {getPageNumbers().map((page, idx) =>
+                page === '...' ? (
+                  <span key={`dots-${idx}`} className="w-10 h-10 flex items-center justify-center text-gray-400 text-xs font-mono">
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={page}
+                    onClick={() => { setCurrentPage(page as number); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    className={`w-10 h-10 flex items-center justify-center text-xs font-semibold tracking-wider transition-all duration-300 ${
+                      currentPage === page
+                        ? 'bg-[#1A1A1A] text-white border border-[#1A1A1A]'
+                        : 'border border-gray-200 text-gray-500 hover:border-[#1A1A1A] hover:text-[#1A1A1A]'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
+
+              {/* Next Button */}
+              <button
+                onClick={() => { setCurrentPage(Math.min(totalPages, currentPage + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                disabled={currentPage === totalPages}
+                className="w-10 h-10 flex items-center justify-center border border-gray-200 text-gray-500 hover:border-[#1A1A1A] hover:text-[#1A1A1A] transition-all duration-300 disabled:opacity-30 disabled:hover:border-gray-200 disabled:hover:text-gray-500"
+                aria-label="Next page"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
+        </>
       )}
 
     </div>
