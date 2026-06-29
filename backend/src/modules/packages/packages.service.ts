@@ -16,13 +16,24 @@ export class PackagesService {
     const allOsposItems = await this.osposService.fetchAllItems();
     const osposMap = new Map(allOsposItems.map((i) => [i.item_id, i]));
 
-    const enrichedItems = pkg.package_items.map((pi: any) => ({
-      osposItemId: pi.products.ospos_item_id,
-      item: osposMap.get(pi.products.ospos_item_id) ?? null,
-      quantity: pi.quantity,
-    }));
+    let hasUnavailableItem = false;
 
-    // Recalculate package price from live OSPOS prices
+    const enrichedItems = pkg.package_items.map((pi: any) => {
+      const osposItem = osposMap.get(pi.products.ospos_item_id) ?? null;
+      const hasAssetEntry = !!pi.products.product_assets;
+      const isVisible = pi.products.product_assets?.is_visible ?? pi.products.is_active ?? true;
+      
+      if (!osposItem || !hasAssetEntry || !isVisible) {
+        hasUnavailableItem = true;
+      }
+
+      return {
+        osposItemId: pi.products.ospos_item_id,
+        item: osposItem,
+        quantity: pi.quantity,
+      };
+    });
+
     const basePrice = enrichedItems.reduce(
       (sum: number, { item, quantity }: any) => sum + (item?.price ?? 0) * quantity,
       0,
@@ -38,37 +49,59 @@ export class PackagesService {
       items: enrichedItems,
       calculatedPrice: Number(calculatedPrice.toFixed(2)),
       createdAt: pkg.created_at,
+      status: pkg.status,
+      hasUnavailableItem,
     };
   }
 
-  async findAll() {
+  async findAll(includeHidden: boolean = false) {
     const packages = await this.prisma.packages.findMany({
+      where: includeHidden ? undefined : { status: 'active' },
       include: {
         package_items: {
           include: {
-            products: true,
+            products: {
+              include: {
+                product_assets: true
+              }
+            },
           },
         },
       },
     });
-    return Promise.all(packages.map((pkg) => this.enrichPackage(pkg)));
+    const enriched = await Promise.all(packages.map((pkg) => this.enrichPackage(pkg)));
+    
+    if (!includeHidden) {
+      return enriched.filter(pkg => !pkg.hasUnavailableItem);
+    }
+    return enriched;
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, includeHidden: boolean = false) {
     const pkg = await this.prisma.packages.findUnique({
       where: { package_id: id },
       include: {
         package_items: {
           include: {
-            products: true,
+            products: {
+              include: {
+                product_assets: true
+              }
+            }
           },
         },
       },
     });
-    if (!pkg) {
+    if (!pkg || (!includeHidden && pkg.status !== 'active')) {
       throw new NotFoundException(`Package with ID ${id} not found`);
     }
-    return this.enrichPackage(pkg);
+    
+    const enriched = await this.enrichPackage(pkg);
+    if (!includeHidden && enriched.hasUnavailableItem) {
+      throw new NotFoundException(`Package with ID ${id} not found`);
+    }
+    
+    return enriched;
   }
 
   async create(data: {
@@ -125,7 +158,7 @@ export class PackagesService {
       data: packageItemsData,
     });
 
-    return this.findOne(pkg.package_id);
+    return this.findOne(pkg.package_id, true);
   }
 
   async remove(id: string) {

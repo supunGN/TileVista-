@@ -8,12 +8,24 @@ export class PackagesController {
 
   @Get()
   async getAll() {
-    return this.packagesService.findAll();
+    return this.packagesService.findAll(false);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('admin')
+  async adminGetAll() {
+    return this.packagesService.findAll(true);
   }
 
   @Get(':id')
   async getOne(@Param('id') id: string) {
-    return this.packagesService.findOne(id);
+    return this.packagesService.findOne(id, false);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('admin/:id')
+  async adminGetOne(@Param('id') id: string) {
+    return this.packagesService.findOne(id, true);
   }
 
   @Post()

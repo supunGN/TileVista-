@@ -63,7 +63,19 @@ export class OrdersService {
       for (const item of data.items) {
         const osposItem = osposItemMap.get(item.osposItemId);
         if (!osposItem) {
-          throw new NotFoundException(`OSPOS Item ID ${item.osposItemId} not found`);
+          throw new NotFoundException(`Item not available`);
+        }
+
+        // Validate visibility gate
+        const localProduct = await tx.products.findUnique({
+          where: { ospos_item_id: item.osposItemId },
+          include: { product_assets: true }
+        });
+        
+        const hasAssetEntry = !!localProduct?.product_assets;
+        const isVisible = localProduct?.product_assets?.is_visible ?? localProduct?.is_active ?? true;
+        if (!localProduct || !hasAssetEntry || !isVisible) {
+          throw new NotFoundException(`Item not available`);
         }
 
         const reservedQty = reservedQuantities.get(item.osposItemId) || 0;

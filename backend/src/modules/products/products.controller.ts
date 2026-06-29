@@ -16,7 +16,7 @@ import { diskStorage } from 'multer';
 import * as path from 'path';
 import * as fs from 'fs';
 import { ProductsService } from './products.service';
-import { UpsertAssetDto } from './dto/unified-item.dto';
+import { UpsertAssetDto, PublishProductDto } from './dto/unified-item.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -44,7 +44,7 @@ export class ProductsController {
    */
   @Get('items')
   async findAll() {
-    return this.productsService.findAll();
+    return this.productsService.findAll(false);
   }
 
   /**
@@ -70,6 +70,28 @@ export class ProductsController {
   // ──────────────────────────────────────────────────────────────
 
   /**
+   * GET /api/admin/products/pending-review
+   * Returns OSPOS items that are not yet in the TileVista local catalog.
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get('admin/products/pending-review')
+  async getPendingReviewItems() {
+    return this.productsService.getPendingReviewItems();
+  }
+
+  /**
+   * POST /api/admin/products/publish
+   * Publishes an OSPOS item to TileVista by creating local product and asset rows.
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Post('admin/products/publish')
+  async publishProduct(@Body() dto: PublishProductDto) {
+    return this.productsService.publishProduct(dto);
+  }
+
+  /**
    * GET /api/admin/items
    * Returns all items with asset status indicators for the admin dashboard.
    */
@@ -77,7 +99,7 @@ export class ProductsController {
   @Roles('ADMIN')
   @Get('admin/items')
   async adminFindAll() {
-    return this.productsService.findAll();
+    return this.productsService.findAll(true);
   }
 
   /**
@@ -130,7 +152,7 @@ export class ProductsController {
   ) {
     if (!file) throw new BadRequestException('No file uploaded.');
 
-    const item = await this.productsService.findOne(id);
+    const item = await this.productsService.findOne(id, true);
     const ext = path.extname(file.originalname) || '.jpg';
     const slug = item.name
       .toLowerCase()
@@ -184,7 +206,7 @@ export class ProductsController {
   ) {
     if (!file) throw new BadRequestException('No file uploaded.');
 
-    const item = await this.productsService.findOne(id);
+    const item = await this.productsService.findOne(id, true);
     const slug = item.name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')

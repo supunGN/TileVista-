@@ -405,7 +405,7 @@ export default function ProductDetailPage() {
                 {isOutOfStock
                   ? 'Currently out of stock at the showroom.'
                   : isLowStock
-                    ? `Low stock — only ${stockLevel} unit${stockLevel > 1 ? 's' : ''} remaining.`
+                    ? `Low stock.`
                     : `Stock available in Alahapperuma Trade Center, Weerawila, Hambantota.`
                 }
               </span>

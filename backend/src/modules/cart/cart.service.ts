@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { OsposIntegrationService } from '../integrations/ospos/ospos.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 /**
  * CartService manages in-memory user carts.
@@ -10,6 +11,7 @@ import { OsposIntegrationService } from '../integrations/ospos/ospos.service';
 export class CartService {
   constructor(
     private readonly osposService: OsposIntegrationService,
+    private readonly prisma: PrismaService,
   ) {}
 
   // In-memory cart store: userId -> array of { osposItemId, quantity }
@@ -23,15 +25,36 @@ export class CartService {
     const allOsposItems = await this.osposService.fetchAllItems();
     const osposItemMap = new Map(allOsposItems.map((i) => [i.item_id, i]));
 
+    // Pre-fetch all local products to check visibility gate
+    const localProducts = await this.prisma.products.findMany({
+      where: { ospos_item_id: { in: items.map(i => i.osposItemId) } },
+      include: { product_assets: true }
+    });
+    const localProductMap = new Map(localProducts.map(p => [p.ospos_item_id, p]));
+
     return items
       .map((item) => {
         const osposItem = osposItemMap.get(item.osposItemId);
-        if (!osposItem) return null;
+        const localProduct = localProductMap.get(item.osposItemId);
+        const hasAssetEntry = !!localProduct?.product_assets;
+        const isVisible = localProduct?.product_assets?.is_visible ?? localProduct?.is_active ?? true;
+        
+        if (!osposItem || !localProduct || !hasAssetEntry || !isVisible) {
+          return {
+            osposItemId: item.osposItemId,
+            item: osposItem ?? { name: 'Unknown Item', price: 0, item_id: item.osposItemId },
+            quantity: item.quantity,
+            lineTotal: 0,
+            isAvailable: false,
+          };
+        }
+
         return {
           osposItemId: item.osposItemId,
           item: osposItem,
           quantity: item.quantity,
           lineTotal: osposItem.price * item.quantity,
+          isAvailable: true,
         };
       })
       .filter(Boolean);
@@ -42,7 +65,18 @@ export class CartService {
     const item = allItems.find((i) => i.item_id === osposItemId);
 
     if (!item) {
-      throw new BadRequestException(`Item ${osposItemId} not found in OSPOS catalogue.`);
+      throw new BadRequestException(`Item not available.`);
+    }
+
+    const localProduct = await this.prisma.products.findUnique({
+      where: { ospos_item_id: osposItemId },
+      include: { product_assets: true }
+    });
+    
+    const hasAssetEntry = !!localProduct?.product_assets;
+    const isVisible = localProduct?.product_assets?.is_visible ?? localProduct?.is_active ?? true;
+    if (!localProduct || !hasAssetEntry || !isVisible) {
+      throw new BadRequestException(`Item not available.`);
     }
     if (item.quantity < quantity) {
       throw new BadRequestException(
