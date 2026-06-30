@@ -40,8 +40,10 @@ export default function ProductPanel() {
         fetch(`${apiUrl}/items`)
           .then(res => res.json())
           .then(data => {
+            console.log("OSPOS_TILES raw items fetched:", data);
             // Filter to only floor tiles for room designer
             const tiles = data.filter((d: any) => d.category?.toLowerCase() === 'tiles' && isFloorTile(d));
+            console.log("OSPOS_TILES filtered tiles:", tiles);
             setDynamicItems(tiles || []);
             setIsLoadingItems(false);
           })
