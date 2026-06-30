@@ -1958,7 +1958,7 @@ function BathroomScene({
   CustomFurniture?: any;
 }) {
   const { camera, gl } = useThree();
-  const { selectedWallIdx, setSelectedWallIdx, activeCategory } = useDesignerStore();
+  const { selectedWallIdx, setSelectedWallIdx, activeCategory, recordHistory } = useDesignerStore();
   const w = Math.max(1.5, state.widthFt * 0.3048);
   const d = Math.max(1.5, state.depthFt * 0.3048);
   const h = Math.max(2.2, state.heightFt * 0.3048);
@@ -2223,6 +2223,8 @@ function BathroomScene({
 
   // Pointer drag logic
   useEffect(() => {
+    let hasMovedInScene = false;
+
     const onMove = (e: PointerEvent) => {
       if (draggingOpeningId.current) {
         const opId = draggingOpeningId.current;
@@ -2250,6 +2252,10 @@ function BathroomScene({
       if (!activeId || walls.length === 0) return;
       const pt = getFloorHit(e);
       if (!pt) return;
+
+      if (isPlacingItem) {
+        hasMovedInScene = true;
+      }
 
       const itemToMove = placedItems.find(i => i.id === activeId) || isPlacingItem;
       if (!itemToMove) return;
@@ -2355,6 +2361,12 @@ function BathroomScene({
       }
       if (draggingOpeningId.current) {
         draggingOpeningId.current = null;
+        setOrbitEnabled(true);
+      }
+      if (isPlacingItem && hasMovedInScene) {
+        recordHistory([...placedItems, isPlacingItem]);
+        setPlacedItems(prev => [...prev, isPlacingItem]);
+        setIsPlacingItem(null);
         setOrbitEnabled(true);
       }
     };
