@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import React from 'react';
-import { X, RotateCw, Trash2 } from 'lucide-react';
+import { X, RotateCw, Trash2, ArrowLeft } from 'lucide-react';
 import { useDesignerStore } from '../../store/designer.store';
 import { DOOR_STYLES, WINDOW_STYLES, renderDoorIcon } from './SharedDesignerEngine';
 import { getActiveCategories, getActiveCatalog } from './catalog';
@@ -16,6 +16,13 @@ export default function ProductPanel() {
   const [dynamicItems, setDynamicItems] = useState<any[]>([]);
   const [isLoadingItems, setIsLoadingItems] = useState(false);
   const [coverageHeightInput, setCoverageHeightInput] = useState<string>('');
+  const [selectedProductDetails, setSelectedProductDetails] = useState<any | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('All');
+
+  useEffect(() => {
+    setSelectedProductDetails(null);
+    setSelectedSubcategory('All');
+  }, [activeCategory]);
 
   const isFloorTile = (item: any) => {
     const catId = item.categoryId !== null && item.categoryId !== undefined ? Number(item.categoryId) : null;
@@ -134,7 +141,7 @@ export default function ProductPanel() {
   return (
     <>
       {/* ── RIGHT SIDEBAR TOOLBAR ── */}
-      <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-30">
+      <div className={`absolute transition-all duration-300 ${activeCategory === 'bathware_products' ? 'right-[440px]' : 'right-6'} top-1/2 -translate-y-1/2 flex flex-col gap-4 z-30`}>
         {/* Home / exit */}
         <button
           id="btn-exit"
@@ -169,15 +176,15 @@ export default function ProductPanel() {
         </div>
       </div>
 
-      {/* ── ITEMS DRAWER ── */}
-      {activeCategory && (
-        <div className={`absolute right-20 top-1/2 -translate-y-1/2 ${['ospos_tiles', 'wall_tiles', 'floor_tiles', 'bathware_products'].includes(activeCategory) ? 'w-[360px]' : 'w-64'} bg-white/95 backdrop-blur-md border border-gray-100 shadow-2xl rounded-2xl p-5 z-30 font-sans flex flex-col gap-4`}>
+      {/* ── ITEMS DRAWER (FLOATING DRAWER FOR TILES & OPENINGS) ── */}
+      {activeCategory && activeCategory !== 'bathware_products' && (
+        <div className={`absolute right-20 top-1/2 -translate-y-1/2 ${['ospos_tiles', 'wall_tiles', 'floor_tiles'].includes(activeCategory) ? 'w-[360px]' : 'w-64'} bg-white/95 backdrop-blur-md border border-gray-100 shadow-2xl rounded-2xl p-5 z-30 font-sans flex flex-col gap-4`}>
           <div className="flex justify-between items-center border-b border-gray-100 pb-2.5">
             <h3 className="text-xs font-bold tracking-wider text-[#1A1A1A] uppercase">
               {activeCategory === 'wall_tiles' ? 'Wall Tiles' :
                activeCategory === 'floor_tiles' ? 'Floor Tiles' :
                activeCategory === 'ospos_tiles' ? 'Load Tiles' : 
-               activeCategory === 'bathware_products' ? 'Add Product' : `Add ${activeCategory.replace('_', ' ')}`}
+               `Add ${activeCategory.replace('_', ' ')}`}
             </h3>
             <button onClick={() => setActiveCategory(null)} className="p-1 text-gray-400 hover:text-gray-600">
               <X size={14} />
@@ -212,7 +219,7 @@ export default function ProductPanel() {
                   ))}
                 </div>
               </div>
-            ) : ['ospos_tiles', 'wall_tiles', 'floor_tiles', 'bathware_products'].includes(activeCategory) ? (
+            ) : ['ospos_tiles', 'wall_tiles', 'floor_tiles'].includes(activeCategory) ? (
               <div className="space-y-2 pt-1 pb-4">
                 {activeCategory === 'wall_tiles' && (
                   <div className="mb-2 bg-gray-50 p-2.5 rounded-xl border border-gray-100 flex items-center justify-between">
@@ -263,9 +270,7 @@ export default function ProductPanel() {
                         <button
                           key={idx}
                           onClick={() => {
-                            if (activeCategory === 'bathware_products') {
-                              handleAddItem(item.category, state.designType === 'room' ? item : { ...item, type: item.category });
-                            } else if (item.imageUrl) {
+                            if (item.imageUrl) {
                               if (activeCategory === 'wall_tiles') {
                                 const texUrl = `${STATIC_BASE}${item.imageUrl}`;
                                 const hVal = coverageHeightInput ? parseFloat(coverageHeightInput) : null;
@@ -418,6 +423,236 @@ export default function ProductPanel() {
               ))
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── FULL-HEIGHT PRODUCT SIDEBAR (IKEA STYLE FOR BATHWARE PRODUCTS) ── */}
+      {activeCategory === 'bathware_products' && (
+        <div className="fixed right-0 top-0 bottom-0 h-screen w-[420px] bg-white border-l border-gray-200 shadow-2xl z-40 flex flex-col font-sans transition-all duration-300">
+          {selectedProductDetails ? (
+            /* DETAILED VIEW (showing product info with action controls) */
+            <div className="flex-1 flex flex-col h-full bg-white">
+              {/* Header */}
+              <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
+                <button 
+                  onClick={() => setSelectedProductDetails(null)}
+                  className="p-1 text-gray-500 hover:text-black hover:bg-gray-100 rounded-lg transition-all"
+                  title="Back to products"
+                >
+                  <ArrowLeft size={16} />
+                </button>
+                <span className="text-xs font-bold text-gray-800 tracking-wider uppercase">Product Details</span>
+                <button 
+                  onClick={() => { setSelectedProductDetails(null); setActiveCategory(null); }}
+                  className="ml-auto p-1 text-gray-400 hover:text-black hover:bg-gray-100 rounded-lg transition-all"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Product Image */}
+                <div className="w-full h-64 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 overflow-hidden relative">
+                  {selectedProductDetails.imageUrl ? (
+                    <img 
+                      src={`${process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000'}${selectedProductDetails.imageUrl}`}
+                      alt={selectedProductDetails.name}
+                      className="max-w-[85%] max-h-[85%] object-contain"
+                    />
+                  ) : (
+                    <div className="text-gray-400 text-xs uppercase tracking-widest font-semibold">No Image Available</div>
+                  )}
+                </div>
+
+                {/* Details Card */}
+                <div className="space-y-4">
+                  <div>
+                    <h2 className="text-xl font-extrabold tracking-tight text-gray-900 leading-tight">
+                      {selectedProductDetails.name}
+                    </h2>
+                    <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full mt-1.5 inline-block uppercase tracking-wider">
+                      {selectedProductDetails.category}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-gray-500 leading-relaxed font-light">
+                    {selectedProductDetails.description || "No description provided for this product catalog entry."}
+                  </p>
+
+                  <div className="border-t border-b border-gray-100 py-4 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Showroom Price</span>
+                      <div className="flex items-baseline mt-0.5">
+                        <span className="text-xs font-bold text-gray-900 mr-0.5">Rs</span>
+                        <span className="text-2xl font-black text-gray-900 leading-none">
+                          {Math.floor(selectedProductDetails.price || 0).toLocaleString()}
+                        </span>
+                        <span className="text-xs font-bold text-gray-900">
+                          {((selectedProductDetails.price || 0) % 1).toFixed(2).substring(1)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">OSPOS Inventory</span>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-1 inline-block ${
+                        selectedProductDetails.quantity > 0 
+                          ? 'bg-green-50 text-green-700' 
+                          : 'bg-red-50 text-red-700'
+                      }`}>
+                        {selectedProductDetails.quantity > 0 ? `In Stock: ${selectedProductDetails.quantity}` : 'Out of Stock'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Specifications List */}
+                <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-3">
+                  <span className="text-[9px] font-bold tracking-widest text-gray-400 uppercase block">Product Specifications</span>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
+                    <div>
+                      <span className="text-[10px] text-gray-400 block">Item Code / SKU</span>
+                      <span className="font-semibold text-gray-800">{selectedProductDetails.sku || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-400 block">Material Family</span>
+                      <span className="font-semibold text-gray-800">{selectedProductDetails.material || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-400 block">Finish Family</span>
+                      <span className="font-semibold text-gray-800">{selectedProductDetails.finish || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-400 block">Asset Loaded</span>
+                      <span className="font-semibold text-gray-800">{selectedProductDetails.hasAssetEntry ? 'Yes' : 'No'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions Footer */}
+              <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+                <button
+                  onClick={() => {
+                    handleAddItem(selectedProductDetails.category, state.designType === 'room' ? selectedProductDetails : { ...selectedProductDetails, type: selectedProductDetails.category });
+                  }}
+                  className="flex-1 py-3 bg-black text-white hover:bg-neutral-800 text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-98"
+                >
+                  Place Another
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedProductDetails(null);
+                  }}
+                  className="px-4 py-3 bg-white border border-gray-200 text-gray-600 hover:text-black hover:bg-gray-100 text-xs font-bold uppercase tracking-widest rounded-xl transition-all"
+                >
+                  List
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* PRODUCTS CATALOG GRID (matching IKEA category list layout) */
+            <div className="flex-1 flex flex-col h-full bg-white">
+              {/* Header */}
+              <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-black tracking-tight text-gray-900 uppercase">Bathroom products</h3>
+                  <p className="text-[10px] text-gray-400 font-light mt-0.5">Select and drag products to place them into the scene.</p>
+                </div>
+                <button 
+                  onClick={() => setActiveCategory(null)} 
+                  className="p-1.5 text-gray-400 hover:text-black hover:bg-gray-100 rounded-lg transition-all"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Subcategories Horizontal Scroll Filter (IKEA style) */}
+              <div className="px-6 py-3 border-b border-gray-50 flex gap-2 overflow-x-auto scrollbar-none whitespace-nowrap bg-gray-50/55">
+                {['All', 'Wash Basins', 'Water Closets', 'Accessories'].map((sub) => (
+                  <button
+                    key={sub}
+                    onClick={() => setSelectedSubcategory(sub)}
+                    className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                      selectedSubcategory === sub
+                        ? 'bg-black text-white border-black shadow-sm'
+                        : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {sub}
+                  </button>
+                ))}
+              </div>
+
+              {/* Grid List */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {isLoadingItems ? (
+                  <div className="flex flex-col items-center justify-center h-48 gap-3">
+                    <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest animate-pulse">Loading items...</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+                    {dynamicItems
+                      .filter(item => selectedSubcategory === 'All' || item.category === selectedSubcategory)
+                      .map((item, idx) => {
+                        const STATIC_BASE = process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000';
+                        const priceWhole = Math.floor(item.price || 0);
+                        const priceDecimal = ((item.price || 0) % 1).toFixed(2).substring(1);
+                        
+                        return (
+                          <div 
+                            key={idx}
+                            onClick={() => {
+                              handleAddItem(item.category, state.designType === 'room' ? item : { ...item, type: item.category });
+                              setSelectedProductDetails(item);
+                            }}
+                            className="group flex flex-col bg-white border border-gray-150 rounded-2xl p-3 hover:border-black hover:shadow-xl transition-all duration-300 cursor-pointer relative"
+                          >
+                            {/* Product Image */}
+                            <div className="w-full h-28 bg-gray-50 rounded-xl flex items-center justify-center overflow-hidden border border-gray-50 relative group-hover:scale-[1.02] transition-transform duration-300">
+                              {item.imageUrl ? (
+                                <img 
+                                  src={`${STATIC_BASE}${item.imageUrl}`}
+                                  alt={item.name}
+                                  className="max-w-[85%] max-h-[85%] object-contain mix-blend-multiply"
+                                />
+                              ) : (
+                                <span className="text-[8px] font-bold text-gray-300 uppercase tracking-widest">No Image</span>
+                              )}
+                            </div>
+
+                            {/* Product Details */}
+                            <div className="mt-3 flex-1 flex flex-col">
+                              <h4 className="text-[11px] font-black text-gray-900 leading-tight tracking-tight uppercase group-hover:text-black transition-colors line-clamp-1">
+                                {item.name.split(' ')[0]} / {item.name.split(' ').slice(1).join(' ')}
+                              </h4>
+                              <p className="text-[9px] text-gray-400 font-light mt-0.5 line-clamp-2 leading-relaxed">
+                                {item.name}
+                              </p>
+                              
+                              <div className="mt-auto pt-3 flex items-baseline justify-between border-t border-gray-50">
+                                <div className="flex items-baseline">
+                                  <span className="text-[9px] font-bold text-gray-900 mr-0.5">Rs</span>
+                                  <span className="text-[15px] font-black text-gray-900 leading-none">{priceWhole.toLocaleString()}</span>
+                                  <span className="text-[9px] font-bold text-gray-900">{priceDecimal}</span>
+                                </div>
+                                <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full ${
+                                  item.quantity > 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                                }`}>
+                                  {item.quantity > 0 ? 'In Stock' : 'Out'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
