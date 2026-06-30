@@ -43,4 +43,10 @@ export class DesignerController {
   async getLayout(@Param('id') id: string) {
     return this.designerService.getLayout(id);
   }
+
+  @Post('log')
+  async clientLog(@Body() body: { message: string; args?: any[] }) {
+    console.log("[CLIENT LOG]", body.message, body.args || "");
+    return { success: true };
+  }
 }

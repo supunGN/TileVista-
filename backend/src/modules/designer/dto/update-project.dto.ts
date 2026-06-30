@@ -6,6 +6,8 @@ export class UpdateProjectDto {
   width: number;
   length: number;
   height: number;
+  floorTextureUrl?: string;
+  wallTextureUrl?: string;
   designType?: 'room' | 'bathroom';
   vertices?: Array<{ x: number; y: number; z: number; sequence_order: number }>;
   walls?: Array<{
@@ -15,6 +17,7 @@ export class UpdateProjectDto {
     wall_height: number;
     wall_color: string;
     tile_asset_id?: string | null;
+    tile_texture_url?: string | null;
     tile_coverage_height?: number | null;
   }>;
   openings?: Array<{

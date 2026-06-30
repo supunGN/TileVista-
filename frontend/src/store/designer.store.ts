@@ -31,6 +31,7 @@ interface DesignerStoreState {
   selectedItemColor: string;
   isPlacingItem: PlacedItem | null;
   activeCategory: string | null;
+  selectedWallIdx: number | null;
   showRoomCustomizer: boolean;
   showSummaryModal: boolean;
   orbitEnabled: boolean;
@@ -68,6 +69,7 @@ interface DesignerStoreActions {
   setSelectedItemColor: (color: string) => void;
   setIsPlacingItem: (item: PlacedItem | null) => void;
   setActiveCategory: (cat: string | null) => void;
+  setSelectedWallIdx: (val: number | null) => void;
   setShowRoomCustomizer: (val: boolean) => void;
   setShowSummaryModal: (val: boolean) => void;
   setOrbitEnabled: (val: boolean) => void;
@@ -130,6 +132,7 @@ export const useDesignerStore = create<DesignerStoreState & DesignerStoreActions
   selectedItemColor: "#FFFFFF",
   isPlacingItem: null,
   activeCategory: null,
+  selectedWallIdx: null,
   showRoomCustomizer: false,
   showSummaryModal: false,
   orbitEnabled: true,
@@ -171,6 +174,7 @@ export const useDesignerStore = create<DesignerStoreState & DesignerStoreActions
   setSelectedItemColor: (color) => set({ selectedItemColor: color }),
   setIsPlacingItem: (item) => set({ isPlacingItem: item }),
   setActiveCategory: (cat) => set({ activeCategory: cat }),
+  setSelectedWallIdx: (val) => set({ selectedWallIdx: val }),
   setShowRoomCustomizer: (val) => set({ showRoomCustomizer: val }),
   setShowSummaryModal: (val) => set({ showSummaryModal: val }),
   setOrbitEnabled: (val) => set({ orbitEnabled: val }),

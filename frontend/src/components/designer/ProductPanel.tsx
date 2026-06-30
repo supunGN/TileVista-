@@ -2,32 +2,90 @@ import { useEffect, useState } from 'react';
 import React from 'react';
 import { X, RotateCw, Trash2 } from 'lucide-react';
 import { useDesignerStore } from '../../store/designer.store';
-import { getActiveCategories, DOOR_STYLES, WINDOW_STYLES, renderDoorIcon, getActiveCatalog } from './DesignerCanvas';
+import { DOOR_STYLES, WINDOW_STYLES, renderDoorIcon } from './SharedDesignerEngine';
+import { getActiveCategories, getActiveCatalog } from './catalog';
+import { remoteLog } from './SharedDesignerEngine';
 
 export default function ProductPanel() {
   const { 
     state, setState, activeCategory, setActiveCategory, 
     activePlacement, setActivePlacement, isPlacingItem, setIsPlacingItem, selectedItemId, setSelectedItemId, recordHistory, placedItems,
-    selectedItemColor, setSelectedItemColor
+    selectedItemColor, setSelectedItemColor, selectedWallIdx, setSelectedWallIdx
   } = useDesignerStore();
 
   const [dynamicItems, setDynamicItems] = useState<any[]>([]);
   const [isLoadingItems, setIsLoadingItems] = useState(false);
+  const [coverageHeightInput, setCoverageHeightInput] = useState<string>('');
+
+  const isFloorTile = (item: any) => {
+    if (item.subcategoryId !== null && item.subcategoryId !== undefined) {
+      return item.subcategoryId === 1;
+    }
+    const name = item.name?.toLowerCase() || '';
+    const desc = item.description?.toLowerCase() || '';
+    const img = item.imageUrl?.toLowerCase() || '';
+    if (name.includes('mosaic') || name.includes('glass') || name.includes('aqua') || name.includes('wall') || name.includes('pearl') ||
+        img.includes('mosaic') || img.includes('glass') || img.includes('aqua') || img.includes('wall') || img.includes('pearl') ||
+        desc.includes('wall') || desc.includes('mosaic')) {
+      return false;
+    }
+    return true;
+  };
 
   useEffect(() => {
-    if (activeCategory && state.designType === 'room' && activeCategory !== 'openings') {
+    if (activeCategory && !['openings', 'wall_colours'].includes(activeCategory)) {
       setIsLoadingItems(true);
-      fetch(`/api/furniture?category=${activeCategory}`)
-        .then(res => res.json())
-        .then(data => {
-          setDynamicItems(data.items || []);
-          setIsLoadingItems(false);
-        })
-        .catch(err => {
-          console.error(err);
-          setDynamicItems([]);
-          setIsLoadingItems(false);
-        });
+      if (activeCategory === 'ospos_tiles') {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+        fetch(`${apiUrl}/items`)
+          .then(res => res.json())
+          .then(data => {
+            // Filter to only floor tiles for room designer
+            const tiles = data.filter((d: any) => d.category?.toLowerCase() === 'tiles' && isFloorTile(d));
+            setDynamicItems(tiles || []);
+            setIsLoadingItems(false);
+          })
+          .catch(err => {
+            console.error(err);
+            setDynamicItems([]);
+            setIsLoadingItems(false);
+          });
+      } else if (['wall_tiles', 'floor_tiles', 'bathware_products'].includes(activeCategory)) {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+        fetch(`${apiUrl}/items`)
+          .then(res => res.json())
+          .then(data => {
+            if (activeCategory === 'wall_tiles') {
+              setDynamicItems(data.filter((d: any) => 
+                d.category?.toLowerCase() === 'tiles' && !isFloorTile(d)
+              ) || []);
+            } else if (activeCategory === 'floor_tiles') {
+              setDynamicItems(data.filter((d: any) => 
+                d.category?.toLowerCase() === 'tiles' && isFloorTile(d)
+              ) || []);
+            } else {
+              setDynamicItems(data.filter((d: any) => d.category?.toLowerCase() !== 'tiles') || []);
+            }
+            setIsLoadingItems(false);
+          })
+          .catch(err => {
+            console.error(err);
+            setDynamicItems([]);
+            setIsLoadingItems(false);
+          });
+      } else {
+        fetch(`/api/furniture?category=${activeCategory}`)
+          .then(res => res.json())
+          .then(data => {
+            setDynamicItems(data.items || []);
+            setIsLoadingItems(false);
+          })
+          .catch(err => {
+            console.error(err);
+            setDynamicItems([]);
+            setIsLoadingItems(false);
+          });
+      }
     } else {
       setDynamicItems([]);
     }
@@ -100,7 +158,7 @@ export default function ProductPanel() {
         {/* Category icons */}
         <div className="bg-black rounded-xl p-1.5 shadow-2xl flex flex-col gap-1.5 border border-white/10">
           {getActiveCategories(state.designType, state.subRoomType)
-            .filter(cat => state.designType === 'bathroom' ? true : cat.id === 'openings')
+            .filter(cat => ['openings', 'wall_colours', 'ospos_tiles', 'wall_tiles', 'floor_tiles', 'bathware_products'].includes(cat.id))
             .map(cat => (
             <button
               key={cat.id}
@@ -120,36 +178,175 @@ export default function ProductPanel() {
 
       {/* ── ITEMS DRAWER ── */}
       {activeCategory && (
-        <div className="absolute right-20 top-1/2 -translate-y-1/2 w-64 bg-white/95 backdrop-blur-md border border-gray-100 shadow-2xl rounded-2xl p-5 z-30 font-sans flex flex-col gap-4">
+        <div className={`absolute right-20 top-1/2 -translate-y-1/2 ${['ospos_tiles', 'wall_tiles', 'floor_tiles', 'bathware_products'].includes(activeCategory) ? 'w-[360px]' : 'w-64'} bg-white/95 backdrop-blur-md border border-gray-100 shadow-2xl rounded-2xl p-5 z-30 font-sans flex flex-col gap-4`}>
           <div className="flex justify-between items-center border-b border-gray-100 pb-2.5">
             <h3 className="text-xs font-bold tracking-wider text-[#1A1A1A] uppercase">
-              Add {activeCategory.replace('_', ' ')}
+              {activeCategory === 'wall_tiles' ? 'Wall Tiles' :
+               activeCategory === 'floor_tiles' ? 'Floor Tiles' :
+               activeCategory === 'ospos_tiles' ? 'Load Tiles' : 
+               activeCategory === 'bathware_products' ? 'Add Product' : `Add ${activeCategory.replace('_', ' ')}`}
             </h3>
             <button onClick={() => setActiveCategory(null)} className="p-1 text-gray-400 hover:text-gray-600">
               <X size={14} />
             </button>
           </div>
           
-          {/* Color Selector */}
-          {state.designType === 'room' && activeCategory !== 'openings' && (
-            <div className="flex flex-col gap-2 border-b border-gray-100 pb-3">
-              <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">Item Color</span>
-              <div className="flex flex-wrap gap-2">
-                {['#FFFFFF', '#D1D5DB', '#4B5563', '#1F2937', '#9CA3AF', '#FCD34D', '#F87171', '#60A5FA', '#34D399', '#A78BFA'].map(color => (
-                  <button
-                    key={color}
-                    onClick={() => setSelectedItemColor(color)}
-                    className={`w-6 h-6 rounded-full border-2 transition-all ${selectedItemColor === color ? 'border-black scale-110 shadow-md' : 'border-gray-200 hover:scale-105'}`}
-                    style={{ backgroundColor: color }}
-                    title={color}
-                  />
-                ))}
+          <div className={`space-y-3 ${activeCategory === 'ospos_tiles' ? 'max-h-[75vh]' : 'max-h-[300px]'} overflow-y-auto pr-2`}>
+            {activeCategory === 'wall_colours' ? (
+              <div className="space-y-4">
+                <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase block">Solid Colors</span>
+                <div className="grid grid-cols-5 gap-2">
+                  {['#F8F8F8', '#E1D5C9', '#E7D6C9', '#C06C2D', '#976050', '#BDCDD4', '#6C8592', '#97A27E', '#8A8A8A', '#958981', '#73566D', '#547061'].map(color => (
+                    <button
+                      key={color}
+                      onClick={() => {
+                        setState((prev: any) => ({
+                          ...prev,
+                          wallDesigns: prev.wallDesigns.map((w: any) => ({
+                            ...w,
+                            tileColorBottom: color,
+                            tileColorTop: color,
+                            tileColorCenter: color,
+                            tileColorSides: color
+                          }))
+                        }));
+                        setActiveCategory(null);
+                      }}
+                      className="w-10 h-10 rounded-xl border border-gray-200 hover:border-black transition-all shadow-sm flex-shrink-0"
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-
-          <div className="space-y-3 max-h-[300px] overflow-y-auto">
-            {activeCategory === 'openings' ? (
+            ) : ['ospos_tiles', 'wall_tiles', 'floor_tiles', 'bathware_products'].includes(activeCategory) ? (
+              <div className="space-y-2 pt-1 pb-4">
+                {activeCategory === 'wall_tiles' && (
+                  <div className="mb-2 bg-gray-50 p-2.5 rounded-xl border border-gray-100 flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-gray-600 tracking-wider">TILE HEIGHT (M)</span>
+                    <input 
+                      type="number" 
+                      step="0.1" 
+                      min="0.1"
+                      className="w-16 bg-white border border-gray-200 rounded text-xs px-2 py-1 outline-none focus:border-black transition-colors"
+                      value={coverageHeightInput}
+                      onChange={(e) => {
+                        const strVal = e.target.value;
+                        setCoverageHeightInput(strVal);
+                        const val = strVal ? parseFloat(strVal) : null;
+                        if (selectedWallIdx !== null) {
+                          setState((prev: any) => {
+                            const next = [...prev.wallDesigns];
+                            if (!next[selectedWallIdx]) next[selectedWallIdx] = { wallIndex: selectedWallIdx };
+                            next[selectedWallIdx] = { ...next[selectedWallIdx], textureCoverageHeight: val };
+                            return { ...prev, wallDesigns: next };
+                          });
+                        } else {
+                          setState((prev: any) => {
+                            const next = [...prev.wallDesigns];
+                            for (let i = 0; i < Math.max(4, next.length); i++) {
+                              if (!next[i]) next[i] = { wallIndex: i };
+                              next[i] = { ...next[i], textureCoverageHeight: val };
+                            }
+                            return { ...prev, wallDesigns: next };
+                          });
+                        }
+                      }}
+                      placeholder="Full"
+                    />
+                  </div>              )}
+                {isLoadingItems ? (
+                  <div className="text-sm text-gray-500 py-8 text-center animate-pulse font-medium">Loading items from OSPOS...</div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+                    {dynamicItems.map((item, idx) => {
+                      const STATIC_BASE = process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000';
+                      
+                      // Format price
+                      const priceWhole = Math.floor(item.price || 0);
+                      const priceDecimal = ((item.price || 0) % 1).toFixed(2).substring(1);
+                      
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            if (activeCategory === 'bathware_products') {
+                              handleAddItem(item.category, state.designType === 'room' ? item : { ...item, type: item.category });
+                            } else if (item.imageUrl) {
+                              if (activeCategory === 'wall_tiles') {
+                                const texUrl = `${STATIC_BASE}${item.imageUrl}`;
+                                const hVal = coverageHeightInput ? parseFloat(coverageHeightInput) : null;
+                                remoteLog("TILE CLICKED. selectedWallIdx:", selectedWallIdx);
+                                if (state.designType === 'bathroom') {
+                                  if (selectedWallIdx !== null) {
+                                    setState((prev: any) => {
+                                      const next = [...prev.wallDesigns];
+                                      if (!next[selectedWallIdx]) next[selectedWallIdx] = { wallIndex: selectedWallIdx };
+                                      next[selectedWallIdx] = { 
+                                        ...next[selectedWallIdx], 
+                                        textureUrl: texUrl, 
+                                        textureCoverageHeight: hVal,
+                                        tileAssetId: item.itemId.toString()
+                                      };
+                                      return { ...prev, wallDesigns: next };
+                                    });
+                                    setSelectedWallIdx(null);
+                                  } else {
+                                    alert("Please select a wall in the 3D view first to apply this tile.");
+                                  }
+                                } else {
+                                  setState((prev: any) => ({
+                                    ...prev,
+                                    wallTextureUrl: texUrl
+                                  }));
+                                }
+                              } else {
+                                setState((prev: any) => ({
+                                  ...prev,
+                                  floorTextureUrl: `${STATIC_BASE}${item.imageUrl}`
+                                }));
+                              }
+                            }
+                          }}
+                          className="text-left bg-white transition-all overflow-hidden flex flex-col group relative border border-transparent hover:border-gray-200 p-1.5 -m-1.5 rounded-xl"
+                        >
+                          <div className="w-full aspect-square bg-[#f5f5f5] flex items-center justify-center overflow-hidden mb-3 rounded-lg">
+                            {item.imageUrl ? (
+                              <img src={`${STATIC_BASE}${item.imageUrl}`} alt={item.name} className="w-full h-full object-cover mix-blend-multiply group-hover:scale-105 transition-transform duration-500" />
+                            ) : (
+                              <div className="text-gray-400 text-xs text-center p-2 font-medium">No Image</div>
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-1 px-1">
+                            {/* Brand / Short Name (assuming first word is brand/style) */}
+                            <span className="text-xs font-extrabold text-[#111111] uppercase tracking-wide">{item.name.split(' ')[0]}</span>
+                            {/* Full Description */}
+                            <span className="text-[11px] text-gray-600 leading-snug min-h-[34px]">{item.name}</span>
+                            
+                            {/* Price formatted like IKEA */}
+                            <div className="mt-1.5 flex items-start">
+                              <span className="text-xs font-bold text-black mt-0.5 mr-0.5">Rs</span>
+                              <span className="text-xl font-extrabold text-black leading-none">{priceWhole}</span>
+                              <span className="text-[10px] font-bold text-black mt-0.5">{priceDecimal}</span>
+                            </div>
+                            
+                            {/* Availability */}
+                            {item.quantity !== undefined && (
+                              <div className="mt-2.5 flex items-center gap-1.5">
+                                <div className={`w-2 h-2 rounded-full ${item.quantity > 0 ? 'bg-green-500' : 'bg-red-500'}`} />
+                                <span className={`text-[10px] font-bold ${item.quantity > 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                  {item.quantity > 0 ? `In Stock: ${item.quantity}` : 'Out of stock'}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : activeCategory === 'openings' ? (
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase block">Doors</span>
@@ -222,7 +419,7 @@ export default function ProductPanel() {
                     <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
                       {item.isWallMounted ? 'Wall Snap' : 'Floor Placement'}
                     </span>
-                    <span className="text-xs font-mono font-bold text-[#1A1A1A]">£{item.cost.toFixed(2)}</span>
+                    <span className="text-xs font-mono font-bold text-[#1A1A1A]">Rs {item.cost?.toFixed(2)}</span>
                   </div>
                 </button>
               ))

@@ -118,6 +118,46 @@ export class ProductsService {
       );
     }
 
+    // ── Step 2: Collect stale local DB items that are missing from OSPOS ──────
+    // This ensures admin can still see/manage local products not yet in OSPOS.
+    if (osposItems.length > 0) {
+      const osposItemIds = new Set(osposItems.map((item) => item.item_id));
+      for (const dbProduct of dbProducts) {
+        if (!osposItemIds.has(dbProduct.ospos_item_id)) {
+          // Smart fallback: infer name and category from image URL if available
+          let fallbackName = `Product ${dbProduct.ospos_item_id}`;
+          let fallbackCategory = 'Unknown';
+
+          if (dbProduct.product_assets?.image_url) {
+            const imgUrl = dbProduct.product_assets.image_url.toLowerCase();
+            if (imgUrl.includes('tile')) fallbackCategory = 'Tiles';
+            else if (imgUrl.includes('basin') || imgUrl.includes('sink')) fallbackCategory = 'Wash Basins';
+            else if (imgUrl.includes('closet') || imgUrl.includes('toilet')) fallbackCategory = 'Water Closets';
+
+            // Try to extract a nice name from the filename
+            const filename = imgUrl.split('/').pop() || '';
+            const namePart = filename.split('.')[0];
+            if (namePart) {
+              fallbackName = namePart.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+            }
+          }
+
+          const fallbackOsposItem: OsposItem = {
+            item_id: dbProduct.ospos_item_id,
+            name: fallbackName,
+            category: fallbackCategory,
+            category_id: null,
+            subcategory_id: null,
+            sku: `LOCAL-${dbProduct.ospos_item_id}`,
+            description: 'Local product record (missing from OSPOS).',
+            price: 0,
+            quantity: 0,
+          };
+          result.push(this.buildUnifiedItem(fallbackOsposItem, dbProduct, true));
+        }
+      }
+    }
+
     if (!includeHidden) {
       // Filter out items that have no local DB entry or have product_assets.is_visible = false.
       // (buildUnifiedItem already sets isEnabled = product_assets?.is_visible ?? is_active ?? true)

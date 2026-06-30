@@ -43,7 +43,7 @@ export default function SaveDesignModal() {
                       <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mt-1">{item.type.replace('_',' ')}</p>
                     </div>
                   </div>
-                  <span className="font-mono font-bold text-[#1A1A1A]">£{(item.cost || 0).toFixed(2)}</span>
+                  <span className="font-mono font-bold text-[#1A1A1A]">Rs {(item.cost || 0).toFixed(2)}</span>
                 </div>
               ))}
             </div>
@@ -53,7 +53,7 @@ export default function SaveDesignModal() {
         <div className="px-8 py-6 bg-[#FAF9F6] border-t border-gray-100 flex justify-between items-center">
           <div>
             <p className="text-[10px] font-bold tracking-widest text-gray-400 uppercase mb-1">Total Estimate</p>
-            <p className="font-mono text-2xl font-bold text-[#1A1A1A]">£{total.toFixed(2)}</p>
+            <p className="font-mono text-2xl font-bold text-[#1A1A1A]">Rs {total.toFixed(2)}</p>
           </div>
           <button className="h-12 px-8 bg-black hover:bg-[#333] text-white rounded-full flex items-center gap-3 font-bold tracking-wider text-xs uppercase shadow-xl transition-all">
             <Download size={14} />

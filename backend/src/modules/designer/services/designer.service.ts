@@ -91,6 +91,8 @@ export class DesignerService {
       width: Number(layout.width),
       length: Number(layout.length),
       height: Number(layout.height),
+      floorTextureUrl: layout.floor_texture_url || undefined,
+      wallTextureUrl: layout.wall_texture_url || undefined,
       type: layout.design_type,
       vertices: layout.room_vertices.map((v) => ({
         x: Number(v.x),
@@ -106,6 +108,7 @@ export class DesignerService {
         height: Number(w.wall_height),
         color: w.wall_color,
         tileAssetId: w.tile_asset_id,
+        textureUrl: w.tile_texture_url,
         tileCoverageHeight: w.tile_coverage_height ? Number(w.tile_coverage_height) : null,
         openings: w.design_openings.map((op) => ({
           id: op.opening_id,
@@ -140,6 +143,7 @@ export class DesignerService {
       userId: layout.user_id,
       name: layout.design_name,
       shape: layout.room_shape,
+      type: layout.design_type,
       width: Number(layout.width),
       length: Number(layout.length),
       height: Number(layout.height),

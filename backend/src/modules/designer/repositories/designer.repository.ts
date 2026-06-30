@@ -19,6 +19,7 @@ export class DesignerRepository {
   }
 
   async saveLayoutTransaction(designId: string, targetUserId: string, fallbackProductId: string, fallbackAssetId: string, data: UpdateProjectDto) {
+    console.log("Saving layout with data:", data);
     return await this.prisma.$transaction(async (tx) => {
       // 1. Delete existing elements to recreate them cleanly
       await tx.room_vertices.deleteMany({ where: { design_id: designId } });
@@ -41,6 +42,8 @@ export class DesignerRepository {
             width: data.width,
             length: data.length,
             height: data.height,
+            floor_texture_url: data.floorTextureUrl || null,
+            wall_texture_url: data.wallTextureUrl || null,
             design_type: data.designType || design.design_type || 'bathroom',
             updated_at: new Date(),
           }
@@ -55,6 +58,8 @@ export class DesignerRepository {
             width: data.width,
             length: data.length,
             height: data.height,
+            floor_texture_url: data.floorTextureUrl || null,
+            wall_texture_url: data.wallTextureUrl || null,
             design_type: data.designType || 'bathroom',
           }
         });
@@ -80,6 +85,23 @@ export class DesignerRepository {
         for (const w of data.walls) {
           const wallId = crypto.randomUUID();
           wallIdMap.set(w.wall_sequence, wallId);
+
+          let resolvedAssetId = null;
+          if (w.tile_asset_id) {
+            const osposId = parseInt(w.tile_asset_id);
+            if (!isNaN(osposId)) {
+              const product = await tx.products.findUnique({
+                where: { ospos_item_id: osposId },
+                include: { product_assets: true }
+              });
+              if (product && product.product_assets) {
+                resolvedAssetId = product.product_assets.asset_id;
+              }
+            } else {
+              resolvedAssetId = w.tile_asset_id;
+            }
+          }
+
           await tx.design_walls.create({
             data: {
               wall_id: wallId,
@@ -89,7 +111,8 @@ export class DesignerRepository {
               wall_length: w.wall_length,
               wall_height: w.wall_height,
               wall_color: w.wall_color,
-              tile_asset_id: w.tile_asset_id || null,
+              tile_asset_id: resolvedAssetId,
+              tile_texture_url: w.tile_texture_url || null,
               tile_coverage_height: w.tile_coverage_height || null,
             }
           });

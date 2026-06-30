@@ -7,6 +7,9 @@ export interface WallSplitDesign {
   tileColorTop: string;
   tileColorCenter: string;
   tileColorSides: string;
+  textureUrl?: string;
+  textureCoverageHeight?: number;
+  tileAssetId?: string;
 }
 
 export interface PlacedItem {
@@ -41,6 +44,8 @@ export interface DesignState {
   shape: RoomShape;
   unit: UnitSystem;
   floorColor: string;
+  floorTextureUrl?: string;
+  wallTextureUrl?: string;
   wallDesigns: WallSplitDesign[];
   designType: 'room' | 'bathroom';
   subRoomType?: 'dining_room' | 'bed_room' | 'living_room';
