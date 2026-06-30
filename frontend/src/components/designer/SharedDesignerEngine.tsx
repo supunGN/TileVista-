@@ -600,7 +600,7 @@ function GLBModel({ url, selected, item }: { url: string, selected: boolean, ite
     clone.position.x = -center.x;
     clone.position.y = -box.min.y;
     if (item && item.isWallMounted) {
-      clone.position.z = -box.min.z + 0.05;
+      clone.position.z = -box.min.z;
     } else {
       clone.position.z = -center.z;
     }
@@ -2278,7 +2278,7 @@ function BathroomScene({
         const dz = wall.p2[1] - wall.p1[1];
         const ux = dx / wall.len, uz = dz / wall.len;
         const nx = -uz, nz = ux;
-        const bias = 0.08;
+        const bias = 0.01;
         const posX = wall.p1[0] + ux * closestOffset + nx * bias;
         const posZ = wall.p1[1] + uz * closestOffset + nz * bias;
 
@@ -2293,8 +2293,8 @@ function BathroomScene({
         if (dims && dims.height) {
           itemHeight = dims.height;
         }
-        // Top of item (heightY + itemHeight) must stay below (h - 0.05) buffer
-        const maxH = Math.max(0.5, h - itemHeight - 0.05);
+        // Top of item (heightY + itemHeight) must stay below (h - 0.20) buffer to never touch the roof/ceiling
+        const maxH = Math.max(0.2, h - itemHeight - 0.20);
         if (raycasterRef.ray.intersectPlane(wallPlane, wallPt)) {
           heightY = Math.max(0.1, Math.min(maxH, wallPt.y));
         }

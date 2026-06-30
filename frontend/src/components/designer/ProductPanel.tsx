@@ -127,26 +127,26 @@ export default function ProductPanel() {
     
     const catId = item.categoryId !== null && item.categoryId !== undefined ? Number(item.categoryId) : null;
     const subcatId = item.subcategoryId !== null && item.subcategoryId !== undefined ? Number(item.subcategoryId) : null;
-    
+    const nameLower = (item.name || '').toLowerCase();
+    const catLower = (item.category || '').toLowerCase();
+
     // Snaps all "Bath & Shower" (OSPOS subcategoryId 17) items to walls
     if (subcatId === 17) {
+      // Exclude floor-standing enclosures/boxes
+      if (nameLower.includes('enclosure') || nameLower.includes('box') || nameLower.includes('cabin')) {
+        return false;
+      }
       return true;
     }
 
-    const nameLower = (item.name || '').toLowerCase();
-    const catLower = (item.category || '').toLowerCase();
     return (
-      nameLower.includes('shower set') || 
-      nameLower.includes('shower mixer') || 
-      nameLower.includes('rain shower') || 
+      (nameLower.includes('shower') && !nameLower.includes('enclosure') && !nameLower.includes('box') && !nameLower.includes('cabin')) ||
       nameLower.includes('mirror') || 
-      nameLower.includes('towel rail') || 
-      nameLower.includes('towel holder') || 
-      nameLower.includes('towel ladder') || 
-      nameLower.includes('towel ring') || 
-      nameLower.includes('soap dish') ||
-      nameLower.includes('paper holder') ||
+      nameLower.includes('towel') || 
+      nameLower.includes('soap') ||
+      nameLower.includes('paper') ||
       nameLower.includes('hook') ||
+      nameLower.includes('holder') ||
       (nameLower.includes('mixer') && catLower.includes('accessories')) ||
       nameLower.includes('light')
     );
