@@ -14,14 +14,14 @@ async function bootstrap() {
     fs.mkdirSync(uploadsPath, { recursive: true });
   }
 
-  // Serve uploaded files (images + GLB models) as static assets
-  // Serve uploaded files at /uploads (not affected by global 'api' prefix)
-  app.useStaticAssets(uploadsPath, { prefix: '/uploads' });
-
   app.enableCors({
     origin: true,
     credentials: true,
   });
+
+  // Serve uploaded files (images + GLB models) as static assets
+  // Serve uploaded files at /uploads (not affected by global 'api' prefix)
+  app.useStaticAssets(uploadsPath, { prefix: '/uploads' });
 
   app.setGlobalPrefix('api');
 

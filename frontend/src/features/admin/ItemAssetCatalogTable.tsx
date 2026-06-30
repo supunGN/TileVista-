@@ -24,6 +24,8 @@ interface UnifiedItem {
   itemId: number;
   name: string;
   category: string;
+  categoryId: number | null;
+  subcategoryId: number | null;
   sku: string;
   description: string | null;
   price: number;
@@ -45,7 +47,9 @@ export const ItemAssetCatalogTable: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState<string>('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | 'ALL'>('ALL');
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<number | 'ALL'>('ALL');
+  const [categories, setCategories] = useState<any[]>([]);
   
   // Drawer Editing State
   const [editingItem, setEditingItem] = useState<UnifiedItem | null>(null);
@@ -76,18 +80,22 @@ export const ItemAssetCatalogTable: React.FC = () => {
     setError(null);
     try {
       const token = localStorage.getItem('tilevista_admin_token');
-      const response = await fetch(`${API_BASE}/admin/items`, {
-        headers: {
-          'Authorization': `Bearer ${token || ''}`,
-        },
-      });
+      const [itemsResponse, catsResponse] = await Promise.all([
+        fetch(`${API_BASE}/admin/items`, { headers: { 'Authorization': `Bearer ${token || ''}` } }),
+        fetch(`${API_BASE}/categories`)
+      ]);
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch items (${response.status})`);
+      if (!itemsResponse.ok) {
+        throw new Error(`Failed to fetch items (${itemsResponse.status})`);
       }
 
-      const data = await response.json();
+      const data = await itemsResponse.json();
       setItems(data);
+
+      if (catsResponse.ok) {
+        const catData = await catsResponse.json();
+        setCategories(catData);
+      }
     } catch (err: any) {
       setError(err.message || 'An error occurred while loading items');
     } finally {
@@ -238,11 +246,14 @@ export const ItemAssetCatalogTable: React.FC = () => {
       item.name.toLowerCase().includes(search.toLowerCase()) || 
       item.sku.toLowerCase().includes(search.toLowerCase()) ||
       item.category.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = selectedCategory === 'ALL' ? true : item.category.toUpperCase() === selectedCategory.toUpperCase();
-    return matchesSearch && matchesCategory;
+    
+    const matchesCategory = selectedCategoryId === 'ALL' ? true : item.categoryId === selectedCategoryId;
+    const matchesSubcategory = selectedSubcategoryId === 'ALL' ? true : item.subcategoryId === selectedSubcategoryId;
+    
+    return matchesSearch && matchesCategory && matchesSubcategory;
   });
 
-  const categories = ['ALL', ...Array.from(new Set(items.map((i) => i.category.toUpperCase()).filter(Boolean)))];
+  const activeCategory = categories.find(c => c.id === selectedCategoryId);
 
   return (
     <div className="relative flex flex-col lg:flex-row gap-6">
@@ -268,33 +279,75 @@ export const ItemAssetCatalogTable: React.FC = () => {
         </div>
 
         {/* Search Input and Filter Row */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              placeholder="Search by name, SKU, category..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-[#F9F9F7] border border-gray-200 px-4 py-2.5 pl-9 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] font-light transition-colors"
-            />
-            <Search size={13} className="text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          </div>
+        <div className="flex flex-col mb-6">
+          <div className="flex flex-col md:flex-row gap-4 mb-3">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Search by name, SKU, category..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-[#F9F9F7] border border-gray-200 px-4 py-2.5 pl-9 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] font-light transition-colors"
+              />
+              <Search size={13} className="text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            </div>
 
-          <div className="flex flex-wrap gap-1.5">
-            {categories.map((cat) => (
+            <div className="flex flex-wrap gap-1.5">
               <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => { setSelectedCategoryId('ALL'); setSelectedSubcategoryId('ALL'); }}
                 className={`px-4 py-2 text-[10px] font-bold tracking-widest uppercase transition-all border ${
-                  selectedCategory === cat
+                  selectedCategoryId === 'ALL'
                     ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white'
                     : 'bg-white border-gray-200 text-gray-400 hover:text-[#1A1A1A] hover:bg-gray-50'
                 }`}
               >
-                {cat}
+                ALL
               </button>
-            ))}
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => { setSelectedCategoryId(cat.id); setSelectedSubcategoryId('ALL'); }}
+                  className={`px-4 py-2 text-[10px] font-bold tracking-widest uppercase transition-all border ${
+                    selectedCategoryId === cat.id
+                      ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white'
+                      : 'bg-white border-gray-200 text-gray-400 hover:text-[#1A1A1A] hover:bg-gray-50'
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* Subcategories Row */}
+          {selectedCategoryId !== 'ALL' && activeCategory && activeCategory.subcategories?.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-1 pt-3 border-t border-gray-100 items-center justify-end">
+              <span className="text-[10px] text-gray-400 uppercase tracking-widest font-semibold mr-2">Filter by:</span>
+              <button
+                onClick={() => setSelectedSubcategoryId('ALL')}
+                className={`px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase transition-all duration-300 ${
+                  selectedSubcategoryId === 'ALL'
+                    ? 'bg-[#D4C5B9] text-[#1A1A1A]'
+                    : 'bg-white border border-gray-200 text-gray-500 hover:text-[#1A1A1A] hover:border-[#D4C5B9]'
+                }`}
+              >
+                All {activeCategory.name}
+              </button>
+              {activeCategory.subcategories.map((sub: any) => (
+                <button
+                  key={sub.id}
+                  onClick={() => setSelectedSubcategoryId(sub.id)}
+                  className={`px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase transition-all duration-300 ${
+                    selectedSubcategoryId === sub.id
+                      ? 'bg-[#D4C5B9] text-[#1A1A1A]'
+                      : 'bg-white border border-gray-200 text-gray-500 hover:text-[#1A1A1A] hover:border-[#D4C5B9]'
+                  }`}
+                >
+                  {sub.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Items Listing Table */}

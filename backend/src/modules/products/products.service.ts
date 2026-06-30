@@ -169,8 +169,9 @@ export class ProductsService {
 
     const osposItem = osposItems.find((i) => i.item_id === osposItemId);
     if (!osposItem) {
-      if (dbProduct) {
-        this.logger.warn(`OSPOS item details not available for product ID ${osposItemId}. Returning local database metadata with fallback stock status.`);
+      // If OSPOS returned NO items at all, assume it's down and return a fallback
+      if (dbProduct && osposItems.length === 0) {
+        this.logger.warn(`OSPOS connection failed. Returning local database metadata for product ID ${osposItemId} with fallback stock status.`);
         const fallbackOsposItem: OsposItem = {
           item_id: dbProduct.ospos_item_id,
           name: `Product ${dbProduct.ospos_item_id}`,
@@ -188,6 +189,8 @@ export class ProductsService {
         }
         return fallbackUnified;
       }
+      
+      // If OSPOS is online (length > 0) but the item wasn't found, it means it was deleted in OSPOS.
       throw new NotFoundException(`Product with ID ${osposItemId} not found.`);
     }
 
