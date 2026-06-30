@@ -1,3 +1,5 @@
+import { IsNumber, IsString, IsOptional, IsIn, IsPositive, IsBoolean } from 'class-validator';
+
 /**
  * The unified DTO representing a merged OSPOS item + TileVista asset entry.
  * Live pricing, stock, SKU, name, and category come from OSPOS.
@@ -49,13 +51,62 @@ export class UnifiedItemDto {
 }
 
 export class UpsertAssetDto {
+  @IsOptional() @IsNumber()
   scaleX?: number;
+  @IsOptional() @IsNumber()
   scaleY?: number;
+  @IsOptional() @IsNumber()
   scaleZ?: number;
+  @IsOptional() @IsNumber()
   rotationY?: number;
+  @IsOptional() @IsString()
   tags?: string; // comma-separated
+  @IsOptional() @IsString()
   material?: string;
+  @IsOptional() @IsString()
   finish?: string;
+  @IsOptional() @IsBoolean()
   isEnabled?: boolean;
+  @IsOptional() @IsString()
   notes?: string;
+}
+
+export class PublishProductDto {
+  @IsNumber()
+  osposItemId: number;
+
+  @IsString()
+  imageUrl: string;
+
+  @IsOptional()
+  @IsString()
+  thumbnailUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  glbUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  materialType?: string;
+
+  @IsOptional()
+  @IsString()
+  colorFamily?: string;
+
+  @IsNumber()
+  @IsPositive()
+  width: number;
+
+  @IsNumber()
+  @IsPositive()
+  height: number;
+
+  @IsNumber()
+  @IsPositive()
+  depth: number;
+
+  @IsString()
+  @IsIn(['cm', 'm'])
+  unit: 'cm' | 'm';
 }

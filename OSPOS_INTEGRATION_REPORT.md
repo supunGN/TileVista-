@@ -37,7 +37,8 @@ The backend integration service (`OsposIntegrationService`) invokes the followin
 The integration maps POS data with visual assets via:
 * **Table `products`**: Stores `ospos_item_id` (unique integer mapping to OSPOS primary key) and local `product_id` (UUID). (Note: The `category_id` field was removed to rely entirely on live OSPOS categories).
 * **Table `product_assets`**: Links visual properties (`image_url`, `glb_url`, material/color family, visibility status) to `product_id`.
-* **Table `asset_transformations`**: Details 3D model transforms (rotation, scale X/Y/Z).
+* **Table `asset_sizes`**: Defines physical unit dimensions (width, height, depth) tied to `asset_id`.
+* **Table `asset_transformations`**: Details 3D model transforms (rotation, scale X/Y/Z) tied to `asset_id`.
 
 ---
 

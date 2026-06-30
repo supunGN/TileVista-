@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AdminGuard } from '../../../features/auth/AdminGuard';
@@ -17,7 +17,13 @@ import {
   Box,
   Phone,
   MapPin,
+  Bell,
+  X,
+  PackagePlus,
 } from 'lucide-react';
+
+const API_BASE = 'http://localhost:4000/api';
+const POLL_INTERVAL_MS = 60_000; // Check every 60 seconds
 
 export default function AdminLayout({
   children,
@@ -26,13 +32,53 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const [pendingCount, setPendingCount] = useState<number>(0);
+  const [pendingItems, setPendingItems] = useState<any[]>([]);
+  const [bannerDismissed, setBannerDismissed] = useState<boolean>(false);
+  const [lastKnownCount, setLastKnownCount] = useState<number | null>(null);
+  const [showNewItemPulse, setShowNewItemPulse] = useState<boolean>(false);
+
+  const fetchPendingCount = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('tilevista_admin_token');
+      if (!token) return;
+
+      const response = await fetch(`${API_BASE}/admin/products/pending-review`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const count = Array.isArray(data) ? data.length : 0;
+
+      // Detect if NEW items appeared since last check
+      if (lastKnownCount !== null && count > lastKnownCount) {
+        setBannerDismissed(false); // Re-show banner if new items arrive
+        setShowNewItemPulse(true);
+        setTimeout(() => setShowNewItemPulse(false), 3000);
+      }
+
+      setPendingCount(count);
+      setPendingItems(Array.isArray(data) ? data.slice(0, 5) : []); // Keep top 5 for preview
+      setLastKnownCount(count);
+    } catch {
+      // Silently fail — don't break the admin panel over a notification check
+    }
+  }, [lastKnownCount]);
+
+  useEffect(() => {
+    fetchPendingCount();
+    const interval = setInterval(fetchPendingCount, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [fetchPendingCount]);
 
   const sidebarLinks = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: <LayoutDashboard size={16} /> },
     { name: 'Orders', href: '/admin/orders', icon: <Receipt size={16} /> },
     { name: 'Inventory', href: '/admin/inventory', icon: <Warehouse size={16} /> },
     { name: 'Analytics', href: '/admin/analytics', icon: <LineChart size={16} /> },
-    { name: 'Item Assets', href: '/admin/items', icon: <Box size={16} /> },
+    { name: 'Item Assets', href: '/admin/items', icon: <Box size={16} />, badge: pendingCount },
     { name: 'Packages', href: '/admin/packages', icon: <Grid3X3 size={16} /> },
     { name: 'Settings', href: '/admin/settings', icon: <SettingsIcon size={16} /> },
   ];
@@ -72,7 +118,7 @@ export default function AdminLayout({
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`flex items-center gap-3 px-4 py-3 text-xs font-semibold tracking-widest uppercase transition-all duration-300 ${
+                  className={`flex items-center gap-3 px-4 py-3 text-xs font-semibold tracking-widest uppercase transition-all duration-300 relative ${
                     active
                       ? 'bg-[#D4C5B9] text-[#1A1A1A]'
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -80,6 +126,16 @@ export default function AdminLayout({
                 >
                   {link.icon}
                   <span>{link.name}</span>
+                  {'badge' in link && link.badge > 0 && (
+                    <span className={`
+                      ml-auto min-w-[20px] h-5 flex items-center justify-center
+                      text-[10px] font-bold rounded-full px-1.5
+                      ${active ? 'bg-amber-500 text-white' : 'bg-amber-500 text-white'}
+                      ${showNewItemPulse ? 'animate-pulse' : ''}
+                    `}>
+                      {link.badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -114,6 +170,40 @@ export default function AdminLayout({
 
         {/* 2. Main content viewport */}
         <div className="flex-1 flex flex-col overflow-hidden">
+
+          {/* Notification Banner — New OSPOS Items Pending Review */}
+          {pendingCount > 0 && !bannerDismissed && (
+            <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 flex items-center gap-4 animate-in slide-in-from-top duration-300">
+              <div className="flex items-center justify-center w-8 h-8 bg-amber-100 border border-amber-200 rounded-full shrink-0">
+                <PackagePlus size={15} className="text-amber-700" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-amber-900 uppercase tracking-wider">
+                  {pendingCount} New {pendingCount === 1 ? 'Item' : 'Items'} Pending Review
+                </p>
+                <p className="text-[11px] text-amber-700 mt-0.5 truncate">
+                  {pendingItems.length > 0
+                    ? pendingItems.map(i => i.name).join(', ')
+                    : 'New items were added in OSPOS and need to be published to the storefront.'
+                  }
+                </p>
+              </div>
+              <Link
+                href="/admin/items"
+                className="shrink-0 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold tracking-widest uppercase transition-colors"
+              >
+                Review Items
+              </Link>
+              <button
+                onClick={() => setBannerDismissed(true)}
+                className="shrink-0 p-1.5 text-amber-400 hover:text-amber-700 transition-colors"
+                title="Dismiss"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
           {/* Viewport content */}
           <main className="flex-grow overflow-y-auto p-8 bg-[#F9F9F7]/60">{children}</main>
         </div>

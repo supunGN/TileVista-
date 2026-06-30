@@ -14,6 +14,7 @@ interface CartItem {
   discountPercent: number;
   quantity: number;
   image: string;
+  isAvailable?: boolean;
 }
 
 const INITIAL_CART_ITEMS: CartItem[] = [
@@ -51,13 +52,17 @@ export default function CartPage() {
 
   const calculateSubtotal = () => {
     return items.reduce((sum, item) => {
+      if (item.isAvailable === false) return sum;
       const finalPrice = item.price * (1 - item.discountPercent / 100);
       return sum + finalPrice * item.quantity;
     }, 0);
   };
 
   const calculateOriginalSubtotal = () => {
-    return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return items.reduce((sum, item) => {
+      if (item.isAvailable === false) return sum;
+      return sum + item.price * item.quantity;
+    }, 0);
   };
 
   const subtotal = calculateSubtotal();
@@ -131,11 +136,17 @@ export default function CartPage() {
                       )}
                       
                       <div className="flex items-baseline gap-2 mt-2">
-                        <span className="text-xs font-bold text-red-600">{formatLKR(finalPrice)}</span>
+                        <span className={`text-xs font-bold ${item.isAvailable === false ? 'text-gray-400' : 'text-red-600'}`}>{formatLKR(finalPrice)}</span>
                         {item.discountPercent > 0 && (
                           <span className="text-[10.5px] text-gray-400 line-through">{formatLKR(item.price)}</span>
                         )}
                       </div>
+                      
+                      {item.isAvailable === false && (
+                        <div className="mt-2 text-xs font-semibold text-red-500 bg-red-50 py-1 px-2 inline-block border border-red-100">
+                          This item is no longer available
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -143,11 +154,12 @@ export default function CartPage() {
                   <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto border-t sm:border-t-0 pt-4 sm:pt-0">
                     
                     {/* Incrementer box */}
-                    <div className="flex items-center bg-[#F9F9F7] border border-gray-200 p-1">
+                    <div className={`flex items-center border border-gray-200 p-1 ${item.isAvailable === false ? 'bg-gray-100 opacity-50 cursor-not-allowed' : 'bg-[#F9F9F7]'}`}>
                       <button
-                        onClick={() => updateQuantity(item.id, -1)}
-                        className="p-1.5 hover:bg-gray-200 text-gray-500 transition-colors"
+                        onClick={() => item.isAvailable !== false && updateQuantity(item.id, -1)}
+                        className={`p-1.5 transition-colors ${item.isAvailable === false ? 'text-gray-300' : 'hover:bg-gray-200 text-gray-500'}`}
                         aria-label="Decrease quantity"
+                        disabled={item.isAvailable === false}
                       >
                         <Minus size={12} />
                       </button>
@@ -155,9 +167,10 @@ export default function CartPage() {
                         {item.quantity}
                       </span>
                       <button
-                        onClick={() => updateQuantity(item.id, 1)}
-                        className="p-1.5 hover:bg-gray-200 text-gray-500 transition-colors"
+                        onClick={() => item.isAvailable !== false && updateQuantity(item.id, 1)}
+                        className={`p-1.5 transition-colors ${item.isAvailable === false ? 'text-gray-300' : 'hover:bg-gray-200 text-gray-500'}`}
                         aria-label="Increase quantity"
+                        disabled={item.isAvailable === false}
                       >
                         <Plus size={12} />
                       </button>
@@ -166,7 +179,7 @@ export default function CartPage() {
                     {/* Total item cost */}
                     <div className="flex flex-col text-right hidden sm:flex">
                       <span className="text-[8.5px] font-bold text-gray-400 tracking-wider uppercase leading-none mb-1">Item Subtotal</span>
-                      <span className="text-sm font-bold text-[#1A1A1A] font-mono">
+                      <span className={`text-sm font-bold font-mono ${item.isAvailable === false ? 'text-gray-400 line-through' : 'text-[#1A1A1A]'}`}>
                         {formatLKR(finalPrice * item.quantity)}
                       </span>
                     </div>

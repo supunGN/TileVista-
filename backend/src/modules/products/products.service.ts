@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OsposIntegrationService, OsposItem } from '../integrations/ospos/ospos.service';
-import { UnifiedItemDto, UpsertAssetDto } from './dto/unified-item.dto';
+import { UnifiedItemDto, UpsertAssetDto, PublishProductDto } from './dto/unified-item.dto';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class ProductsService {
@@ -60,7 +61,7 @@ export class ProductsService {
       dto.tags = [];
       dto.material = null;
       dto.finish = null;
-      dto.isEnabled = true;
+      dto.isEnabled = false;
       dto.notes = null;
       dto.hasAssetEntry = false;
     }
@@ -70,8 +71,9 @@ export class ProductsService {
 
   /**
    * Returns all active OSPOS items merged with their visual asset entries.
+   * If includeHidden is false, it only returns items that have an asset entry and are enabled/visible.
    */
-  async findAll(): Promise<UnifiedItemDto[]> {
+  async findAll(includeHidden: boolean = false): Promise<UnifiedItemDto[]> {
     const [osposItems, dbProducts] = await Promise.all([
       this.osposService.fetchAllItems(),
       this.prisma.products.findMany({
@@ -92,9 +94,11 @@ export class ProductsService {
 
     const productMap = new Map(dbProducts.map((p) => [p.ospos_item_id, p]));
 
+    let result: UnifiedItemDto[] = [];
+
     if (osposItems.length === 0 && dbProducts.length > 0) {
       this.logger.warn('OSPOS connection failed or returned no items. Returning local database product records with fallback stock status.');
-      return dbProducts.map((dbProduct) => {
+      result = dbProducts.map((dbProduct) => {
         const fallbackOsposItem: OsposItem = {
           item_id: dbProduct.ospos_item_id,
           name: `Product ${dbProduct.ospos_item_id}`,
@@ -108,17 +112,42 @@ export class ProductsService {
         };
         return this.buildUnifiedItem(fallbackOsposItem, dbProduct, true);
       });
+    } else {
+      result = osposItems.map((item) =>
+        this.buildUnifiedItem(item, productMap.get(item.item_id) ?? null, false),
+      );
     }
 
-    return osposItems.map((item) =>
-      this.buildUnifiedItem(item, productMap.get(item.item_id) ?? null, false),
-    );
+    if (!includeHidden) {
+      // Filter out items that have no local DB entry or have product_assets.is_visible = false.
+      // (buildUnifiedItem already sets isEnabled = product_assets?.is_visible ?? is_active ?? true)
+      return result.filter((item) => item.hasAssetEntry && item.isEnabled);
+    }
+
+    return result;
+  }
+
+  /**
+   * Returns all OSPOS items that do not have a corresponding record in the local products table.
+   * These items are pending review and can be imported into the Tile Vista catalog.
+   */
+  async getPendingReviewItems(): Promise<OsposItem[]> {
+    const [osposItems, dbProducts] = await Promise.all([
+      this.osposService.fetchAllItems(),
+      this.prisma.products.findMany({
+        select: { ospos_item_id: true },
+      }),
+    ]);
+
+    const existingIds = new Set(dbProducts.map((p) => p.ospos_item_id));
+    return osposItems.filter((item) => !existingIds.has(item.item_id));
   }
 
   /**
    * Returns a single product merged with live stock and visual asset entries.
+   * If includeHidden is false, throws a 404 if the item lacks an asset entry or is not visible.
    */
-  async findOne(osposItemId: number): Promise<UnifiedItemDto> {
+  async findOne(osposItemId: number, includeHidden: boolean = false): Promise<UnifiedItemDto> {
     const [osposItems, dbProduct] = await Promise.all([
       this.osposService.fetchAllItems(),
       this.prisma.products.findUnique({
@@ -143,8 +172,8 @@ export class ProductsService {
       if (dbProduct) {
         this.logger.warn(`OSPOS item details not available for product ID ${osposItemId}. Returning local database metadata with fallback stock status.`);
         const fallbackOsposItem: OsposItem = {
-          item_id: osposItemId,
-          name: `Product ${osposItemId}`,
+          item_id: dbProduct.ospos_item_id,
+          name: `Product ${dbProduct.ospos_item_id}`,
           category: 'Unknown',
           category_id: null,
           subcategory_id: null,
@@ -153,12 +182,20 @@ export class ProductsService {
           price: 0,
           quantity: 0,
         };
-        return this.buildUnifiedItem(fallbackOsposItem, dbProduct, true);
+        const fallbackUnified = this.buildUnifiedItem(fallbackOsposItem, dbProduct, true);
+        if (!includeHidden && (!fallbackUnified.hasAssetEntry || !fallbackUnified.isEnabled)) {
+          throw new NotFoundException(`Product with ID ${osposItemId} not found.`);
+        }
+        return fallbackUnified;
       }
       throw new NotFoundException(`Product with ID ${osposItemId} not found.`);
     }
 
-    return this.buildUnifiedItem(osposItem, dbProduct, false);
+    const unified = this.buildUnifiedItem(osposItem, dbProduct, false);
+    if (!includeHidden && (!unified.hasAssetEntry || !unified.isEnabled)) {
+      throw new NotFoundException(`Product with ID ${osposItemId} not found.`);
+    }
+    return unified;
   }
 
   /**
@@ -271,7 +308,77 @@ export class ProductsService {
       }
     }
 
-    return this.findOne(osposItemId);
+    return this.findOne(osposItemId, true);
+  }
+
+  async publishProduct(data: PublishProductDto) {
+    // 1. Verify osposItemId exists in live OSPOS
+    const allOsposItems = await this.osposService.fetchAllItems();
+    const osposItem = allOsposItems.find(i => i.item_id === data.osposItemId);
+    if (!osposItem) {
+      throw new NotFoundException(`OSPOS item with ID ${data.osposItemId} not found.`);
+    }
+
+    // 2. Verify no products row already exists
+    const existing = await this.prisma.products.findUnique({
+      where: { ospos_item_id: data.osposItemId }
+    });
+    if (existing) {
+      throw new ConflictException(`Product with OSPOS item ID ${data.osposItemId} already exists. Please edit it instead.`);
+    }
+
+    // 3. Create all in transaction
+    return this.prisma.$transaction(async (tx) => {
+      const productId = crypto.randomUUID();
+      const assetId = crypto.randomUUID();
+
+      const product = await tx.products.create({
+        data: {
+          product_id: productId,
+          ospos_item_id: data.osposItemId,
+          is_active: true,
+        }
+      });
+
+      const productAsset = await tx.product_assets.create({
+        data: {
+          asset_id: assetId,
+          product_id: productId,
+          image_url: data.imageUrl,
+          thumbnail_url: data.thumbnailUrl,
+          glb_url: data.glbUrl,
+          material_type: data.materialType,
+          color_family: data.colorFamily,
+          is_visible: true,
+        }
+      });
+
+      await tx.asset_sizes.create({
+        data: {
+          size_id: crypto.randomUUID(),
+          asset_id: assetId,
+          width: data.width,
+          height: data.height,
+          depth: data.depth,
+          unit: data.unit === 'm' ? 'm' : 'cm',
+        }
+      });
+
+      await tx.asset_transformations.create({
+        data: {
+          transform_id: crypto.randomUUID(),
+          asset_id: assetId,
+          scale_x: 1.0,
+          scale_y: 1.0,
+          scale_z: 1.0,
+          rotation_x: 0,
+          rotation_y: 0,
+          rotation_z: 0,
+        }
+      });
+
+      return { product, productAsset };
+    });
   }
 
   /**
