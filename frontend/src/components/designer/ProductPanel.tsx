@@ -121,6 +121,28 @@ export default function ProductPanel() {
   
   const selectedItem = placedItems.find(i => i.id === selectedItemId) || state.wallOpenings.find(op => op.id === selectedItemId);
 
+  const checkIsWallMounted = (item: any) => {
+    if (!item) return false;
+    if (item.isWallMounted === true) return true;
+    const nameLower = (item.name || '').toLowerCase();
+    const catLower = (item.category || '').toLowerCase();
+    return (
+      nameLower.includes('shower set') || 
+      nameLower.includes('shower mixer') || 
+      nameLower.includes('rain shower') || 
+      nameLower.includes('mirror') || 
+      nameLower.includes('towel rail') || 
+      nameLower.includes('towel holder') || 
+      nameLower.includes('towel ladder') || 
+      nameLower.includes('towel ring') || 
+      nameLower.includes('soap dish') ||
+      nameLower.includes('paper holder') ||
+      nameLower.includes('hook') ||
+      (nameLower.includes('mixer') && catLower.includes('accessories')) ||
+      nameLower.includes('light')
+    );
+  };
+
   const handleAddItem = (type: string, dynamicItem?: any) => {
     const catalog = getActiveCatalog(state.designType, state.subRoomType || 'living_room');
     const cat = catalog.find((i: any) => i.type === type) || dynamicItem;
@@ -131,14 +153,16 @@ export default function ProductPanel() {
     const STATIC_BASE = process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000';
     const fullModelUrl = modelUrl && modelUrl.startsWith('/uploads') ? `${STATIC_BASE}${modelUrl}` : modelUrl;
 
+    const isWallMounted = cat.isWallMounted || checkIsWallMounted(cat);
+
     setIsPlacingItem({
       id: `${type}_${Date.now()}`,
       type: cat.type || type,
       name: cat.name,
       cost: cat.cost || cat.price || 0,
-      position: [0, 0, 0],
+      position: [0, isWallMounted ? 1.37 : 0, 0],
       rotation: 0,
-      isWallMounted: cat.isWallMounted || false,
+      isWallMounted: isWallMounted,
       color: selectedItemColor || '#FFFFFF',
       model: fullModelUrl
     });
