@@ -532,7 +532,9 @@ function DynamicFurnitureModel({ item, selected, CustomFurniture }: { item: any,
 
 function GLBModel({ url, selected, item }: { url: string, selected: boolean, item: any }) {
   const { state } = useDesignerStore();
-  const { scene } = useGLTF(url) as any;
+  const STATIC_BASE = process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000';
+  const fullUrl = url.startsWith('/uploads') ? `${STATIC_BASE}${url}` : url;
+  const { scene } = useGLTF(fullUrl) as any;
   const clonedScene = React.useMemo(() => {
     if (!scene) return null;
     const clone = scene.clone();
@@ -5957,7 +5959,10 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
 
 
 export function ItemSidebarPreview({ item, heightClass = "h-40" }: { item: any, heightClass?: string }) {
-  const previewItem = { ...item, model: item.glbUrl || item.model || undefined };
+  const modelUrl = item.glbUrl || item.model || undefined;
+  const STATIC_BASE = process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000';
+  const fullUrl = modelUrl && modelUrl.startsWith('/uploads') ? `${STATIC_BASE}${modelUrl}` : modelUrl;
+  const previewItem = { ...item, model: fullUrl };
   return (
     <div className={`w-full ${heightClass} bg-white rounded-lg overflow-hidden border border-gray-200 shadow-inner relative`}>
       <Canvas camera={{ position: [0, 3.5, 8], fov: 50 }}>
