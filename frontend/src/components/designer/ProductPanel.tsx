@@ -18,18 +18,9 @@ export default function ProductPanel() {
   const [coverageHeightInput, setCoverageHeightInput] = useState<string>('');
 
   const isFloorTile = (item: any) => {
-    if (item.subcategoryId !== null && item.subcategoryId !== undefined) {
-      return item.subcategoryId === 1;
-    }
-    const name = item.name?.toLowerCase() || '';
-    const desc = item.description?.toLowerCase() || '';
-    const img = item.imageUrl?.toLowerCase() || '';
-    if (name.includes('mosaic') || name.includes('glass') || name.includes('aqua') || name.includes('wall') || name.includes('pearl') ||
-        img.includes('mosaic') || img.includes('glass') || img.includes('aqua') || img.includes('wall') || img.includes('pearl') ||
-        desc.includes('wall') || desc.includes('mosaic')) {
-      return false;
-    }
-    return true;
+    const catId = item.categoryId !== null && item.categoryId !== undefined ? Number(item.categoryId) : null;
+    const subcatId = item.subcategoryId !== null && item.subcategoryId !== undefined ? Number(item.subcategoryId) : null;
+    return catId === 1 && subcatId === 1;
   };
 
   useEffect(() => {
@@ -41,8 +32,8 @@ export default function ProductPanel() {
           .then(res => res.json())
           .then(data => {
             console.log("OSPOS_TILES raw items fetched:", data);
-            // Filter to only floor tiles for room designer
-            const tiles = data.filter((d: any) => d.category?.toLowerCase() === 'tiles' && isFloorTile(d));
+            // Filter strictly to floor tiles (categoryId = 1, subcategoryId = 1)
+            const tiles = data.filter((d: any) => isFloorTile(d));
             console.log("OSPOS_TILES filtered tiles:", tiles);
             setDynamicItems(tiles || []);
             setIsLoadingItems(false);
@@ -58,13 +49,13 @@ export default function ProductPanel() {
           .then(res => res.json())
           .then(data => {
             if (activeCategory === 'wall_tiles') {
-              setDynamicItems(data.filter((d: any) => 
-                d.category?.toLowerCase() === 'tiles' && !isFloorTile(d)
-              ) || []);
+              setDynamicItems(data.filter((d: any) => {
+                const catId = d.categoryId !== null && d.categoryId !== undefined ? Number(d.categoryId) : null;
+                const subcatId = d.subcategoryId !== null && d.subcategoryId !== undefined ? Number(d.subcategoryId) : null;
+                return catId === 1 && (subcatId === 2 || subcatId === 4);
+              }) || []);
             } else if (activeCategory === 'floor_tiles') {
-              setDynamicItems(data.filter((d: any) => 
-                d.category?.toLowerCase() === 'tiles' && isFloorTile(d)
-              ) || []);
+              setDynamicItems(data.filter((d: any) => isFloorTile(d)) || []);
             } else {
               setDynamicItems(data.filter((d: any) => d.category?.toLowerCase() !== 'tiles') || []);
             }
