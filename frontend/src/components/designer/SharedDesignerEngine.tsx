@@ -587,9 +587,22 @@ function GLBModel({ url, selected, item }: { url: string, selected: boolean, ite
     console.log("GLB MaxDim:", maxDim, "TargetSize:", targetSize);
     if (maxDim > 0 && maxDim !== Infinity && !isNaN(maxDim)) {
       const scale = targetSize / maxDim;
-      clone.scale.set(scale, scale, scale);
+      
+      // Apply base scale and custom asset scale transformations if defined
+      const sx = item.scale?.x ? Number(item.scale.x) : 1;
+      const sy = item.scale?.y ? Number(item.scale.y) : 1;
+      const sz = item.scale?.z ? Number(item.scale.z) : 1;
+      clone.scale.set(scale * sx, scale * sy, scale * sz);
     } else {
       console.warn("Invalid maxDim for GLB", maxDim);
+    }
+
+    // Apply custom asset rotation transformations if defined
+    if (item.rotation) {
+      const rx = item.rotation.x ? Number(item.rotation.x) * (Math.PI / 180) : 0;
+      const ry = item.rotation.y ? Number(item.rotation.y) * (Math.PI / 180) : 0;
+      const rz = item.rotation.z ? Number(item.rotation.z) * (Math.PI / 180) : 0;
+      clone.rotation.set(rx, ry, rz);
     }
 
     // Recalculate box to center and ground the model
@@ -2298,15 +2311,21 @@ function BathroomScene({
         }
 
         let itemD = 0.5; // fallback
+        let itemW = 0.5; // fallback
         const dims = globalItemDimensions.get(itemToMove.id);
         if (dims) {
           itemD = dims.depth;
+          itemW = dims.width;
         }
+
+        // Limit offset so the item's width never extends past the wall corners
+        const buffer = Math.max(0.1, itemW / 2 + 0.05);
+        const snappedOffset = Math.max(buffer, Math.min(wall.len - buffer, closestOffset));
 
         // Snap to touch wall flush: Z-center offset is exactly half of depth
         const bias = itemD / 2;
-        const posX = wall.p1[0] + ux * closestOffset + nx * bias;
-        const posZ = wall.p1[1] + uz * closestOffset + nz * bias;
+        const posX = wall.p1[0] + ux * snappedOffset + nx * bias;
+        const posZ = wall.p1[1] + uz * snappedOffset + nz * bias;
 
         const wallPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
           new THREE.Vector3(nx, 0, nz).normalize(),
