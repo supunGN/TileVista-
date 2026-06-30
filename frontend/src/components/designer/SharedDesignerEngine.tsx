@@ -614,7 +614,8 @@ function GLBModel({ url, selected, item }: { url: string, selected: boolean, ite
       // Store exact world dimensions (finalSize is scaled locally, 0.3048 is the parent group scale)
       globalItemDimensions.set(item.id, {
         width: finalSize.x * 0.3048,
-        depth: finalSize.z * 0.3048
+        depth: finalSize.z * 0.3048,
+        height: finalSize.y * 0.3048
       });
     }
 
@@ -652,7 +653,7 @@ function FallbackModel({ item, selected }: { item: any, selected: boolean }) {
 
 // A global cache to store exact physical dimensions of loaded GLB items
 // so the drag-and-drop collision logic can be pixel-perfect without causing React re-renders.
-export const globalItemDimensions = new Map<string, { width: number, depth: number }>();
+export const globalItemDimensions = new Map<string, { width: number, depth: number, height?: number }>();
 
 function FallbackColoredBox({ item, selected }: { item: any, selected: boolean }) {
   const rotation = item.isWallMounted ? [0, 0, 0] : [-Math.PI / 2, 0, 0];
@@ -2287,8 +2288,15 @@ function BathroomScene({
         );
         const wallPt = new THREE.Vector3();
         let heightY = 1.37;
+        let itemHeight = 1.5; // fallback
+        const dims = globalItemDimensions.get(itemToMove.id);
+        if (dims && dims.height) {
+          itemHeight = dims.height;
+        }
+        // Top of item (heightY + itemHeight) must stay below (h - 0.05) buffer
+        const maxH = Math.max(0.5, h - itemHeight - 0.05);
         if (raycasterRef.ray.intersectPlane(wallPlane, wallPt)) {
-          heightY = Math.max(1.0, Math.min(h - 0.5, wallPt.y));
+          heightY = Math.max(0.1, Math.min(maxH, wallPt.y));
         }
 
         const updateItem = (prev: PlacedItem) => ({
