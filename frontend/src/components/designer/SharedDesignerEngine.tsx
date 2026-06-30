@@ -2310,39 +2310,6 @@ function BathroomScene({
           rotY += Math.PI;
         }
 
-        let itemD = 0.5; // fallback
-        let itemW = 0.5; // fallback
-        const dims = globalItemDimensions.get(itemToMove.id);
-        if (dims) {
-          itemD = dims.depth;
-          itemW = dims.width;
-        }
-
-        // Limit offset so the item's width never extends past the wall corners
-        const buffer = Math.max(0.1, itemW / 2 + 0.05);
-        const snappedOffset = Math.max(buffer, Math.min(wall.len - buffer, closestOffset));
-
-        // Snap to touch wall flush: Z-center offset is exactly half of depth
-        const bias = itemD / 2;
-        const posX = wall.p1[0] + ux * snappedOffset + nx * bias;
-        const posZ = wall.p1[1] + uz * snappedOffset + nz * bias;
-
-        const wallPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
-          new THREE.Vector3(nx, 0, nz).normalize(),
-          new THREE.Vector3(wall.cx, 0, wall.cz)
-        );
-        const wallPt = new THREE.Vector3();
-        let heightY = 1.37;
-        let itemHeight = 1.5; // fallback
-        if (dims && dims.height) {
-          itemHeight = dims.height;
-        }
-        // Top of item (heightY + itemHeight) must stay below (h - 0.20) buffer to never touch the roof/ceiling
-        const maxH = Math.max(0.2, h - itemHeight - 0.20);
-        if (raycasterRef.ray.intersectPlane(wallPlane, wallPt)) {
-          heightY = Math.max(0.1, Math.min(maxH, wallPt.y));
-        }
-
         let rotOffset = 0;
         const originalItem = placedItems.find(i => i.id === activeId);
         if (originalItem && originalItem.position) {
@@ -2366,6 +2333,45 @@ function BathroomScene({
           }
           
           rotOffset = originalItem.rotation - origRotY;
+        }
+
+        let itemD = 0.5; // fallback
+        let itemW = 0.5; // fallback
+        const dims = globalItemDimensions.get(itemToMove.id);
+        if (dims) {
+          itemD = dims.depth;
+          itemW = dims.width;
+        }
+
+        // Calculate rotated dimensions based on custom rotation offset to prevent clipping into walls
+        const cosR = Math.abs(Math.cos(rotOffset));
+        const sinR = Math.abs(Math.sin(rotOffset));
+        const rotatedDepth = itemD * cosR + itemW * sinR;
+        const rotatedWidth = itemW * cosR + itemD * sinR;
+
+        // Limit offset so the item's width never extends past the wall corners
+        const buffer = Math.max(0.1, rotatedWidth / 2 + 0.05);
+        const snappedOffset = Math.max(buffer, Math.min(wall.len - buffer, closestOffset));
+
+        // Snap to touch wall flush: Z-center offset is exactly half of the rotated depth
+        const bias = rotatedDepth / 2;
+        const posX = wall.p1[0] + ux * snappedOffset + nx * bias;
+        const posZ = wall.p1[1] + uz * snappedOffset + nz * bias;
+
+        const wallPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
+          new THREE.Vector3(nx, 0, nz).normalize(),
+          new THREE.Vector3(wall.cx, 0, wall.cz)
+        );
+        const wallPt = new THREE.Vector3();
+        let heightY = 1.37;
+        let itemHeight = 1.5; // fallback
+        if (dims && dims.height) {
+          itemHeight = dims.height;
+        }
+        // Top of item (heightY + itemHeight) must stay below (h - 0.20) buffer to never touch the roof/ceiling
+        const maxH = Math.max(0.2, h - itemHeight - 0.20);
+        if (raycasterRef.ray.intersectPlane(wallPlane, wallPt)) {
+          heightY = Math.max(0.1, Math.min(maxH, wallPt.y));
         }
 
         const updateItem = (prev: PlacedItem) => ({
