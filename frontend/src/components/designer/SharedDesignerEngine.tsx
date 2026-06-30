@@ -599,7 +599,11 @@ function GLBModel({ url, selected, item }: { url: string, selected: boolean, ite
 
     clone.position.x = -center.x;
     clone.position.y = -box.min.y;
-    clone.position.z = -center.z;
+    if (item && item.isWallMounted) {
+      clone.position.z = -box.min.z + 0.05;
+    } else {
+      clone.position.z = -center.z;
+    }
 
     // Compute final size after scaling
     const finalBox = new THREE.Box3().setFromObject(clone);
