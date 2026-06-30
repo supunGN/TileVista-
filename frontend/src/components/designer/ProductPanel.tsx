@@ -52,7 +52,7 @@ export default function ProductPanel() {
               setDynamicItems(data.filter((d: any) => {
                 const catId = d.categoryId !== null && d.categoryId !== undefined ? Number(d.categoryId) : null;
                 const subcatId = d.subcategoryId !== null && d.subcategoryId !== undefined ? Number(d.subcategoryId) : null;
-                return catId === 1 && (subcatId === 2 || subcatId === 4);
+                return catId === 1 && subcatId === 2;
               }) || []);
             } else if (activeCategory === 'floor_tiles') {
               setDynamicItems(data.filter((d: any) => isFloorTile(d)) || []);
