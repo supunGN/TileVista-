@@ -23,6 +23,7 @@ export interface PlacedItem {
   model?: string;
   image?: string;
   isWallMounted: boolean;
+  rotationOffset?: number;
 }
 
 export interface WallOpening {

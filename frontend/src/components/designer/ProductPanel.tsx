@@ -116,7 +116,11 @@ export default function ProductPanel() {
 
   const handleRotateItem = () => {
     if (!selectedItemId) return;
-    recordHistory(placedItems.map(i => i.id === selectedItemId ? { ...i, rotation: i.rotation - Math.PI / 4 } : i));
+    recordHistory(placedItems.map(i => i.id === selectedItemId ? { 
+      ...i, 
+      rotationOffset: (i.rotationOffset || 0) - Math.PI / 4,
+      rotation: i.rotation - Math.PI / 4 
+    } : i));
   };
   
   const selectedItem = placedItems.find(i => i.id === selectedItemId) || state.wallOpenings.find(op => op.id === selectedItemId);

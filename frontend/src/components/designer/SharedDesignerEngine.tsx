@@ -61,6 +61,7 @@ interface PlacedItem {
   model?: string;
   image?: string;
   isWallMounted: boolean;
+  rotationOffset?: number;
 }
 
 interface WallOpening {
@@ -2310,30 +2311,7 @@ function BathroomScene({
           rotY += Math.PI;
         }
 
-        let rotOffset = 0;
-        const originalItem = placedItems.find(i => i.id === activeId);
-        if (originalItem && originalItem.position) {
-          // Find the wall closest to original item's position to extract its base rotation
-          let origClosestWallIdx = 0;
-          let origClosestDist = Infinity;
-          walls.forEach((w, idx) => {
-            const dist = Math.hypot(originalItem.position[0] - w.cx, originalItem.position[2] - w.cz);
-            if (dist < origClosestDist) { origClosestDist = dist; origClosestWallIdx = idx; }
-          });
-          const origWall = walls[origClosestWallIdx];
-          
-          let origNx = -(origWall.p2[1] - origWall.p1[1]) / origWall.len;
-          let origNz = (origWall.p2[0] - origWall.p1[0]) / origWall.len;
-          const origToCenterX = roomCenterX - origWall.cx;
-          const origToCenterZ = roomCenterZ - origWall.cz;
-          const origDotVal = origNx * origToCenterX + origNz * origToCenterZ;
-          let origRotY = origWall.rotY;
-          if (origDotVal < 0) {
-            origRotY += Math.PI;
-          }
-          
-          rotOffset = originalItem.rotation - origRotY;
-        }
+        const rotOffset = itemToMove.rotationOffset || 0;
 
         let itemD = 0.5; // fallback
         let itemW = 0.5; // fallback
