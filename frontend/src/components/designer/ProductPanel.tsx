@@ -127,6 +127,8 @@ export default function ProductPanel() {
     const nameLower = (item.name || '').toLowerCase();
     const catLower = (item.category || '').toLowerCase();
     return (
+      nameLower.includes('basin') ||
+      nameLower.includes('sink') ||
       nameLower.includes('shower set') || 
       nameLower.includes('shower mixer') || 
       nameLower.includes('rain shower') || 
@@ -143,6 +145,24 @@ export default function ProductPanel() {
     );
   };
 
+  const getDefaultHeightForWallMounted = (item: any) => {
+    if (!item) return 1.37;
+    const nameLower = (item.name || '').toLowerCase();
+    if (nameLower.includes('basin') || nameLower.includes('sink')) {
+      return 0.85; // Standard wash basin height is 85cm from the floor
+    }
+    if (nameLower.includes('mirror')) {
+      return 1.4; // Mirrors are hung higher (center around eye level)
+    }
+    if (nameLower.includes('towel') || nameLower.includes('holder') || nameLower.includes('soap')) {
+      return 1.1; // Accessories
+    }
+    if (nameLower.includes('shower')) {
+      return 1.5; // Showers are hung high
+    }
+    return 1.37; // Default wall mount height
+  };
+
   const handleAddItem = (type: string, dynamicItem?: any) => {
     const catalog = getActiveCatalog(state.designType, state.subRoomType || 'living_room');
     const cat = catalog.find((i: any) => i.type === type) || dynamicItem;
@@ -154,13 +174,14 @@ export default function ProductPanel() {
     const fullModelUrl = modelUrl && modelUrl.startsWith('/uploads') ? `${STATIC_BASE}${modelUrl}` : modelUrl;
 
     const isWallMounted = cat.isWallMounted || checkIsWallMounted(cat);
+    const initialHeight = isWallMounted ? getDefaultHeightForWallMounted(cat) : 0;
 
     setIsPlacingItem({
       id: `${type}_${Date.now()}`,
       type: cat.type || type,
       name: cat.name,
       cost: cat.cost || cat.price || 0,
-      position: [0, isWallMounted ? 1.37 : 0, 0],
+      position: [0, initialHeight, 0],
       rotation: 0,
       isWallMounted: isWallMounted,
       color: selectedItemColor || '#FFFFFF',

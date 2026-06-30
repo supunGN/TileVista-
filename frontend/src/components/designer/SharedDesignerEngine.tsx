@@ -2293,10 +2293,22 @@ function BathroomScene({
         if (dims && dims.height) {
           itemHeight = dims.height;
         }
+        
+        // Define minimum comfortable height off the floor based on product type
+        let minH = 0.1;
+        const nameLower = (itemToMove.name || '').toLowerCase();
+        if (nameLower.includes('basin') || nameLower.includes('sink')) {
+          minH = 0.75; // Wash basins should snap to middle of the wall (min 75cm)
+        } else if (nameLower.includes('shower')) {
+          minH = 0.9;
+        } else if (nameLower.includes('mirror') || nameLower.includes('light')) {
+          minH = 1.1;
+        }
+
         // Top of item (heightY + itemHeight) must stay below (h - 0.05) buffer
-        const maxH = Math.max(0.5, h - itemHeight - 0.05);
+        const maxH = Math.max(minH, h - itemHeight - 0.05);
         if (raycasterRef.ray.intersectPlane(wallPlane, wallPt)) {
-          heightY = Math.max(0.1, Math.min(maxH, wallPt.y));
+          heightY = Math.max(minH, Math.min(maxH, wallPt.y));
         }
 
         const updateItem = (prev: PlacedItem) => ({
