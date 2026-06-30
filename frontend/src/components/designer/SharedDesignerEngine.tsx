@@ -2279,7 +2279,23 @@ function BathroomScene({
         const dx = wall.p2[0] - wall.p1[0];
         const dz = wall.p2[1] - wall.p1[1];
         const ux = dx / wall.len, uz = dz / wall.len;
-        const nx = -uz, nz = ux;
+        let nx = -uz, nz = ux;
+
+        // Calculate room center to guarantee wall normal points INSIDE the room
+        let avgX = 0, avgZ = 0;
+        walls.forEach(w => { avgX += w.cx; avgZ += w.cz; });
+        const roomCenterX = avgX / walls.length;
+        const roomCenterZ = avgZ / walls.length;
+        
+        const toCenterX = roomCenterX - wall.cx;
+        const toCenterZ = roomCenterZ - wall.cz;
+        const dot = nx * toCenterX + nz * toCenterZ;
+        let rotY = wall.rotY;
+        if (dot < 0) {
+          nx = -nx;
+          nz = -nz;
+          rotY += Math.PI;
+        }
 
         let itemD = 0.5; // fallback
         const dims = globalItemDimensions.get(itemToMove.id);
@@ -2311,7 +2327,7 @@ function BathroomScene({
         const updateItem = (prev: PlacedItem) => ({
           ...prev,
           position: [posX, heightY, posZ] as [number, number, number],
-          rotation: wall.rotY,
+          rotation: rotY,
         });
 
         if (draggingItemId.current) {
