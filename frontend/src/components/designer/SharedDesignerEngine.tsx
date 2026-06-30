@@ -599,11 +599,7 @@ function GLBModel({ url, selected, item }: { url: string, selected: boolean, ite
 
     clone.position.x = -center.x;
     clone.position.y = -box.min.y;
-    if (item && item.isWallMounted) {
-      clone.position.z = -box.min.z;
-    } else {
-      clone.position.z = -center.z;
-    }
+    clone.position.z = -center.z;
 
     // Compute final size after scaling
     const finalBox = new THREE.Box3().setFromObject(clone);
@@ -2284,7 +2280,15 @@ function BathroomScene({
         const dz = wall.p2[1] - wall.p1[1];
         const ux = dx / wall.len, uz = dz / wall.len;
         const nx = -uz, nz = ux;
-        const bias = 0.01;
+
+        let itemD = 0.5; // fallback
+        const dims = globalItemDimensions.get(itemToMove.id);
+        if (dims) {
+          itemD = dims.depth;
+        }
+
+        // Snap to touch wall flush: Z-center offset is exactly half of depth
+        const bias = itemD / 2;
         const posX = wall.p1[0] + ux * closestOffset + nx * bias;
         const posZ = wall.p1[1] + uz * closestOffset + nz * bias;
 
@@ -2295,7 +2299,6 @@ function BathroomScene({
         const wallPt = new THREE.Vector3();
         let heightY = 1.37;
         let itemHeight = 1.5; // fallback
-        const dims = globalItemDimensions.get(itemToMove.id);
         if (dims && dims.height) {
           itemHeight = dims.height;
         }
