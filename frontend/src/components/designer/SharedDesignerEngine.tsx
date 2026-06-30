@@ -5767,7 +5767,7 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
       <ProductPanel />
 
       {/* ── 3D CANVAS ── */}
-      <div className="flex-1 w-full h-full overflow-hidden">
+      <div className={`h-full overflow-hidden transition-all duration-300 ${activeCategory === 'bathware_products' ? 'w-[calc(100%-420px)] flex-none' : 'flex-1 w-full'}`}>
         <Canvas
           camera={{ position: [6, 5, 8], fov: 45 }}
           gl={{ antialias: true, alpha: false }}
