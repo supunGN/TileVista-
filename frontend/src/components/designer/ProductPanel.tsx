@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import React from 'react';
 import { X, RotateCw, Trash2, ArrowLeft } from 'lucide-react';
 import { useDesignerStore } from '../../store/designer.store';
-import { DOOR_STYLES, WINDOW_STYLES, renderDoorIcon } from './SharedDesignerEngine';
+import { DOOR_STYLES, WINDOW_STYLES, renderDoorIcon, ItemSidebarPreview } from './SharedDesignerEngine';
 import { getActiveCategories, getActiveCatalog } from './catalog';
 import { remoteLog } from './SharedDesignerEngine';
 
@@ -452,18 +452,8 @@ export default function ProductPanel() {
 
               {/* Scrollable Content */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {/* Product Image */}
-                <div className="w-full h-64 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100 overflow-hidden relative">
-                  {selectedProductDetails.imageUrl ? (
-                    <img 
-                      src={`${process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000'}${selectedProductDetails.imageUrl}`}
-                      alt={selectedProductDetails.name}
-                      className="max-w-[85%] max-h-[85%] object-contain"
-                    />
-                  ) : (
-                    <div className="text-gray-400 text-xs uppercase tracking-widest font-semibold">No Image Available</div>
-                  )}
-                </div>
+                {/* Product 3D Preview */}
+                <ItemSidebarPreview item={selectedProductDetails} heightClass="h-64" />
 
                 {/* Details Card */}
                 <div className="space-y-4">

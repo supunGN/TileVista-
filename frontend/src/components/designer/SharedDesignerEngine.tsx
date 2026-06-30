@@ -5956,15 +5956,16 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
 }
 
 
-function ItemSidebarPreview({ item }: { item: any }) {
+export function ItemSidebarPreview({ item, heightClass = "h-40" }: { item: any, heightClass?: string }) {
+  const previewItem = { ...item, model: item.glbUrl || item.model || undefined };
   return (
-    <div className="w-full h-40 bg-white rounded-lg overflow-hidden border border-gray-200 shadow-inner mb-3 relative">
+    <div className={`w-full ${heightClass} bg-white rounded-lg overflow-hidden border border-gray-200 shadow-inner relative`}>
       <Canvas camera={{ position: [0, 3.5, 8], fov: 50 }}>
         <ambientLight intensity={0.7} />
         <directionalLight position={[5, 10, 5]} intensity={1.2} />
         <OrbitControls autoRotate autoRotateSpeed={2.0} enableZoom={true} enablePan={false} />
         <group position={[0, -1, 0]}>
-          <DynamicFurnitureModel item={item} selected={false} />
+          <DynamicFurnitureModel item={previewItem} selected={false} />
         </group>
       </Canvas>
       <div className="absolute top-2 left-2 bg-black/50 text-white text-[9px] px-2 py-0.5 rounded backdrop-blur-sm font-medium tracking-wide">
