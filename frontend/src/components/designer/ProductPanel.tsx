@@ -123,19 +123,29 @@ export default function ProductPanel() {
 
   const handleAddItem = (type: string, dynamicItem?: any) => {
     const catalog = getActiveCatalog(state.designType, state.subRoomType || 'living_room');
-    const cat = catalog.find((i: any) => i.type === type);
+    const cat = catalog.find((i: any) => i.type === type) || dynamicItem;
     if (!cat) return;
+    
+    // Map relative uploads path to absolute URL if needed
+    const modelUrl = cat.glbUrl || cat.model || undefined;
+    const STATIC_BASE = process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'http://localhost:4000';
+    const fullModelUrl = modelUrl && modelUrl.startsWith('/uploads') ? `${STATIC_BASE}${modelUrl}` : modelUrl;
+
     setIsPlacingItem({
       id: `${type}_${Date.now()}`,
-      type,
+      type: cat.type || type,
       name: cat.name,
-      cost: cat.cost,
+      cost: cat.cost || cat.price || 0,
       position: [0, 0, 0],
       rotation: 0,
       isWallMounted: cat.isWallMounted || false,
-      color: selectedItemColor || '#FFFFFF'
+      color: selectedItemColor || '#FFFFFF',
+      model: fullModelUrl
     });
-    setActiveCategory(null);
+
+    if (activeCategory !== 'bathware_products') {
+      setActiveCategory(null);
+    }
   };
 
   return (
