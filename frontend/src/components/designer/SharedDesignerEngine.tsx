@@ -1923,6 +1923,63 @@ function CoffeeTableModel({ selected }: { selected: boolean }) {
     </group>
   );
 }
+// ─── Oriented Bounding Box (OBB) 2D Collision Helpers (SAT) ───────────────────
+function getItemCorners(x: number, z: number, width: number, depth: number, rotation: number) {
+  const halfW = width / 2;
+  const halfD = depth / 2;
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  const localCorners = [
+    { x: -halfW, z: -halfD },
+    { x: halfW, z: -halfD },
+    { x: halfW, z: halfD },
+    { x: -halfW, z: halfD },
+  ];
+  return localCorners.map(p => ({
+    x: x + (p.x * cos - p.z * sin),
+    z: z + (p.x * sin + p.z * cos),
+  }));
+}
+
+function projectionOverlap(proj1: { min: number, max: number }, proj2: { min: number, max: number }) {
+  return proj1.max >= proj2.min && proj2.max >= proj1.min;
+}
+
+function getAxes(corners: { x: number; z: number }[]) {
+  const axes = [];
+  for (let i = 0; i < 4; i++) {
+    const p1 = corners[i];
+    const p2 = corners[(i + 1) % 4];
+    axes.push({ x: -(p2.z - p1.z), z: p2.x - p1.x });
+  }
+  return axes;
+}
+
+function projectCorners(corners: { x: number; z: number }[], axis: { x: number; z: number }) {
+  const len = Math.hypot(axis.x, axis.z);
+  const ax = len > 0 ? axis.x / len : 0;
+  const az = len > 0 ? axis.z / len : 0;
+  let min = Infinity;
+  let max = -Infinity;
+  for (const p of corners) {
+    const dot = p.x * ax + p.z * az;
+    if (dot < min) min = dot;
+    if (dot > max) max = dot;
+  }
+  return { min, max };
+}
+
+function rectsIntersect(rectA: { x: number; z: number }[], rectB: { x: number; z: number }[]) {
+  const axes = [...getAxes(rectA), ...getAxes(rectB)];
+  for (const axis of axes) {
+    const projA = projectCorners(rectA, axis);
+    const projB = projectCorners(rectB, axis);
+    if (!projectionOverlap(projA, projB)) {
+      return false;
+    }
+  }
+  return true;
+}
 
 // ─── BATHROOM SCENE ──────────────────────────────────────────────────────────
 
@@ -2270,127 +2327,115 @@ function BathroomScene({
       const itemToMove = placedItems.find(i => i.id === activeId) || isPlacingItem;
       if (!itemToMove) return;
 
-      if (itemToMove.isWallMounted) {
-        // Snap to nearest wall
-        let closestWallIdx = 0;
-        let closestDist = Infinity;
-        let closestOffset = 0;
+      // Snap to nearest wall (All items in BathroomScene)
+      let closestWallIdx = 0;
+      let closestDist = Infinity;
+      let closestOffset = 0;
 
-        walls.forEach((wall, idx) => {
-          const dx = wall.p2[0] - wall.p1[0];
-          const dz = wall.p2[1] - wall.p1[1];
-          const ux = pt.x - wall.p1[0];
-          const uz = pt.z - wall.p1[1];
-          const wallLenSq = wall.len * wall.len;
-          const t = Math.max(0.1, Math.min(0.9, wallLenSq > 0 ? (ux * dx + uz * dz) / wallLenSq : 0));
-          const projX = wall.p1[0] + t * dx;
-          const projZ = wall.p1[1] + t * dz;
-          const dist = Math.hypot(pt.x - projX, pt.z - projZ);
-          if (dist < closestDist) { closestDist = dist; closestWallIdx = idx; closestOffset = t * wall.len; }
-        });
-
-        const wall = walls[closestWallIdx];
+      walls.forEach((wall, idx) => {
         const dx = wall.p2[0] - wall.p1[0];
         const dz = wall.p2[1] - wall.p1[1];
-        const ux = dx / wall.len, uz = dz / wall.len;
-        let nx = -uz, nz = ux;
+        const ux = pt.x - wall.p1[0];
+        const uz = pt.z - wall.p1[1];
+        const wallLenSq = wall.len * wall.len;
+        const t = Math.max(0.1, Math.min(0.9, wallLenSq > 0 ? (ux * dx + uz * dz) / wallLenSq : 0));
+        const projX = wall.p1[0] + t * dx;
+        const projZ = wall.p1[1] + t * dz;
+        const dist = Math.hypot(pt.x - projX, pt.z - projZ);
+        if (dist < closestDist) { closestDist = dist; closestWallIdx = idx; closestOffset = t * wall.len; }
+      });
 
-        // Calculate room center to guarantee wall normal points INSIDE the room
-        let avgX = 0, avgZ = 0;
-        walls.forEach(w => { avgX += w.cx; avgZ += w.cz; });
-        const roomCenterX = avgX / walls.length;
-        const roomCenterZ = avgZ / walls.length;
-        
-        const toCenterX = roomCenterX - wall.cx;
-        const toCenterZ = roomCenterZ - wall.cz;
-        const dot = nx * toCenterX + nz * toCenterZ;
-        let rotY = wall.rotY;
-        if (dot < 0) {
-          nx = -nx;
-          nz = -nz;
-          rotY += Math.PI;
-        }
+      const wall = walls[closestWallIdx];
+      const dx = wall.p2[0] - wall.p1[0];
+      const dz = wall.p2[1] - wall.p1[1];
+      const ux = dx / wall.len, uz = dz / wall.len;
+      let nx = -uz, nz = ux;
 
-        const rotOffset = itemToMove.rotationOffset || 0;
+      // Calculate room center to guarantee wall normal points INSIDE the room
+      let avgX = 0, avgZ = 0;
+      walls.forEach(w => { avgX += w.cx; avgZ += w.cz; });
+      const roomCenterX = avgX / walls.length;
+      const roomCenterZ = avgZ / walls.length;
+      
+      const toCenterX = roomCenterX - wall.cx;
+      const toCenterZ = roomCenterZ - wall.cz;
+      const dot = nx * toCenterX + nz * toCenterZ;
+      let rotY = wall.rotY;
+      if (dot < 0) {
+        nx = -nx;
+        nz = -nz;
+        rotY += Math.PI;
+      }
 
-        let itemD = 0.5; // fallback
-        let itemW = 0.5; // fallback
-        const dims = globalItemDimensions.get(itemToMove.id);
-        if (dims) {
-          itemD = dims.depth;
-          itemW = dims.width;
-        }
+      const rotOffset = itemToMove.rotationOffset || 0;
 
-        // Calculate rotated dimensions based on custom rotation offset to prevent clipping into walls
-        const cosR = Math.abs(Math.cos(rotOffset));
-        const sinR = Math.abs(Math.sin(rotOffset));
-        const rotatedDepth = itemD * cosR + itemW * sinR;
-        const rotatedWidth = itemW * cosR + itemD * sinR;
+      let itemD = 0.5; // fallback
+      let itemW = 0.5; // fallback
+      const dims = globalItemDimensions.get(itemToMove.id);
+      if (dims) {
+        itemD = dims.depth;
+        itemW = dims.width;
+      }
 
-        // Limit offset so the item's width never extends past the wall corners
-        const buffer = Math.max(0.1, rotatedWidth / 2 + 0.05);
-        const snappedOffset = Math.max(buffer, Math.min(wall.len - buffer, closestOffset));
+      // Calculate rotated dimensions based on custom rotation offset to prevent clipping into walls
+      const cosR = Math.abs(Math.cos(rotOffset));
+      const sinR = Math.abs(Math.sin(rotOffset));
+      const rotatedDepth = itemD * cosR + itemW * sinR;
+      const rotatedWidth = itemW * cosR + itemD * sinR;
 
-        // Snap to touch wall flush: Z-center offset is exactly half of the rotated depth
-        const bias = rotatedDepth / 2;
-        const posX = wall.p1[0] + ux * snappedOffset + nx * bias;
-        const posZ = wall.p1[1] + uz * snappedOffset + nz * bias;
+      // Limit offset so the item's width never extends past the wall corners
+      const buffer = Math.max(0.1, rotatedWidth / 2 + 0.05);
+      const snappedOffset = Math.max(buffer, Math.min(wall.len - buffer, closestOffset));
 
+      // Snap to touch wall flush: Z-center offset is exactly half of the rotated depth
+      const bias = rotatedDepth / 2;
+      const posX = wall.p1[0] + ux * snappedOffset + nx * bias;
+      const posZ = wall.p1[1] + uz * snappedOffset + nz * bias;
+
+      let heightY = 0;
+      if (itemToMove.isWallMounted) {
         const wallPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
           new THREE.Vector3(nx, 0, nz).normalize(),
           new THREE.Vector3(wall.cx, 0, wall.cz)
         );
         const wallPt = new THREE.Vector3();
-        let heightY = 1.37;
         let itemHeight = 1.5; // fallback
         if (dims && dims.height) {
           itemHeight = dims.height;
         }
         // Top of item (heightY + itemHeight) must stay below (h - 0.20) buffer to never touch the roof/ceiling
         const maxH = Math.max(0.2, h - itemHeight - 0.20);
+        heightY = 1.37;
         if (raycasterRef.ray.intersectPlane(wallPlane, wallPt)) {
           heightY = Math.max(0.1, Math.min(maxH, wallPt.y));
         }
+      }
 
+      // Check collision against all other items (oriented bounding boxes)
+      const candidateCorners = getItemCorners(posX, posZ, itemW, itemD, rotY + rotOffset);
+      let collides = false;
+      for (const other of placedItems) {
+        if (other.id === activeId) continue;
+        
+        let otherW = 0.5, otherD = 0.5;
+        const otherDims = globalItemDimensions.get(other.id);
+        if (otherDims) {
+          otherW = otherDims.width;
+          otherD = otherDims.depth;
+        }
+        
+        const otherCorners = getItemCorners(other.position[0], other.position[2], otherW, otherD, other.rotation);
+        if (rectsIntersect(candidateCorners, otherCorners)) {
+          collides = true;
+          break;
+        }
+      }
+
+      if (!collides) {
         const updateItem = (prev: PlacedItem) => ({
           ...prev,
           position: [posX, heightY, posZ] as [number, number, number],
           rotation: rotY + rotOffset,
-        });
-
-        if (draggingItemId.current) {
-          setPlacedItems(prev => prev.map(item => item.id === activeId ? updateItem(item) : item));
-        } else if (isPlacingItem) {
-          setIsPlacingItem(updateItem(isPlacingItem));
-        }
-      } else {
-        const t = itemToMove.type;
-        let itemW = 1.0;
-        let itemD = 1.0;
-        const dims = globalItemDimensions.get(itemToMove.id);
-        if (dims) {
-          // Use exact bounding box from the loaded 3D model!
-          itemW = dims.width;
-          itemD = dims.depth;
-        } else {
-          // Fallback if not loaded yet
-          if (t === 'beds' || t === 'bed') { itemW = 2.1; itemD = 2.1; }
-          else if (t === 'wardrobes' || t === 'wardrobe') { itemW = 1.25; itemD = 1.25; }
-          else if (t === 'sofa' || t === 'sofas') { itemW = 2.15; itemD = 2.15; }
-          else if (t === 'table' || t === 'dressing_table') { itemW = 1.55; itemD = 1.55; }
-          else if (t === 'chair' || t === 'chairs') { itemW = 0.65; itemD = 0.65; }
-          else if (t === 'tv_cabinet') { itemW = 1.55; itemD = 1.55; }
-          else if (t === 'coffee_table') { itemW = 1.1; itemD = 1.1; }
-        }
-
-        // Use clampItemToPolygon for exact bounding box collision
-        const snapped = clampItemToPolygon(pt, itemW, itemD, itemToMove.rotation || 0, polygon, state.shape, w, d);
-        const posX = snapped.x;
-        const posZ = snapped.z;
-
-        const updateItem = (prev: PlacedItem) => ({
-          ...prev,
-          position: [posX, 0, posZ] as [number, number, number],
         });
 
         if (draggingItemId.current) {
