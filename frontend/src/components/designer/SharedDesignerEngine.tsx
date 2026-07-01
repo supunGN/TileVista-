@@ -2147,7 +2147,7 @@ function MeasurementOverlay({
                 const t = ((x1 - itemPos.x) * dz - (z1 - itemPos.z) * dx) / denom;
                 const u = ((x1 - itemPos.x) * dir.z - (z1 - itemPos.z) * dir.x) / denom;
 
-                if (t > 0 && u >= 0 && u <= 1) {
+                if (t > extent + 0.01 && u >= 0 && u <= 1) {
                   if (t < closestT) {
                     closestT = t;
                     interPt = new THREE.Vector3(itemPos.x + t * dir.x, 0.05, itemPos.z + t * dir.z);
@@ -2190,7 +2190,7 @@ function MeasurementOverlay({
                   const t = ((seg[0].x - itemPos.x) * dz - (seg[0].z - itemPos.z) * dx) / denom;
                   const u = ((seg[0].x - itemPos.x) * dir.z - (seg[0].z - itemPos.z) * dir.x) / denom;
 
-                  if (t > 0 && u >= 0 && u <= 1) {
+                  if (t > extent + 0.01 && u >= 0 && u <= 1) {
                     if (t < closestT) {
                       closestT = t;
                       interPt = new THREE.Vector3(itemPos.x + t * dir.x, 0.05, itemPos.z + t * dir.z);
