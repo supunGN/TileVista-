@@ -564,10 +564,6 @@ export default function ProductPanel() {
                       <span className="text-[10px] text-gray-400 block">Material</span>
                       <span className="font-semibold text-gray-800">{selectedProductDetails.material || 'N/A'}</span>
                     </div>
-                    <div>
-                      <span className="text-[10px] text-gray-400 block">Asset Loaded</span>
-                      <span className="font-semibold text-gray-800">{selectedProductDetails.hasAssetEntry ? 'Yes' : 'No'}</span>
-                    </div>
                   </div>
                 </div>
               </div>

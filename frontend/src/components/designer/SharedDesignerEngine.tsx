@@ -6036,11 +6036,11 @@ export function ItemSidebarPreview({ item, heightClass = "h-40" }: { item: any, 
   const previewItem = { ...item, model: fullUrl };
   return (
     <div className={`w-full ${heightClass} bg-white rounded-lg overflow-hidden border border-gray-200 shadow-inner relative`}>
-      <Canvas camera={{ position: [0, 3.5, 8], fov: 50 }}>
+      <Canvas camera={{ position: [0, 1.6, 4.0], fov: 45 }}>
         <ambientLight intensity={0.7} />
         <directionalLight position={[5, 10, 5]} intensity={1.2} />
         <OrbitControls autoRotate autoRotateSpeed={2.0} enableZoom={true} enablePan={false} />
-        <group position={[0, -1, 0]}>
+        <group position={[0, -0.8, 0]}>
           <DynamicFurnitureModel item={previewItem} selected={false} />
         </group>
       </Canvas>
