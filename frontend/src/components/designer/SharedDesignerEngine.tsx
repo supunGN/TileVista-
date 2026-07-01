@@ -1998,24 +1998,23 @@ function formatLength(meters: number, unit: 'ft' | 'cm') {
 }
 
 function getItemDimensions(type: string): { width: number, depth: number } {
-  switch (type) {
-    case 'sink':
-      return { width: 1.6, depth: 1.4 };
-    case 'bathtub':
-      return { width: 4.3, depth: 2.3 };
-    case 'shower':
-      return { width: 3.0, depth: 3.0 };
-    case 'toilet':
-      return { width: 1.4, depth: 2.2 };
-    case 'towel_rail':
-      return { width: 1.8, depth: 0.4 };
-    case 'washing_machine':
-      return { width: 2.0, depth: 2.0 };
-    case 'light':
-      return { width: 0.5, depth: 0.5 };
-    default:
-      return { width: 1.5, depth: 1.5 };
-  }
+  const t = type;
+  if (t === 'beds' || t === 'bed') return { width: 2.1, depth: 2.1 };
+  if (t === 'wardrobes' || t === 'wardrobe') return { width: 1.25, depth: 1.25 };
+  if (t === 'sofa' || t === 'sofas') return { width: 2.15, depth: 2.15 };
+  if (t === 'table' || t === 'dressing_table') return { width: 1.55, depth: 1.55 };
+  if (t === 'chair' || t === 'chairs') return { width: 0.65, depth: 0.65 };
+  if (t === 'tv_cabinet') return { width: 1.55, depth: 1.55 };
+  if (t === 'coffee_table') return { width: 1.1, depth: 1.1 };
+  
+  if (t === 'sink') return { width: 1.6 * 0.3048, depth: 1.4 * 0.3048 };
+  if (t === 'bathtub') return { width: 4.3 * 0.3048, depth: 2.3 * 0.3048 };
+  if (t === 'shower') return { width: 3.0 * 0.3048, depth: 3.0 * 0.3048 };
+  if (t === 'toilet') return { width: 1.4 * 0.3048, depth: 2.2 * 0.3048 };
+  if (t === 'towel_rail') return { width: 1.8 * 0.3048, depth: 0.4 * 0.3048 };
+  if (t === 'washing_machine') return { width: 2.0 * 0.3048, depth: 2.0 * 0.3048 };
+  if (t === 'light') return { width: 0.5 * 0.3048, depth: 0.5 * 0.3048 };
+  return { width: 1.5 * 0.3048, depth: 1.5 * 0.3048 };
 }
 
 function RoomDimensionLine({ start, end, label, angle }: { start: [number, number, number], end: [number, number, number], label: string, angle: number }) {
