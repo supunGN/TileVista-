@@ -2103,23 +2103,31 @@ function MeasurementOverlay({
 
         const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
         const dims = getItemDimensions(item.type);
-        const extents = [
-          (dims.depth / 2) * 0.3048,  // index 0: front (0, 0, 1)
-          (dims.depth / 2) * 0.3048,  // index 1: back (0, 0, -1)
-          (dims.width / 2) * 0.3048,  // index 2: right (1, 0, 0)
-          (dims.width / 2) * 0.3048   // index 3: left (-1, 0, 0)
-        ];
+        
+        const cachedDims = globalItemDimensions.get(item.id);
+        let wMeters = 0.5;
+        let dMeters = 0.5;
+        if (cachedDims) {
+          wMeters = cachedDims.width;
+          dMeters = cachedDims.depth;
+        } else {
+          const fallback = getItemDimensions(item.type);
+          wMeters = fallback.width;
+          dMeters = fallback.depth;
+        }
 
+        // We only show FRONT, RIGHT, and LEFT directions (exactly 3 measurements)
         const dirs = [
-          new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), item.rotation),
-          new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), item.rotation),
-          new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), item.rotation),
-          new THREE.Vector3(-1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), item.rotation)
+          { vec: new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), item.rotation), extent: dMeters / 2 },  // Front
+          { vec: new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), item.rotation), extent: wMeters / 2 },  // Right
+          { vec: new THREE.Vector3(-1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), item.rotation), extent: wMeters / 2 }  // Left
         ];
 
         return (
           <group>
-            {dirs.map((dir, dIdx) => {
+            {dirs.map((dConfig, dIdx) => {
+              const dir = dConfig.vec;
+              const extent = dConfig.extent;
               let closestT = Infinity;
               let interPt: THREE.Vector3 | null = null;
               let wallAngle = 0;
@@ -2151,11 +2159,7 @@ function MeasurementOverlay({
               if (!interPt) return null;
 
               const totalDist = itemPos.distanceTo(interPt);
-              const extent = extents[dIdx];
               const actualSpacing = totalDist - extent;
-
-              // If spacing is extremely small (item is pushed against the wall), skip rendering to match Screenshot 1 clean look
-              if (actualSpacing < 0.03) return null;
 
               const p1 = new THREE.Vector3().addScaledVector(dir, extent).add(itemPos);
               p1.y = 0.05;
