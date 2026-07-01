@@ -2632,6 +2632,10 @@ function BathroomScene({
       if (dims) {
         itemD = dims.depth;
         itemW = dims.width;
+      } else {
+        const fallback = getItemDimensions(itemToMove.type);
+        itemD = fallback.depth;
+        itemW = fallback.width;
       }
 
       // Calculate rotated dimensions based on custom rotation offset to prevent clipping into walls
@@ -4063,13 +4067,9 @@ function RoomPreview3D({
             itemW = dims.width;
             itemD = dims.depth;
           } else {
-            if (t === 'beds' || t === 'bed') { itemW = 2.1; itemD = 2.1; }
-            else if (t === 'wardrobes' || t === 'wardrobe') { itemW = 1.25; itemD = 1.25; }
-            else if (t === 'sofa' || t === 'sofas') { itemW = 2.15; itemD = 2.15; }
-            else if (t === 'table' || t === 'dressing_table') { itemW = 1.55; itemD = 1.55; }
-            else if (t === 'chair' || t === 'chairs') { itemW = 0.65; itemD = 0.65; }
-            else if (t === 'tv_cabinet') { itemW = 1.55; itemD = 1.55; }
-            else if (t === 'coffee_table') { itemW = 1.1; itemD = 1.1; }
+            const fallback = getItemDimensions(t);
+            itemW = fallback.width;
+            itemD = fallback.depth;
           }
 
           const snapped = clampItemToPolygon(
