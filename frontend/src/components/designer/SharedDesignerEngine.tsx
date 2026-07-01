@@ -599,7 +599,10 @@ function GLBModel({ url, selected, item }: { url: string, selected: boolean, ite
     }
 
     // Apply custom asset rotation transformations if defined
-    if (item.rotation) {
+    if (item.rotationY !== undefined && item.rotationY !== null) {
+      const ry = Number(item.rotationY) * (Math.PI / 180);
+      clone.rotation.set(0, ry, 0);
+    } else if (item.rotation && typeof item.rotation === 'object') {
       const rx = item.rotation.x ? Number(item.rotation.x) * (Math.PI / 180) : 0;
       const ry = item.rotation.y ? Number(item.rotation.y) * (Math.PI / 180) : 0;
       const rz = item.rotation.z ? Number(item.rotation.z) * (Math.PI / 180) : 0;
