@@ -6478,33 +6478,6 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
           Top View
         </button>
 
-        {/* Side views dropdown */}
-        {numWalls > 0 && (
-          <div className="relative group">
-            <button className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase text-gray-600 hover:text-[#1A1A1A] hover:bg-gray-100/50 transition-all duration-300">
-              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-              Side Views
-              <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 ml-1 opacity-60" fill="none" stroke="currentColor" strokeWidth="3">
-                <path d="m18 15-6-6-6 6" />
-              </svg>
-            </button>
-            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 bg-white border border-gray-200 shadow-xl rounded-xl py-1.5 hidden group-hover:flex flex-col min-w-[130px] z-30">
-              {Array.from({ length: numWalls }).map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => { setTopView(false); setActiveSideView(idx); }}
-                  className="w-full text-center px-4 py-2 text-[10px] font-bold tracking-wider uppercase text-gray-700 hover:bg-gray-100 hover:text-[#1A1A1A] transition-colors"
-                >
-                  Wall {idx + 1} ({idx === 0 ? 'Back' : idx === 1 ? 'Right' : idx === 2 ? 'Left' : 'Front'})
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="w-[1px] h-5 bg-gray-200" />
 
         {/* Customise room */}
