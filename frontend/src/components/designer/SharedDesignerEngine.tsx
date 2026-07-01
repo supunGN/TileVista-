@@ -2797,7 +2797,7 @@ function BathroomScene({
             )}
 
             {/* Wall Selection Target */}
-            {!activePlacement && state.designType === 'bathroom' && !state.wallDesigns[i]?.textureUrl && (
+            {activeCategory === 'wall_tiles' && !activePlacement && state.designType === 'bathroom' && (
               <mesh
                 name="selection-target"
                 position={[0, h / 2, 0.005]}
