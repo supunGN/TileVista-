@@ -2144,10 +2144,13 @@ function MeasurementOverlay({
                 const denom = dir.x * dz - dir.z * dx;
                 if (Math.abs(denom) < 0.0001) continue;
 
+                // Ignore walls nearly parallel to the ray (sin of angle < 0.08)
+                if (Math.abs(denom) / wall.len < 0.08) continue;
+
                 const t = ((x1 - itemPos.x) * dz - (z1 - itemPos.z) * dx) / denom;
                 const u = ((x1 - itemPos.x) * dir.z - (z1 - itemPos.z) * dir.x) / denom;
 
-                if (t > extent + 0.01 && u >= 0 && u <= 1) {
+                if (t > 0.01 && u >= 0 && u <= 1) {
                   if (t < closestT) {
                     closestT = t;
                     interPt = new THREE.Vector3(itemPos.x + t * dir.x, 0.05, itemPos.z + t * dir.z);
@@ -2174,23 +2177,26 @@ function MeasurementOverlay({
 
                 const corners = getItemCorners(other.position[0], other.position[2], otherW, otherD, other.rotation);
                 const segments = [
-                  [corners[0], corners[1]],
-                  [corners[1], corners[2]],
-                  [corners[2], corners[3]],
-                  [corners[3], corners[0]]
+                  { p1: corners[0], p2: corners[1], len: otherW },
+                  { p1: corners[1], p2: corners[2], len: otherD },
+                  { p1: corners[2], p2: corners[3], len: otherW },
+                  { p1: corners[3], p2: corners[0], len: otherD }
                 ];
 
                 for (const seg of segments) {
-                  const dx = seg[1].x - seg[0].x;
-                  const dz = seg[1].z - seg[0].z;
+                  const dx = seg.p2.x - seg.p1.x;
+                  const dz = seg.p2.z - seg.p1.z;
 
                   const denom = dir.x * dz - dir.z * dx;
                   if (Math.abs(denom) < 0.0001) continue;
 
-                  const t = ((seg[0].x - itemPos.x) * dz - (seg[0].z - itemPos.z) * dx) / denom;
-                  const u = ((seg[0].x - itemPos.x) * dir.z - (seg[0].z - itemPos.z) * dir.x) / denom;
+                  // Ignore segments nearly parallel to the ray
+                  if (Math.abs(denom) / seg.len < 0.08) continue;
 
-                  if (t > extent + 0.01 && u >= 0 && u <= 1) {
+                  const t = ((seg.p1.x - itemPos.x) * dz - (seg.p1.z - itemPos.z) * dx) / denom;
+                  const u = ((seg.p1.x - itemPos.x) * dir.z - (seg.p1.z - itemPos.z) * dir.x) / denom;
+
+                  if (t > 0.01 && u >= 0 && u <= 1) {
                     if (t < closestT) {
                       closestT = t;
                       interPt = new THREE.Vector3(itemPos.x + t * dir.x, 0.05, itemPos.z + t * dir.z);
@@ -2203,7 +2209,7 @@ function MeasurementOverlay({
               if (!interPt) return null;
 
               const totalDist = itemPos.distanceTo(interPt);
-              const actualSpacing = totalDist - extent;
+              const actualSpacing = Math.max(0, totalDist - extent);
 
               const p1 = new THREE.Vector3().addScaledVector(dir, extent).add(itemPos);
               p1.y = 0.05;
