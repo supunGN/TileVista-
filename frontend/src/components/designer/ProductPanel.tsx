@@ -569,23 +569,38 @@ export default function ProductPanel() {
               </div>
 
               {/* Actions Footer */}
-              <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3">
+              <div className="p-6 border-t border-gray-100 bg-gray-50 flex flex-col gap-3">
                 <button
                   onClick={() => {
-                    handleAddItem(selectedProductDetails.category, state.designType === 'room' ? selectedProductDetails : { ...selectedProductDetails, type: selectedProductDetails.category });
+                    alert(`Successfully added "${selectedProductDetails.name}" to your shopping cart!`);
                   }}
-                  className="flex-1 py-3 bg-black text-white hover:bg-neutral-800 text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-98"
+                  className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-98 flex items-center justify-center gap-2"
                 >
-                  Place Another
+                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <circle cx="8" cy="21" r="1" />
+                    <circle cx="19" cy="21" r="1" />
+                    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+                  </svg>
+                  Add to Cart
                 </button>
-                <button
-                  onClick={() => {
-                    setSelectedProductDetails(null);
-                  }}
-                  className="px-4 py-3 bg-white border border-gray-200 text-gray-600 hover:text-black hover:bg-gray-100 text-xs font-bold uppercase tracking-widest rounded-xl transition-all"
-                >
-                  List
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      handleAddItem(selectedProductDetails.category, state.designType === 'room' ? selectedProductDetails : { ...selectedProductDetails, type: selectedProductDetails.category });
+                    }}
+                    className="flex-1 py-3 bg-black text-white hover:bg-neutral-800 text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-98"
+                  >
+                    Place Another
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedProductDetails(null);
+                    }}
+                    className="px-4 py-3 bg-white border border-gray-200 text-gray-600 hover:text-black hover:bg-gray-100 text-xs font-bold uppercase tracking-widest rounded-xl transition-all"
+                  >
+                    List
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -669,7 +684,7 @@ export default function ProductPanel() {
                                 {item.name}
                               </p>
                               
-                              <div className="mt-auto pt-3 flex items-baseline justify-between border-t border-gray-50">
+                              <div className="mt-auto pt-3 flex items-baseline justify-between border-t border-gray-50 mb-2">
                                 <div className="flex items-baseline">
                                   <span className="text-[9px] font-bold text-gray-900 mr-0.5">Rs</span>
                                   <span className="text-[15px] font-black text-gray-900 leading-none">{priceWhole.toLocaleString()}</span>
@@ -681,6 +696,20 @@ export default function ProductPanel() {
                                   {item.quantity > 0 ? 'In Stock' : 'Out'}
                                 </span>
                               </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  alert(`Successfully added "${item.name}" to your shopping cart!`);
+                                }}
+                                className="w-full py-2 bg-[#1A1A1A] hover:bg-neutral-800 text-white text-[9px] font-bold uppercase tracking-widest rounded-xl transition-all shadow-sm active:scale-98 flex items-center justify-center gap-1.5"
+                              >
+                                <svg viewBox="0 0 24 24" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                  <circle cx="8" cy="21" r="1" />
+                                  <circle cx="19" cy="21" r="1" />
+                                  <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+                                </svg>
+                                Add to Cart
+                              </button>
                             </div>
                           </div>
                         );
