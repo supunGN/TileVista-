@@ -2239,9 +2239,9 @@ function MeasurementOverlay({
                     <meshBasicMaterial color="#ffffff" />
                   </mesh>
 
-                  {/* Sleek blue badge (balanced size) */}
-                  <Html position={midpoint} center distanceFactor={10}>
-                    <div className="bg-[#0086ff] text-white text-[11px] font-sans font-bold px-2 py-0.5 rounded shadow-lg select-none pointer-events-none whitespace-nowrap">
+                  {/* Sleek blue badge (slightly reduced size) */}
+                  <Html position={midpoint} center distanceFactor={12.5}>
+                    <div className="bg-[#0086ff] text-white text-[10px] font-sans font-bold px-1.5 py-0.5 rounded shadow-lg select-none pointer-events-none whitespace-nowrap">
                       {formatLength(actualSpacing, settings.unit)}
                     </div>
                   </Html>
