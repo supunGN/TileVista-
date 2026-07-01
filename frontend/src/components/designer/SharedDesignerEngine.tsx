@@ -2048,8 +2048,8 @@ function RoomDimensionLine({ start, end, label, angle }: { start: [number, numbe
       </mesh>
 
       {/* Sleek architectural label (balanced font size) */}
-      <Html position={midpoint} center distanceFactor={10}>
-        <div className="bg-[#ececec] text-[#3f3f46] px-1 py-0.5 text-[11px] font-sans font-extrabold select-none pointer-events-none whitespace-nowrap">
+      <Html position={midpoint} center distanceFactor={15}>
+        <div className="bg-[#ececec] text-[#3f3f46] px-1 py-0.5 text-[9.5px] font-sans font-extrabold select-none pointer-events-none whitespace-nowrap">
           {label}
         </div>
       </Html>
@@ -2240,8 +2240,8 @@ function MeasurementOverlay({
                   </mesh>
 
                   {/* Sleek blue badge (slightly reduced size) */}
-                  <Html position={midpoint} center distanceFactor={12.5}>
-                    <div className="bg-[#0086ff] text-white text-[10px] font-sans font-bold px-1.5 py-0.5 rounded shadow-lg select-none pointer-events-none whitespace-nowrap">
+                  <Html position={midpoint} center distanceFactor={15}>
+                    <div className="bg-[#0086ff] text-white text-[9.5px] font-sans font-bold px-1.5 py-0.5 rounded shadow-lg select-none pointer-events-none whitespace-nowrap">
                       {formatLength(actualSpacing, settings.unit)}
                     </div>
                   </Html>
