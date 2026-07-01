@@ -553,12 +553,16 @@ export default function ProductPanel() {
                       <span className="font-semibold text-gray-800">{selectedProductDetails.sku || 'N/A'}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-gray-400 block">Material Family</span>
-                      <span className="font-semibold text-gray-800">{selectedProductDetails.material || 'N/A'}</span>
+                      <span className="text-[10px] text-gray-400 block">Brand</span>
+                      <span className="font-semibold text-gray-800">{selectedProductDetails.brand || 'N/A'}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-gray-400 block">Finish Family</span>
-                      <span className="font-semibold text-gray-800">{selectedProductDetails.finish || 'N/A'}</span>
+                      <span className="text-[10px] text-gray-400 block">Color</span>
+                      <span className="font-semibold text-gray-800">{selectedProductDetails.color || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-400 block">Material</span>
+                      <span className="font-semibold text-gray-800">{selectedProductDetails.material || 'N/A'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-gray-400 block">Asset Loaded</span>

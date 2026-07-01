@@ -32,6 +32,8 @@ export class ProductsService {
     dto.price = osposItem.price;
     dto.quantity = osposItem.quantity;
     dto.isStaleData = isStaleData;
+    dto.brand = osposItem.brand ?? null;
+    dto.color = osposItem.color ?? null;
 
     if (dbProduct && dbProduct.product_assets) {
       const asset = dbProduct.product_assets;
@@ -48,8 +50,8 @@ export class ProductsService {
       dto.tags = asset.product_asset_tags
         ? asset.product_asset_tags.map((pat: any) => pat.tags?.tag_name).filter(Boolean)
         : [];
-      dto.material = asset.material_type ?? null;
-      dto.finish = asset.color_family ?? null;
+      dto.material = osposItem.material || asset.material_type || null;
+      dto.finish = osposItem.color || asset.color_family || null;
       dto.isEnabled = dbProduct.is_active ?? true;
       dto.notes = null;
       dto.hasAssetEntry = true;
@@ -59,8 +61,8 @@ export class ProductsService {
       dto.scale = { x: 1, y: 1, z: 1 };
       dto.rotationY = 0;
       dto.tags = [];
-      dto.material = null;
-      dto.finish = null;
+      dto.material = osposItem.material ?? null;
+      dto.finish = osposItem.color ?? null;
       dto.isEnabled = false;
       dto.notes = null;
       dto.hasAssetEntry = false;

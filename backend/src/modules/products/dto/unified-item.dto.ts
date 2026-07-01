@@ -24,6 +24,10 @@ export class UnifiedItemDto {
   price: number;
   /** Live quantity at location 1 from OSPOS */
   quantity: number;
+  /** Brand from OSPOS attribute link */
+  brand: string | null;
+  /** Color from OSPOS attribute link */
+  color: string | null;
 
   // ── Asset Catalog Fields (from TileVista product_assets) ─────────────
   /** Full URL to the product image, or null if no image uploaded */
