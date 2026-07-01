@@ -62,8 +62,6 @@ interface PlacedItem {
   image?: string;
   isWallMounted: boolean;
   rotationOffset?: number;
-  productId?: string;
-  assetId?: string;
 }
 
 interface WallOpening {
@@ -4506,10 +4504,8 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
             model: it.modelUrl,
             cost: 250.00,
             position: it.position,
-            rotation: Array.isArray(it.rotation) ? it.rotation[1] : (it.rotation || 0),
-            isWallMounted,
-            productId: it.productId,
-            assetId: it.assetId
+            rotation: it.rotation[1],
+            isWallMounted
           };
         });
 
@@ -5041,9 +5037,7 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
         position_y: item.position[1],
         position_z: item.position[2],
         rotation_y: item.rotation,
-        modelUrl: item.model,
-        productId: item.productId,
-        assetId: item.assetId
+        modelUrl: item.model
       }));
 
       const response = await fetch(`${apiUrl}/designer/layout`, {

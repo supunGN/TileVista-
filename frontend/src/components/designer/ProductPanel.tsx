@@ -177,9 +177,7 @@ export default function ProductPanel() {
       rotation: 0,
       isWallMounted: isWallMounted,
       color: selectedItemColor || '#FFFFFF',
-      model: fullModelUrl,
-      productId: cat.product_id || cat.productId || undefined,
-      assetId: cat.asset_id || cat.assetId || undefined
+      model: fullModelUrl
     });
 
     if (activeCategory !== 'bathware_products') {
