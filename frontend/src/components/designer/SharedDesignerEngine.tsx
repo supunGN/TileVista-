@@ -2302,19 +2302,38 @@ function BathroomScene({
         if (!op) return;
         const pt = getFloorHit(e);
         if (!pt) return;
-        const wall = walls[op.wallIndex];
-        if (wall) {
-          const dx = wall.p2[0] - wall.p1[0];
-          const dz = wall.p2[1] - wall.p1[1];
-          const proj = (pt.x - wall.p1[0]) * (dx / wall.len) + (pt.z - wall.p1[1]) * (dz / wall.len);
-          const min = op.width / 2 + 0.1;
-          const max = wall.len - op.width / 2 - 0.1;
-          const clamped = Math.max(min, Math.min(max, proj));
-          setState(prev => ({
-            ...prev,
-            wallOpenings: prev.wallOpenings.map(o => o.id === opId ? { ...o, positionOffset: clamped } : o)
-          }));
-        }
+
+        // Find closest wall segment for the opening
+        let closestWallIdx = 0;
+        let closestDist = Infinity;
+        let closestOffset = 0;
+
+        walls.forEach((w, idx) => {
+          const dx = w.p2[0] - w.p1[0];
+          const dz = w.p2[1] - w.p1[1];
+          const ux = pt.x - w.p1[0];
+          const uz = pt.z - w.p1[1];
+          const wallLenSq = w.len * w.len;
+          const t = Math.max(0.1, Math.min(0.9, wallLenSq > 0 ? (ux * dx + uz * dz) / wallLenSq : 0));
+          const projX = w.p1[0] + t * dx;
+          const projZ = w.p1[1] + t * dz;
+          const dist = Math.hypot(pt.x - projX, pt.z - projZ);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closestWallIdx = idx;
+            closestOffset = t * w.len;
+          }
+        });
+
+        const closestWall = walls[closestWallIdx];
+        const min = op.width / 2 + 0.1;
+        const max = closestWall.len - op.width / 2 - 0.1;
+        const clamped = Math.max(min, Math.min(max, closestOffset));
+
+        setState(prev => ({
+          ...prev,
+          wallOpenings: prev.wallOpenings.map(o => o.id === opId ? { ...o, wallIndex: closestWallIdx, positionOffset: clamped } : o)
+        }));
         return;
       }
 
@@ -3510,7 +3529,7 @@ function RoomPreview3D({
   wizardStep: number;
   wallOpenings: WallOpening[];
   onAddWallOpening: (op: WallOpening) => void;
-  onUpdateWallOpeningOffset: (id: string, offset: number) => void;
+  onUpdateWallOpeningOffset: (id: string, offset: number, wallIndex?: number) => void;
   onRemoveWallOpening: (id: string) => void;
   activePlacement: { type: 'door' | 'window'; style: string; name: string; width: number; height: number; sillHeight: number } | null;
   setActivePlacement: (ap: any) => void; placedItems?: any[]; setPlacedItems?: any; isPlacingItem?: any; setIsPlacingItem?: any; selectedItemId?: string | null; setSelectedItemId?: any; recordHistory?: any; setOrbitEnabled?: any; CustomFurniture?: any;
@@ -3977,11 +3996,32 @@ function RoomPreview3D({
                 e.stopPropagation();
                 const hit = getFloorHit(e.nativeEvent);
                 if (hit) {
-                  const proj = (hit.x - wall.p1[0]) * (dx / wall.len) + (hit.z - wall.p1[1]) * (dz / wall.len);
+                  let closestWallIdx = 0;
+                  let closestDist = Infinity;
+                  let closestOffset = 0;
+
+                  walls.forEach((w, idx) => {
+                    const dx = w.p2[0] - w.p1[0];
+                    const dz = w.p2[1] - w.p1[1];
+                    const ux = hit.x - w.p1[0];
+                    const uz = hit.z - w.p1[1];
+                    const wallLenSq = w.len * w.len;
+                    const t = Math.max(0.1, Math.min(0.9, wallLenSq > 0 ? (ux * dx + uz * dz) / wallLenSq : 0));
+                    const projX = w.p1[0] + t * dx;
+                    const projZ = w.p1[1] + t * dz;
+                    const dist = Math.hypot(hit.x - projX, hit.z - projZ);
+                    if (dist < closestDist) {
+                      closestDist = dist;
+                      closestWallIdx = idx;
+                      closestOffset = t * w.len;
+                    }
+                  });
+
+                  const closestWall = walls[closestWallIdx];
                   const min = opening.width / 2 + 0.1;
-                  const max = wall.len - opening.width / 2 - 0.1;
-                  const clamped = Math.max(min, Math.min(max, proj));
-                  onUpdateWallOpeningOffset(opening.id, clamped);
+                  const max = closestWall.len - opening.width / 2 - 0.1;
+                  const clamped = Math.max(min, Math.min(max, closestOffset));
+                  onUpdateWallOpeningOffset(opening.id, clamped, closestWallIdx);
                 }
               }
             }}
@@ -4018,11 +4058,32 @@ function RoomPreview3D({
                         e.stopPropagation();
                         const hit = getFloorHit(e.nativeEvent);
                         if (hit) {
-                          const proj = (hit.x - wall.p1[0]) * (dx / wall.len) + (hit.z - wall.p1[1]) * (dz / wall.len);
+                          let closestWallIdx = 0;
+                          let closestDist = Infinity;
+                          let closestOffset = 0;
+
+                          walls.forEach((w, idx) => {
+                            const dx = w.p2[0] - w.p1[0];
+                            const dz = w.p2[1] - w.p1[1];
+                            const ux = hit.x - w.p1[0];
+                            const uz = hit.z - w.p1[1];
+                            const wallLenSq = w.len * w.len;
+                            const t = Math.max(0.1, Math.min(0.9, wallLenSq > 0 ? (ux * dx + uz * dz) / wallLenSq : 0));
+                            const projX = w.p1[0] + t * dx;
+                            const projZ = w.p1[1] + t * dz;
+                            const dist = Math.hypot(hit.x - projX, hit.z - projZ);
+                            if (dist < closestDist) {
+                              closestDist = dist;
+                              closestWallIdx = idx;
+                              closestOffset = t * w.len;
+                            }
+                          });
+
+                          const closestWall = walls[closestWallIdx];
                           const min = opening.width / 2 + 0.1;
-                          const max = wall.len - opening.width / 2 - 0.1;
-                          const clamped = Math.max(min, Math.min(max, proj));
-                          onUpdateWallOpeningOffset(opening.id, clamped);
+                          const max = closestWall.len - opening.width / 2 - 0.1;
+                          const clamped = Math.max(min, Math.min(max, closestOffset));
+                          onUpdateWallOpeningOffset(opening.id, clamped, closestWallIdx);
                         }
                       }
                     }}
@@ -4457,9 +4518,9 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
     setWizardWallOpenings(prev => [...prev, op]);
   };
 
-  const handleUpdateWallOpeningOffset = (id: string, offset: number) => {
+  const handleUpdateWallOpeningOffset = (id: string, offset: number, wallIndex?: number) => {
     setWizardWallOpenings(prev =>
-      prev.map(op => (op.id === id ? { ...op, positionOffset: offset } : op))
+      prev.map(op => (op.id === id ? { ...op, positionOffset: offset, wallIndex: wallIndex !== undefined ? wallIndex : op.wallIndex } : op))
     );
   };
 
