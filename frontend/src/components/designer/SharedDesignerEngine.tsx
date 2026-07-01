@@ -1997,6 +1997,27 @@ function formatLength(meters: number, unit: 'ft' | 'cm') {
   }
 }
 
+function getItemDimensions(type: string): { width: number, depth: number } {
+  switch (type) {
+    case 'sink':
+      return { width: 1.6, depth: 1.4 };
+    case 'bathtub':
+      return { width: 4.3, depth: 2.3 };
+    case 'shower':
+      return { width: 3.0, depth: 3.0 };
+    case 'toilet':
+      return { width: 1.4, depth: 2.2 };
+    case 'towel_rail':
+      return { width: 1.8, depth: 0.4 };
+    case 'washing_machine':
+      return { width: 2.0, depth: 2.0 };
+    case 'light':
+      return { width: 0.5, depth: 0.5 };
+    default:
+      return { width: 1.5, depth: 1.5 };
+  }
+}
+
 function RoomDimensionLine({ start, end, label, angle }: { start: [number, number, number], end: [number, number, number], label: string, angle: number }) {
   const p1 = new THREE.Vector3(...start);
   const p2 = new THREE.Vector3(...end);
@@ -2011,25 +2032,25 @@ function RoomDimensionLine({ start, end, label, angle }: { start: [number, numbe
     <group>
       {/* Bold dimension line */}
       <mesh position={midpoint} quaternion={rotation}>
-        <boxGeometry args={[0.01, len, 0.01]} />
+        <boxGeometry args={[0.006, len, 0.006]} />
         <meshBasicMaterial color="#52525b" />
       </mesh>
 
       {/* Start slash tick at 45 degrees */}
       <mesh position={start} rotation={[0, angle + Math.PI / 4, 0]}>
-        <boxGeometry args={[0.01, 0.01, 0.25]} />
+        <boxGeometry args={[0.006, 0.006, 0.16]} />
         <meshBasicMaterial color="#52525b" />
       </mesh>
 
       {/* End slash tick at 45 degrees */}
       <mesh position={end} rotation={[0, angle + Math.PI / 4, 0]}>
-        <boxGeometry args={[0.01, 0.01, 0.25]} />
+        <boxGeometry args={[0.006, 0.006, 0.16]} />
         <meshBasicMaterial color="#52525b" />
       </mesh>
 
-      {/* Sleek architectural label (larger text) */}
-      <Html position={midpoint} center distanceFactor={6}>
-        <div className="bg-[#ececec] text-[#3f3f46] px-1.5 py-0.5 text-[15px] font-sans font-extrabold select-none pointer-events-none whitespace-nowrap">
+      {/* Sleek architectural label (balanced font size) */}
+      <Html position={midpoint} center distanceFactor={10}>
+        <div className="bg-[#ececec] text-[#3f3f46] px-1 py-0.5 text-[11px] font-sans font-extrabold select-none pointer-events-none whitespace-nowrap">
           {label}
         </div>
       </Html>
@@ -2082,6 +2103,13 @@ function MeasurementOverlay({
         if (!item) return null;
 
         const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
+        const dims = getItemDimensions(item.type);
+        const extents = [
+          (dims.depth / 2) * 0.3048,  // index 0: front (0, 0, 1)
+          (dims.depth / 2) * 0.3048,  // index 1: back (0, 0, -1)
+          (dims.width / 2) * 0.3048,  // index 2: right (1, 0, 0)
+          (dims.width / 2) * 0.3048   // index 3: left (-1, 0, 0)
+        ];
 
         const dirs = [
           new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), item.rotation),
@@ -2123,7 +2151,15 @@ function MeasurementOverlay({
 
               if (!interPt) return null;
 
-              const p1 = new THREE.Vector3(itemPos.x, 0.05, itemPos.z);
+              const totalDist = itemPos.distanceTo(interPt);
+              const extent = extents[dIdx];
+              const actualSpacing = totalDist - extent;
+
+              // If spacing is extremely small (item is pushed against the wall), skip rendering to match Screenshot 1 clean look
+              if (actualSpacing < 0.03) return null;
+
+              const p1 = new THREE.Vector3().addScaledVector(dir, extent).add(itemPos);
+              p1.y = 0.05;
               const p2 = interPt;
               const midpoint = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
               const len = p1.distanceTo(p2);
@@ -2132,28 +2168,28 @@ function MeasurementOverlay({
 
               return (
                 <group key={`spacing-${dIdx}`}>
-                  {/* Thick line */}
+                  {/* Thin line */}
                   <mesh position={midpoint} quaternion={lineRotation}>
-                    <boxGeometry args={[0.01, len, 0.01]} />
+                    <boxGeometry args={[0.006, len, 0.006]} />
                     <meshBasicMaterial color="#0086ff" />
                   </mesh>
 
                   {/* Tick at wall */}
                   <mesh position={p2} rotation={[0, wallAngle, 0]}>
-                    <boxGeometry args={[0.25, 0.01, 0.01]} />
+                    <boxGeometry args={[0.16, 0.006, 0.006]} />
                     <meshBasicMaterial color="#0086ff" />
                   </mesh>
 
-                  {/* Dot at item center */}
+                  {/* Dot at item boundary */}
                   <mesh position={p1}>
-                    <sphereGeometry args={[0.05, 16, 16]} />
+                    <sphereGeometry args={[0.03, 16, 16]} />
                     <meshBasicMaterial color="#ffffff" />
                   </mesh>
 
-                  {/* Sleek blue badge (larger text) */}
-                  <Html position={midpoint} center distanceFactor={6}>
-                    <div className="bg-[#0086ff] text-white text-[15px] font-sans font-extrabold px-3 py-1 rounded-lg shadow-xl select-none pointer-events-none whitespace-nowrap">
-                      {formatLength(len, settings.unit)}
+                  {/* Sleek blue badge (balanced size) */}
+                  <Html position={midpoint} center distanceFactor={10}>
+                    <div className="bg-[#0086ff] text-white text-[11px] font-sans font-bold px-2 py-0.5 rounded shadow-lg select-none pointer-events-none whitespace-nowrap">
+                      {formatLength(actualSpacing, settings.unit)}
                     </div>
                   </Html>
                 </group>
