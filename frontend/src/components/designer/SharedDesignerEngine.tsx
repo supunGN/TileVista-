@@ -139,86 +139,31 @@ function closestPointOnPolygon(pt: { x: number, z: number }, polygon: [number, n
 
 function clampItemToPolygon(pt: { x: number, z: number }, width: number, depth: number, rotation: number, polygon: [number, number][], shape: string = 'rectangular', roomW: number = 10, roomD: number = 10): { x: number, z: number } {
   const poly3D = polygon.map(p => ({ x: p[0], z: -p[1] }));
+  if (poly3D.length === 0) return pt;
 
-  let currentPt = { ...pt };
+  let minX = Infinity, maxX = -Infinity;
+  let minZ = Infinity, maxZ = -Infinity;
+  poly3D.forEach(p => {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.z < minZ) minZ = p.z;
+    if (p.z > maxZ) maxZ = p.z;
+  });
 
-  // 1. If center is strictly outside, snap to the closest edge point first
-  let inside = false;
-  for (let i = 0, j = poly3D.length - 1; i < poly3D.length; j = i++) {
-    const xi = poly3D[i].x, zi = poly3D[i].z;
-    const xj = poly3D[j].x, zj = poly3D[j].z;
-    const intersect = ((zi > currentPt.z) !== (zj > currentPt.z))
-      && (currentPt.x < (xj - xi) * (currentPt.z - zi) / (zj - zi) + xi);
-    if (intersect) inside = !inside;
-  }
+  // Calculate rotated bounds to prevent clipping out of the room
+  const cos = Math.abs(Math.cos(rotation));
+  const sin = Math.abs(Math.sin(rotation));
+  const rotatedW = width * cos + depth * sin;
+  const rotatedD = depth * cos + width * sin;
 
-  if (!inside) {
-    let minDist = Infinity;
-    let closestPt = currentPt;
-    for (let i = 0; i < poly3D.length; i++) {
-      const p1 = poly3D[i];
-      const p2 = poly3D[(i + 1) % poly3D.length];
-      const dx = p2.x - p1.x;
-      const dz = p2.z - p1.z;
-      const lenSq = dx * dx + dz * dz;
-      let t = 0;
-      if (lenSq > 0) {
-        t = ((currentPt.x - p1.x) * dx + (currentPt.z - p1.z) * dz) / lenSq;
-        t = Math.max(0, Math.min(1, t));
-      }
-      const projX = p1.x + t * dx;
-      const projZ = p1.z + t * dz;
-      const dist = Math.hypot(currentPt.x - projX, currentPt.z - projZ);
-      if (dist < minDist) {
-        minDist = dist;
-        closestPt = { x: projX, z: projZ };
-      }
-    }
-    currentPt = closestPt;
-  }
+  const bufferX = rotatedW / 2;
+  const bufferZ = rotatedD / 2;
 
-  // 2. Iterative push to strictly satisfy all edge boundaries based on actual item rotation
-  const ux_x = Math.cos(rotation);
-  const ux_z = -Math.sin(rotation);
-  const uz_x = Math.sin(rotation);
-  const uz_z = Math.cos(rotation);
-
-  for (let iter = 0; iter < 5; iter++) {
-    let moved = false;
-    for (let i = 0; i < poly3D.length; i++) {
-      const p1 = poly3D[i];
-      const p2 = poly3D[(i + 1) % poly3D.length];
-
-      const dx = p2.x - p1.x;
-      const dz = p2.z - p1.z;
-      const len = Math.hypot(dx, dz);
-      if (len === 0) continue;
-
-      // Inward normal for CCW polygon
-      const nx = dz / len;
-      const nz = -dx / len;
-
-      // Exact padding needed in the direction of the normal
-      const r_eff = (width / 2) * Math.abs(ux_x * nx + ux_z * nz) + (depth / 2) * Math.abs(uz_x * nx + uz_z * nz);
-
-      // Distance from center to the line segment
-      let t = ((currentPt.x - p1.x) * dx + (currentPt.z - p1.z) * dz) / (len * len);
-      t = Math.max(0, Math.min(1, t));
-      const projX = p1.x + t * dx;
-      const projZ = p1.z + t * dz;
-      const dist = Math.hypot(currentPt.x - projX, currentPt.z - projZ);
-
-      if (dist < r_eff - 0.001) {
-        // Push the item inward along the normal
-        currentPt.x += nx * (r_eff - dist + 0.001);
-        currentPt.z += nz * (r_eff - dist + 0.001);
-        moved = true;
-      }
-    }
-    if (!moved) break;
-  }
-
-  return currentPt;
+  // Clamp the item center inside the room boundaries
+  return {
+    x: Math.max(minX + bufferX, Math.min(maxX - bufferX, pt.x)),
+    z: Math.max(minZ + bufferZ, Math.min(maxZ - bufferZ, pt.z))
+  };
 }
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
