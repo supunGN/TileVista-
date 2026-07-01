@@ -120,13 +120,15 @@ export class DesignerService {
           position_y: Number(op.position_y),
         })),
       })),
-      items: ((layout as any).custom_design_items || []).map((it: any) => ({
-        id: it.custom_item_id,
-        type: it.item_type,
-        name: it.item_name,
-        modelUrl: it.model_url,
+      items: (layout.design_items || []).map((it: any) => ({
+        id: it.design_item_id,
+        type: it.products?.category || 'sink',
+        name: it.products?.name || 'Item',
+        modelUrl: it.product_assets?.glb_url || undefined,
         position: [Number(it.position_x), Number(it.position_y), Number(it.position_z)],
         rotation: [0, Number(it.rotation_y), 0],
+        productId: it.product_id,
+        assetId: it.asset_id,
       })),
     };
   }

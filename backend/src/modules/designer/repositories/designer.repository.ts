@@ -25,7 +25,6 @@ export class DesignerRepository {
       await tx.room_vertices.deleteMany({ where: { design_id: designId } });
       await tx.design_openings.deleteMany({ where: { design_id: designId } });
       await tx.design_items.deleteMany({ where: { design_id: designId } });
-      await tx.custom_design_items.deleteMany({ where: { design_id: designId } });
       await tx.design_walls.deleteMany({ where: { design_id: designId } });
 
       // 2. Create or Update parent room_design
@@ -139,15 +138,15 @@ export class DesignerRepository {
         }
       }
 
-      // 6. Insert new custom_design_items
+      // 6. Insert new design_items
       if (data.items && data.items.length > 0) {
-        await tx.custom_design_items.createMany({
+        await tx.design_items.createMany({
           data: data.items.map((it) => ({
-            custom_item_id: crypto.randomUUID(),
+            design_item_id: crypto.randomUUID(),
             design_id: designId,
-            item_type: it.type,
-            item_name: it.name,
-            model_url: it.modelUrl || `/images/furniture/${it.type}/${it.type}.glb`,
+            product_id: it.productId || fallbackProductId,
+            asset_id: it.assetId || fallbackAssetId,
+            quantity: 1,
             position_x: it.position_x,
             position_y: it.position_y,
             position_z: it.position_z,
@@ -197,8 +196,12 @@ export class DesignerRepository {
             design_openings: true,
           },
         },
-        design_items: true,
-        custom_design_items: true,
+        design_items: {
+          include: {
+            products: true,
+            product_assets: true,
+          }
+        },
       },
     });
   }

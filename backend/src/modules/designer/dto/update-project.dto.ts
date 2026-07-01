@@ -38,5 +38,7 @@ export class UpdateProjectDto {
     position_z: number;
     rotation_y: number;
     modelUrl?: string;
+    productId?: string;
+    assetId?: string;
   }>;
 }

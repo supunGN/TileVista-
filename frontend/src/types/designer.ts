@@ -24,6 +24,8 @@ export interface PlacedItem {
   image?: string;
   isWallMounted: boolean;
   rotationOffset?: number;
+  productId?: string;
+  assetId?: string;
 }
 
 export interface WallOpening {
