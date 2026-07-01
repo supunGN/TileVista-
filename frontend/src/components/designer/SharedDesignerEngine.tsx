@@ -6218,7 +6218,7 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
             {wizardStep > 1 && (
               <button
                 onClick={() => transitionToStep(wizardStep - 1)}
-                className="flex-1 py-3.5 bg-black hover:bg-[#222] text-white text-[10px] font-bold tracking-widest uppercase rounded-xl transition-all shadow-md text-center"
+                className="flex-1 py-3.5 bg-white border border-black hover:bg-black hover:text-white text-black text-[10px] font-bold tracking-widest uppercase rounded-xl transition-all shadow-sm text-center"
               >
                 Go Back
               </button>
