@@ -16,11 +16,7 @@ export default function PublicLayout({
   const { user, isAuthenticated, logout } = useAuth();
 
 
-  const isWorkspace = pathname === '/designer/room' || pathname === '/designer/bathroom';
 
-  if (isWorkspace) {
-    return <div className="min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#D4C5B9] selection:text-[#1A1A1A]">{children}</div>;
-  }
 
   const navigation = [
     { name: 'Home', href: '/' },

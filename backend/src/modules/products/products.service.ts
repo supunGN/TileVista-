@@ -32,6 +32,8 @@ export class ProductsService {
     dto.price = osposItem.price;
     dto.quantity = osposItem.quantity;
     dto.isStaleData = isStaleData;
+    dto.brand = osposItem.brand ?? null;
+    dto.color = osposItem.color ?? null;
 
     if (dbProduct && dbProduct.product_assets) {
       const asset = dbProduct.product_assets;
@@ -48,8 +50,8 @@ export class ProductsService {
       dto.tags = asset.product_asset_tags
         ? asset.product_asset_tags.map((pat: any) => pat.tags?.tag_name).filter(Boolean)
         : [];
-      dto.material = asset.material_type ?? null;
-      dto.finish = asset.color_family ?? null;
+      dto.material = osposItem.material || asset.material_type || null;
+      dto.finish = osposItem.color || asset.color_family || null;
       dto.isEnabled = dbProduct.is_active ?? true;
       dto.notes = null;
       dto.hasAssetEntry = true;
@@ -59,8 +61,8 @@ export class ProductsService {
       dto.scale = { x: 1, y: 1, z: 1 };
       dto.rotationY = 0;
       dto.tags = [];
-      dto.material = null;
-      dto.finish = null;
+      dto.material = osposItem.material ?? null;
+      dto.finish = osposItem.color ?? null;
       dto.isEnabled = false;
       dto.notes = null;
       dto.hasAssetEntry = false;
@@ -116,6 +118,46 @@ export class ProductsService {
       result = osposItems.map((item) =>
         this.buildUnifiedItem(item, productMap.get(item.item_id) ?? null, false),
       );
+    }
+
+    // ── Step 2: Collect stale local DB items that are missing from OSPOS ──────
+    // This ensures admin can still see/manage local products not yet in OSPOS.
+    if (osposItems.length > 0) {
+      const osposItemIds = new Set(osposItems.map((item) => item.item_id));
+      for (const dbProduct of dbProducts) {
+        if (!osposItemIds.has(dbProduct.ospos_item_id)) {
+          // Smart fallback: infer name and category from image URL if available
+          let fallbackName = `Product ${dbProduct.ospos_item_id}`;
+          let fallbackCategory = 'Unknown';
+
+          if (dbProduct.product_assets?.image_url) {
+            const imgUrl = dbProduct.product_assets.image_url.toLowerCase();
+            if (imgUrl.includes('tile')) fallbackCategory = 'Tiles';
+            else if (imgUrl.includes('basin') || imgUrl.includes('sink')) fallbackCategory = 'Wash Basins';
+            else if (imgUrl.includes('closet') || imgUrl.includes('toilet')) fallbackCategory = 'Water Closets';
+
+            // Try to extract a nice name from the filename
+            const filename = imgUrl.split('/').pop() || '';
+            const namePart = filename.split('.')[0];
+            if (namePart) {
+              fallbackName = namePart.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+            }
+          }
+
+          const fallbackOsposItem: OsposItem = {
+            item_id: dbProduct.ospos_item_id,
+            name: fallbackName,
+            category: fallbackCategory,
+            category_id: null,
+            subcategory_id: null,
+            sku: `LOCAL-${dbProduct.ospos_item_id}`,
+            description: 'Local product record (missing from OSPOS).',
+            price: 0,
+            quantity: 0,
+          };
+          result.push(this.buildUnifiedItem(fallbackOsposItem, dbProduct, true));
+        }
+      }
     }
 
     if (!includeHidden) {

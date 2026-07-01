@@ -16,6 +16,9 @@ export interface OsposItem {
   description: string;
   price: number;
   quantity: number;
+  brand?: string | null;
+  color?: string | null;
+  material?: string | null;
 }
 
 /**

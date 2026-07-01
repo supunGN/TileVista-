@@ -126,7 +126,7 @@ export default function AdminLayout({
                 >
                   {link.icon}
                   <span>{link.name}</span>
-                  {'badge' in link && link.badge > 0 && (
+                  {'badge' in link && typeof link.badge === 'number' && link.badge > 0 && (
                     <span className={`
                       ml-auto min-w-[20px] h-5 flex items-center justify-center
                       text-[10px] font-bold rounded-full px-1.5

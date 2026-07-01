@@ -163,6 +163,7 @@ model design_walls {
   wall_height          Decimal?          @db.Decimal(10, 2)
   wall_color           String?           @db.VarChar(50)
   tile_asset_id        String?           @db.Char(36)
+  tile_texture_url     String?           @db.VarChar(500)
   tile_coverage_height Decimal?          @db.Decimal(10, 2)
   design_openings      design_openings[]
   product_assets       product_assets?   @relation(fields: [tile_asset_id], references: [asset_id], onDelete: Restrict, onUpdate: Restrict, map: "fk_wall_asset")
@@ -324,10 +325,13 @@ model room_designs {
   length              Decimal?                  @db.Decimal(10, 2)
   width               Decimal?                  @db.Decimal(10, 2)
   height              Decimal?                  @db.Decimal(10, 2)
+  floor_texture_url   String?                   @db.VarChar(500)
+  wall_texture_url    String?                   @db.VarChar(500)
   created_at          DateTime?                 @default(now()) @db.DateTime(0)
   updated_at          DateTime?                 @default(now()) @db.DateTime(0)
   design_elements     design_elements[]
   design_items        design_items[]
+  custom_design_items custom_design_items[]
   design_measurements design_measurements[]
   design_openings     design_openings[]
   design_snapshots    design_snapshots[]
@@ -467,4 +471,18 @@ enum orders_payment_status {
 enum users_status {
   active
   inactive
+}
+
+model custom_design_items {
+  custom_item_id String         @id @db.Char(36)
+  design_id      String         @db.Char(36)
+  item_type      String         @db.VarChar(100)
+  item_name      String?        @db.VarChar(150)
+  model_url      String?        @db.VarChar(500)
+  position_x     Decimal?       @db.Decimal(10, 2)
+  position_y     Decimal?       @db.Decimal(10, 2)
+  position_z     Decimal?       @db.Decimal(10, 2)
+  rotation_y     Decimal?       @default(0.00) @db.Decimal(10, 2)
+  created_at     DateTime?      @default(now()) @db.DateTime(0)
+  room_designs   room_designs   @relation(fields: [design_id], references: [design_id], onDelete: Cascade)
 }
