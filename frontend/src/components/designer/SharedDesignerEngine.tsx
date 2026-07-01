@@ -2284,7 +2284,7 @@ function BathroomScene({
   setMeasureTempEndPoint?: (p: THREE.Vector3 | null) => void;
 }) {
   const { camera, gl } = useThree();
-  const { selectedWallIdx, setSelectedWallIdx, activeCategory, recordHistory } = useDesignerStore();
+  const { selectedWallIdx, setSelectedWallIdx, activeCategory, recordHistory, selectedRoomType } = useDesignerStore();
   const w = Math.max(1.5, state.widthFt * 0.3048);
   const d = Math.max(1.5, state.depthFt * 0.3048);
   const h = Math.max(2.2, state.heightFt * 0.3048);
@@ -2605,48 +2605,6 @@ function BathroomScene({
       const itemToMove = placedItems.find(i => i.id === activeId) || isPlacingItem;
       if (!itemToMove) return;
 
-      // Snap to nearest wall (All items in BathroomScene)
-      let closestWallIdx = 0;
-      let closestDist = Infinity;
-      let closestOffset = 0;
-
-      walls.forEach((wall, idx) => {
-        const dx = wall.p2[0] - wall.p1[0];
-        const dz = wall.p2[1] - wall.p1[1];
-        const ux = pt.x - wall.p1[0];
-        const uz = pt.z - wall.p1[1];
-        const wallLenSq = wall.len * wall.len;
-        const t = Math.max(0.1, Math.min(0.9, wallLenSq > 0 ? (ux * dx + uz * dz) / wallLenSq : 0));
-        const projX = wall.p1[0] + t * dx;
-        const projZ = wall.p1[1] + t * dz;
-        const dist = Math.hypot(pt.x - projX, pt.z - projZ);
-        if (dist < closestDist) { closestDist = dist; closestWallIdx = idx; closestOffset = t * wall.len; }
-      });
-
-      const wall = walls[closestWallIdx];
-      const dx = wall.p2[0] - wall.p1[0];
-      const dz = wall.p2[1] - wall.p1[1];
-      const ux = dx / wall.len, uz = dz / wall.len;
-      let nx = -uz, nz = ux;
-
-      // Calculate room center to guarantee wall normal points INSIDE the room
-      let avgX = 0, avgZ = 0;
-      walls.forEach(w => { avgX += w.cx; avgZ += w.cz; });
-      const roomCenterX = avgX / walls.length;
-      const roomCenterZ = avgZ / walls.length;
-      
-      const toCenterX = roomCenterX - wall.cx;
-      const toCenterZ = roomCenterZ - wall.cz;
-      const dot = nx * toCenterX + nz * toCenterZ;
-      let rotY = wall.rotY;
-      if (dot < 0) {
-        nx = -nx;
-        nz = -nz;
-        rotY += Math.PI;
-      }
-
-      const rotOffset = itemToMove.rotationOffset || 0;
-
       let itemD = 0.5; // fallback
       let itemW = 0.5; // fallback
       const dims = globalItemDimensions.get(itemToMove.id);
@@ -2660,25 +2618,115 @@ function BathroomScene({
       }
 
       // Calculate rotated dimensions based on custom rotation offset to prevent clipping into walls
+      const rotOffset = itemToMove.rotationOffset || 0;
       const cosR = Math.abs(Math.cos(rotOffset));
       const sinR = Math.abs(Math.sin(rotOffset));
       const rotatedDepth = itemD * cosR + itemW * sinR;
       const rotatedWidth = itemW * cosR + itemD * sinR;
 
-      // Limit offset so the item's width never extends past the wall corners
-      const buffer = Math.max(0.1, rotatedWidth / 2 + 0.05);
-      const snappedOffset = Math.max(buffer, Math.min(wall.len - buffer, closestOffset));
+      let posX = pt.x;
+      let posZ = pt.z;
+      let rotY = itemToMove.rotation || 0;
 
-      // Snap to touch wall flush: Z-center offset is exactly half of the rotated depth
-      const bias = rotatedDepth / 2;
-      const posX = wall.p1[0] + ux * snappedOffset + nx * bias;
-      const posZ = wall.p1[1] + uz * snappedOffset + nz * bias;
+      if (selectedRoomType === 'bathroom') {
+        // Snap to nearest wall (All items in BathroomScene for Bathroom designer)
+        let closestWallIdx = 0;
+        let closestDist = Infinity;
+        let closestOffset = 0;
+
+        walls.forEach((wall, idx) => {
+          const dx = wall.p2[0] - wall.p1[0];
+          const dz = wall.p2[1] - wall.p1[1];
+          const ux = pt.x - wall.p1[0];
+          const uz = pt.z - wall.p1[1];
+          const wallLenSq = wall.len * wall.len;
+          const t = Math.max(0.1, Math.min(0.9, wallLenSq > 0 ? (ux * dx + uz * dz) / wallLenSq : 0));
+          const projX = wall.p1[0] + t * dx;
+          const projZ = wall.p1[1] + t * dz;
+          const dist = Math.hypot(pt.x - projX, pt.z - projZ);
+          if (dist < closestDist) { closestDist = dist; closestWallIdx = idx; closestOffset = t * wall.len; }
+        });
+
+        const wall = walls[closestWallIdx];
+        const dx = wall.p2[0] - wall.p1[0];
+        const dz = wall.p2[1] - wall.p1[1];
+        const ux = dx / wall.len, uz = dz / wall.len;
+        let nx = -uz, nz = ux;
+
+        // Calculate room center to guarantee wall normal points INSIDE the room
+        let avgX = 0, avgZ = 0;
+        walls.forEach(w => { avgX += w.cx; avgZ += w.cz; });
+        const roomCenterX = avgX / walls.length;
+        const roomCenterZ = avgZ / walls.length;
+        
+        const toCenterX = roomCenterX - wall.cx;
+        const toCenterZ = roomCenterZ - wall.cz;
+        const dot = nx * toCenterX + nz * toCenterZ;
+        rotY = wall.rotY;
+        if (dot < 0) {
+          nx = -nx;
+          nz = -nz;
+          rotY += Math.PI;
+        }
+
+        // Limit offset so the item's width never extends past the wall corners
+        const buffer = Math.max(0.1, rotatedWidth / 2 + 0.05);
+        const snappedOffset = Math.max(buffer, Math.min(wall.len - buffer, closestOffset));
+
+        // Snap to touch wall flush: Z-center offset is exactly half of the rotated depth
+        const bias = rotatedDepth / 2;
+        posX = wall.p1[0] + ux * snappedOffset + nx * bias;
+        posZ = wall.p1[1] + uz * snappedOffset + nz * bias;
+      } else {
+        // Free movement inside boundaries (Normal room designer)
+        const polyCorners = walls.map(w => [w.p1[0], -w.p1[1]] as [number, number]);
+        const snapped = clampItemToPolygon(
+          { x: pt.x, z: pt.z },
+          itemW,
+          itemD,
+          itemToMove.rotation || 0,
+          polyCorners,
+          'rectangular',
+          10, 10
+        );
+        posX = snapped.x;
+        posZ = snapped.z;
+      }
 
       let heightY = 0;
       if (itemToMove.isWallMounted) {
+        const wallIdx = selectedRoomType === 'bathroom' ? undefined : undefined;
+        let nx = 0, nz = 1, wallCx = 0, wallCz = 0;
+        
+        if (selectedRoomType === 'bathroom') {
+          // snaps along wall
+          let closestWallIdx = 0;
+          let closestDist = Infinity;
+          walls.forEach((wall, idx) => {
+            const dx = wall.p2[0] - wall.p1[0];
+            const dz = wall.p2[1] - wall.p1[1];
+            const ux = pt.x - wall.p1[0];
+            const uz = pt.z - wall.p1[1];
+            const wallLenSq = wall.len * wall.len;
+            const t = Math.max(0.1, Math.min(0.9, wallLenSq > 0 ? (ux * dx + uz * dz) / wallLenSq : 0));
+            const projX = wall.p1[0] + t * dx;
+            const projZ = wall.p1[1] + t * dz;
+            const dist = Math.hypot(pt.x - projX, pt.z - projZ);
+            if (dist < closestDist) { closestDist = dist; closestWallIdx = idx; }
+          });
+          const wall = walls[closestWallIdx];
+          const dx = wall.p2[0] - wall.p1[0];
+          const dz = wall.p2[1] - wall.p1[1];
+          const ux = dx / wall.len, uz = dz / wall.len;
+          nx = -uz;
+          nz = ux;
+          wallCx = wall.cx;
+          wallCz = wall.cz;
+        }
+
         const wallPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(
           new THREE.Vector3(nx, 0, nz).normalize(),
-          new THREE.Vector3(wall.cx, 0, wall.cz)
+          new THREE.Vector3(wallCx, 0, wallCz)
         );
         const wallPt = new THREE.Vector3();
         let itemHeight = 1.5; // fallback
@@ -2696,20 +2744,22 @@ function BathroomScene({
       // Check collision against all other items (oriented bounding boxes)
       const candidateCorners = getItemCorners(posX, posZ, itemW, itemD, rotY + rotOffset);
       let collides = false;
-      for (const other of placedItems) {
-        if (other.id === activeId) continue;
-        
-        let otherW = 0.5, otherD = 0.5;
-        const otherDims = globalItemDimensions.get(other.id);
-        if (otherDims) {
-          otherW = otherDims.width;
-          otherD = otherDims.depth;
-        }
-        
-        const otherCorners = getItemCorners(other.position[0], other.position[2], otherW, otherD, other.rotation);
-        if (rectsIntersect(candidateCorners, otherCorners)) {
-          collides = true;
-          break;
+      if (selectedRoomType === 'bathroom') {
+        for (const other of placedItems) {
+          if (other.id === activeId) continue;
+          
+          let otherW = 0.5, otherD = 0.5;
+          const otherDims = globalItemDimensions.get(other.id);
+          if (otherDims) {
+            otherW = otherDims.width;
+            otherD = otherDims.depth;
+          }
+          
+          const otherCorners = getItemCorners(other.position[0], other.position[2], otherW, otherD, other.rotation);
+          if (rectsIntersect(candidateCorners, otherCorners)) {
+            collides = true;
+            break;
+          }
         }
       }
 
