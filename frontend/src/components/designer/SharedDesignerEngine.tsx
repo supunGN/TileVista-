@@ -2009,27 +2009,27 @@ function RoomDimensionLine({ start, end, label, angle }: { start: [number, numbe
 
   return (
     <group>
-      {/* Thin dimension line */}
+      {/* Bold dimension line */}
       <mesh position={midpoint} quaternion={rotation}>
-        <boxGeometry args={[0.005, len, 0.005]} />
-        <meshBasicMaterial color="#71717a" />
+        <boxGeometry args={[0.01, len, 0.01]} />
+        <meshBasicMaterial color="#52525b" />
       </mesh>
 
       {/* Start slash tick at 45 degrees */}
       <mesh position={start} rotation={[0, angle + Math.PI / 4, 0]}>
-        <boxGeometry args={[0.005, 0.005, 0.15]} />
-        <meshBasicMaterial color="#71717a" />
+        <boxGeometry args={[0.01, 0.01, 0.25]} />
+        <meshBasicMaterial color="#52525b" />
       </mesh>
 
       {/* End slash tick at 45 degrees */}
       <mesh position={end} rotation={[0, angle + Math.PI / 4, 0]}>
-        <boxGeometry args={[0.005, 0.005, 0.15]} />
-        <meshBasicMaterial color="#71717a" />
+        <boxGeometry args={[0.01, 0.01, 0.25]} />
+        <meshBasicMaterial color="#52525b" />
       </mesh>
 
-      {/* Sleek architectural label */}
-      <Html position={midpoint} center distanceFactor={12}>
-        <div className="bg-[#ececec] text-[#71717a] px-1 text-[11px] font-sans font-bold select-none pointer-events-none whitespace-nowrap">
+      {/* Sleek architectural label (larger text) */}
+      <Html position={midpoint} center distanceFactor={6}>
+        <div className="bg-[#ececec] text-[#3f3f46] px-1.5 py-0.5 text-[15px] font-sans font-extrabold select-none pointer-events-none whitespace-nowrap">
           {label}
         </div>
       </Html>
@@ -2132,27 +2132,27 @@ function MeasurementOverlay({
 
               return (
                 <group key={`spacing-${dIdx}`}>
-                  {/* Thin line */}
+                  {/* Thick line */}
                   <mesh position={midpoint} quaternion={lineRotation}>
-                    <boxGeometry args={[0.005, len, 0.005]} />
+                    <boxGeometry args={[0.01, len, 0.01]} />
                     <meshBasicMaterial color="#0086ff" />
                   </mesh>
 
                   {/* Tick at wall */}
                   <mesh position={p2} rotation={[0, wallAngle, 0]}>
-                    <boxGeometry args={[0.15, 0.005, 0.005]} />
+                    <boxGeometry args={[0.25, 0.01, 0.01]} />
                     <meshBasicMaterial color="#0086ff" />
                   </mesh>
 
                   {/* Dot at item center */}
                   <mesh position={p1}>
-                    <sphereGeometry args={[0.03, 16, 16]} />
+                    <sphereGeometry args={[0.05, 16, 16]} />
                     <meshBasicMaterial color="#ffffff" />
                   </mesh>
 
-                  {/* Sleek blue badge */}
-                  <Html position={midpoint} center distanceFactor={12}>
-                    <div className="bg-[#0086ff] text-white text-[11px] font-sans font-bold px-2 py-0.5 rounded shadow-lg select-none pointer-events-none whitespace-nowrap">
+                  {/* Sleek blue badge (larger text) */}
+                  <Html position={midpoint} center distanceFactor={6}>
+                    <div className="bg-[#0086ff] text-white text-[15px] font-sans font-extrabold px-3 py-1 rounded-lg shadow-xl select-none pointer-events-none whitespace-nowrap">
                       {formatLength(len, settings.unit)}
                     </div>
                   </Html>
