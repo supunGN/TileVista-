@@ -2156,6 +2156,50 @@ function MeasurementOverlay({
                 }
               }
 
+              // Intersect with other products in the scene
+              for (const other of placedItems) {
+                if (other.id === item.id) continue;
+
+                let otherW = 0.5;
+                let otherD = 0.5;
+                const otherDims = globalItemDimensions.get(other.id);
+                if (otherDims) {
+                  otherW = otherDims.width;
+                  otherD = otherDims.depth;
+                } else {
+                  const fallback = getItemDimensions(other.type);
+                  otherW = fallback.width;
+                  otherD = fallback.depth;
+                }
+
+                const corners = getItemCorners(other.position[0], other.position[2], otherW, otherD, other.rotation);
+                const segments = [
+                  [corners[0], corners[1]],
+                  [corners[1], corners[2]],
+                  [corners[2], corners[3]],
+                  [corners[3], corners[0]]
+                ];
+
+                for (const seg of segments) {
+                  const dx = seg[1].x - seg[0].x;
+                  const dz = seg[1].z - seg[0].z;
+
+                  const denom = dir.x * dz - dir.z * dx;
+                  if (Math.abs(denom) < 0.0001) continue;
+
+                  const t = ((seg[0].x - itemPos.x) * dz - (seg[0].z - itemPos.z) * dx) / denom;
+                  const u = ((seg[0].x - itemPos.x) * dir.z - (seg[0].z - itemPos.z) * dir.x) / denom;
+
+                  if (t > 0 && u >= 0 && u <= 1) {
+                    if (t < closestT) {
+                      closestT = t;
+                      interPt = new THREE.Vector3(itemPos.x + t * dir.x, 0.05, itemPos.z + t * dir.z);
+                      wallAngle = Math.atan2(dx, dz);
+                    }
+                  }
+                }
+              }
+
               if (!interPt) return null;
 
               const totalDist = itemPos.distanceTo(interPt);
