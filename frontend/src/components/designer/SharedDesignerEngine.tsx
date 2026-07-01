@@ -1997,16 +1997,7 @@ function formatLength(meters: number, unit: 'ft' | 'cm') {
   }
 }
 
-function Tick({ position, rotation, color }: { position: [number, number, number], rotation: THREE.Quaternion, color: string }) {
-  return (
-    <mesh position={position} quaternion={rotation}>
-      <boxGeometry args={[0.06, 0.008, 0.06]} />
-      <meshBasicMaterial color={color} />
-    </mesh>
-  );
-}
-
-function DimensionLine({ start, end, color = "#000000", label }: { start: [number, number, number], end: [number, number, number], color?: string, label?: string }) {
+function RoomDimensionLine({ start, end, label, angle }: { start: [number, number, number], end: [number, number, number], label: string, angle: number }) {
   const p1 = new THREE.Vector3(...start);
   const p2 = new THREE.Vector3(...end);
   const midpoint = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
@@ -2018,49 +2009,28 @@ function DimensionLine({ start, end, color = "#000000", label }: { start: [numbe
 
   return (
     <group>
+      {/* Thin dimension line */}
       <mesh position={midpoint} quaternion={rotation}>
-        <boxGeometry args={[0.015, len, 0.015]} />
-        <meshBasicMaterial color={color} />
+        <boxGeometry args={[0.005, len, 0.005]} />
+        <meshBasicMaterial color="#71717a" />
       </mesh>
-      <Tick position={start} rotation={rotation} color={color} />
-      <Tick position={end} rotation={rotation} color={color} />
-      {label && (
-        <Html position={midpoint} center distanceFactor={15}>
-          <div className="bg-[#1e3a8a] text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-md whitespace-nowrap select-none pointer-events-none">
-            {label}
-          </div>
-        </Html>
-      )}
-    </group>
-  );
-}
 
-function MeasurementLine({ id, start, end, label, onDelete }: { id: number | string, start: [number, number, number], end: [number, number, number], label: string, onDelete: () => void }) {
-  const p1 = new THREE.Vector3(...start);
-  const p2 = new THREE.Vector3(...end);
-  const midpoint = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
-
-  const direction = new THREE.Vector3().subVectors(p2, p1);
-  const len = direction.length();
-  const up = new THREE.Vector3(0, 1, 0);
-  const rotation = new THREE.Quaternion().setFromUnitVectors(up, direction.clone().normalize());
-
-  return (
-    <group>
-      <mesh position={midpoint} quaternion={rotation}>
-        <boxGeometry args={[0.02, len, 0.02]} />
-        <meshBasicMaterial color="#ef4444" />
+      {/* Start slash tick at 45 degrees */}
+      <mesh position={start} rotation={[0, angle + Math.PI / 4, 0]}>
+        <boxGeometry args={[0.005, 0.005, 0.15]} />
+        <meshBasicMaterial color="#71717a" />
       </mesh>
-      <Html position={midpoint} center distanceFactor={15}>
-        <div className="bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded shadow-md flex items-center gap-1.5 whitespace-nowrap">
-          <span>{label}</span>
-          <button 
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="hover:bg-red-600 rounded-full w-3.5 h-3.5 flex items-center justify-center text-[8px] font-extrabold border border-white/40 cursor-pointer"
-          >
-            &times;
-          </button>
+
+      {/* End slash tick at 45 degrees */}
+      <mesh position={end} rotation={[0, angle + Math.PI / 4, 0]}>
+        <boxGeometry args={[0.005, 0.005, 0.15]} />
+        <meshBasicMaterial color="#71717a" />
+      </mesh>
+
+      {/* Sleek architectural label */}
+      <Html position={midpoint} center distanceFactor={12}>
+        <div className="bg-[#ececec] text-[#71717a] px-1 text-[11px] font-sans font-bold select-none pointer-events-none whitespace-nowrap">
+          {label}
         </div>
       </Html>
     </group>
@@ -2072,19 +2042,11 @@ function MeasurementOverlay({
   walls,
   placedItems,
   selectedItemId,
-  savedMeasurements,
-  onDeleteMeasurement,
-  measureStartPoint,
-  measureTempEndPoint,
 }: {
   settings: any;
   walls: any[];
   placedItems: any[];
   selectedItemId: string | null | undefined;
-  savedMeasurements: any[];
-  onDeleteMeasurement: (idx: number) => void;
-  measureStartPoint: THREE.Vector3 | null;
-  measureTempEndPoint: THREE.Vector3 | null;
 }) {
   return (
     <group>
@@ -2095,24 +2057,25 @@ function MeasurementOverlay({
         const len = wall.len;
         const ux = dx / len;
         const uz = dz / len;
-        const ox = uz * 0.35; // Outward shift
-        const oz = -ux * 0.35;
+        const ox = uz * 0.45; // Outward shift
+        const oz = -ux * 0.45;
 
         const startPt: [number, number, number] = [wall.p1[0] + ox, 0.05, wall.p1[1] + oz];
         const endPt: [number, number, number] = [wall.p2[0] + ox, 0.05, wall.p2[1] + oz];
-        
+        const angle = Math.atan2(dx, dz);
+
         return (
-          <DimensionLine
+          <RoomDimensionLine
             key={`room-dim-${idx}`}
             start={startPt}
             end={endPt}
-            color="#4b5563"
             label={formatLength(len, settings.unit)}
+            angle={angle}
           />
         );
       })}
 
-      {/* 2. Product Spacing (Clearance to walls) */}
+      {/* 2. Product Spacing (Clearance to walls in 4 orthogonal directions) */}
       {settings.productSpacing && (() => {
         if (!selectedItemId) return null;
         const item = placedItems.find(i => i.id === selectedItemId);
@@ -2120,91 +2083,82 @@ function MeasurementOverlay({
 
         const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
 
-        return walls.map((wall, idx) => {
-          const dx = wall.p2[0] - wall.p1[0];
-          const dz = wall.p2[1] - wall.p1[1];
-          const ux = itemPos.x - wall.p1[0];
-          const uz = itemPos.z - wall.p1[1];
-          const wallLenSq = wall.len * wall.len;
-          const t = Math.max(0, Math.min(1, wallLenSq > 0 ? (ux * dx + uz * dz) / wallLenSq : 0));
-          const projX = wall.p1[0] + t * dx;
-          const projZ = wall.p1[1] + t * dz;
-          const dist = Math.hypot(itemPos.x - projX, itemPos.z - projZ);
-
-          const startPt: [number, number, number] = [itemPos.x, 0.05, itemPos.z];
-          const endPt: [number, number, number] = [projX, 0.05, projZ];
-
-          return (
-            <DimensionLine
-              key={`prod-space-${idx}`}
-              start={startPt}
-              end={endPt}
-              color="#2563eb"
-              label={formatLength(dist, settings.unit)}
-            />
-          );
-        });
-      })()}
-
-      {/* 3. Product Dimensions (Bounding Box) */}
-      {settings.productDimensions && (() => {
-        if (!selectedItemId) return null;
-        const item = placedItems.find(i => i.id === selectedItemId);
-        if (!item) return null;
-
-        const w = 1.0;
-        const d = 1.0;
-        const halfW = w / 2;
-        const halfD = d / 2;
-        const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
-
-        const startW: [number, number, number] = [itemPos.x - halfW, 0.05, itemPos.z + halfD + 0.1];
-        const endW: [number, number, number] = [itemPos.x + halfW, 0.05, itemPos.z + halfD + 0.1];
-
-        const startD: [number, number, number] = [itemPos.x - halfW - 0.1, 0.05, itemPos.z - halfD];
-        const endD: [number, number, number] = [itemPos.x - halfW - 0.1, 0.05, itemPos.z + halfD];
+        const dirs = [
+          new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), item.rotation),
+          new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), item.rotation),
+          new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), item.rotation),
+          new THREE.Vector3(-1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), item.rotation)
+        ];
 
         return (
           <group>
-            <DimensionLine start={startW} end={endW} color="#059669" label={formatLength(w, settings.unit)} />
-            <DimensionLine start={startD} end={endD} color="#059669" label={formatLength(d, settings.unit)} />
-          </group>
-        );
-      })()}
+            {dirs.map((dir, dIdx) => {
+              let closestT = Infinity;
+              let interPt: THREE.Vector3 | null = null;
+              let wallAngle = 0;
 
-      {/* 4. Saved Point-to-Point Measurements */}
-      {savedMeasurements.map((m, idx) => {
-        const startPt: [number, number, number] = [m.point_a_x, m.point_a_y, m.point_a_z];
-        const endPt: [number, number, number] = [m.point_b_x, m.point_b_y, m.point_b_z];
-        const dist = new THREE.Vector3(...startPt).distanceTo(new THREE.Vector3(...endPt));
-        return (
-          <MeasurementLine
-            key={`saved-meas-${idx}`}
-            id={idx}
-            start={startPt}
-            end={endPt}
-            label={formatLength(dist, settings.unit)}
-            onDelete={() => onDeleteMeasurement(idx)}
-          />
-        );
-      })}
+              for (const wall of walls) {
+                const x1 = wall.p1[0];
+                const z1 = wall.p1[1];
+                const x2 = wall.p2[0];
+                const z2 = wall.p2[1];
 
-      {/* 5. Active Point-to-Point Measuring Line (Dashed/Red) */}
-      {measureStartPoint && measureTempEndPoint && (() => {
-        const startPt: [number, number, number] = [measureStartPoint.x, measureStartPoint.y, measureStartPoint.z];
-        const endPt: [number, number, number] = [measureTempEndPoint.x, measureTempEndPoint.y, measureTempEndPoint.z];
-        const dist = measureStartPoint.distanceTo(measureTempEndPoint);
-        return (
-          <group>
-            <mesh position={new THREE.Vector3().addVectors(measureStartPoint, measureTempEndPoint).multiplyScalar(0.5)} quaternion={new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3().subVectors(measureTempEndPoint, measureStartPoint).normalize())}>
-              <boxGeometry args={[0.015, dist, 0.015]} />
-              <meshBasicMaterial color="#ef4444" />
-            </mesh>
-            <Html position={new THREE.Vector3().addVectors(measureStartPoint, measureTempEndPoint).multiplyScalar(0.5)} center distanceFactor={15}>
-              <div className="bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded shadow-md whitespace-nowrap">
-                {formatLength(dist, settings.unit)}
-              </div>
-            </Html>
+                const dx = x2 - x1;
+                const dz = z2 - z1;
+
+                const denom = dir.x * dz - dir.z * dx;
+                if (Math.abs(denom) < 0.0001) continue;
+
+                const t = ((x1 - itemPos.x) * dz - (z1 - itemPos.z) * dx) / denom;
+                const u = ((x1 - itemPos.x) * dir.z - (z1 - itemPos.z) * dir.x) / denom;
+
+                if (t > 0 && u >= 0 && u <= 1) {
+                  if (t < closestT) {
+                    closestT = t;
+                    interPt = new THREE.Vector3(itemPos.x + t * dir.x, 0.05, itemPos.z + t * dir.z);
+                    wallAngle = Math.atan2(dx, dz);
+                  }
+                }
+              }
+
+              if (!interPt) return null;
+
+              const p1 = new THREE.Vector3(itemPos.x, 0.05, itemPos.z);
+              const p2 = interPt;
+              const midpoint = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+              const len = p1.distanceTo(p2);
+              const up = new THREE.Vector3(0, 1, 0);
+              const lineRotation = new THREE.Quaternion().setFromUnitVectors(up, new THREE.Vector3().subVectors(p2, p1).normalize());
+
+              return (
+                <group key={`spacing-${dIdx}`}>
+                  {/* Thin line */}
+                  <mesh position={midpoint} quaternion={lineRotation}>
+                    <boxGeometry args={[0.005, len, 0.005]} />
+                    <meshBasicMaterial color="#0086ff" />
+                  </mesh>
+
+                  {/* Tick at wall */}
+                  <mesh position={p2} rotation={[0, wallAngle, 0]}>
+                    <boxGeometry args={[0.15, 0.005, 0.005]} />
+                    <meshBasicMaterial color="#0086ff" />
+                  </mesh>
+
+                  {/* Dot at item center */}
+                  <mesh position={p1}>
+                    <sphereGeometry args={[0.03, 16, 16]} />
+                    <meshBasicMaterial color="#ffffff" />
+                  </mesh>
+
+                  {/* Sleek blue badge */}
+                  <Html position={midpoint} center distanceFactor={12}>
+                    <div className="bg-[#0086ff] text-white text-[11px] font-sans font-bold px-2 py-0.5 rounded shadow-lg select-none pointer-events-none whitespace-nowrap">
+                      {formatLength(len, settings.unit)}
+                    </div>
+                  </Html>
+                </group>
+              );
+            })}
           </group>
         );
       })()}
@@ -3295,14 +3249,6 @@ function BathroomScene({
           walls={walls}
           placedItems={placedItems}
           selectedItemId={selectedItemId}
-          savedMeasurements={savedMeasurements || []}
-          onDeleteMeasurement={(idx) => {
-            if (setSavedMeasurements) {
-              setSavedMeasurements(prev => prev.filter((_, i) => i !== idx));
-            }
-          }}
-          measureStartPoint={measureStartPoint || null}
-          measureTempEndPoint={measureTempEndPoint || null}
         />
       )}
  
@@ -4709,14 +4655,6 @@ function RoomPreview3D({
           walls={walls}
           placedItems={placedItems}
           selectedItemId={selectedItemId}
-          savedMeasurements={savedMeasurements || []}
-          onDeleteMeasurement={(idx) => {
-            if (setSavedMeasurements) {
-              setSavedMeasurements(prev => prev.filter((_, i) => i !== idx));
-            }
-          }}
-          measureStartPoint={measureStartPoint || null}
-          measureTempEndPoint={measureTempEndPoint || null}
         />
       )}
 
@@ -6558,19 +6496,6 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
           {showMeasurementPanel && (
             <div className="absolute bottom-full mb-3 right-0 bg-white border border-gray-200 shadow-2xl rounded-2xl p-4 flex flex-col gap-4 min-w-[240px] z-50">
               <div className="flex justify-between items-center gap-4">
-                <span className="text-xs font-bold text-gray-700">Product dimensions</span>
-                <label className="relative inline-flex items-center cursor-pointer select-none">
-                  <input 
-                    type="checkbox" 
-                    checked={measurementSettings.productDimensions} 
-                    onChange={(e) => setMeasurementSettings(prev => ({ ...prev, productDimensions: e.target.checked }))} 
-                    className="sr-only peer" 
-                  />
-                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
-                </label>
-              </div>
-
-              <div className="flex justify-between items-center gap-4">
                 <span className="text-xs font-bold text-gray-700">Product spacing</span>
                 <label className="relative inline-flex items-center cursor-pointer select-none">
                   <input 
@@ -6594,22 +6519,6 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
                   />
                   <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
                 </label>
-              </div>
-
-              <div className="h-[1px] bg-gray-100" />
-
-              {/* Free-form measure tool toggle button */}
-              <div className="flex justify-between items-center gap-4">
-                <span className="text-xs font-bold text-gray-700">Measure Point-to-Point</span>
-                <button
-                  type="button"
-                  onClick={() => setIsMeasuring(!isMeasuring)}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
-                    isMeasuring ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {isMeasuring ? 'Active (Click 3D)' : 'Start'}
-                </button>
               </div>
 
               <div className="h-[1px] bg-gray-100" />
