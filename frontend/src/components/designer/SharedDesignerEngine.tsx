@@ -2048,8 +2048,18 @@ function RoomDimensionLine({ start, end, label, angle }: { start: [number, numbe
       </mesh>
 
       {/* Sleek architectural label (balanced font size) */}
-      <Html position={midpoint} center distanceFactor={15}>
-        <div className="bg-[#ececec] text-[#3f3f46] px-1 py-0.5 text-[9.5px] font-sans font-extrabold select-none pointer-events-none whitespace-nowrap">
+      <Html position={midpoint} center distanceFactor={18}>
+        <div style={{
+          backgroundColor: '#ececec',
+          color: '#3f3f46',
+          fontSize: '8px',
+          fontFamily: 'Inter, sans-serif',
+          fontWeight: '800',
+          padding: '1px 3px',
+          userSelect: 'none',
+          pointerEvents: 'none',
+          whiteSpace: 'nowrap'
+        }}>
           {label}
         </div>
       </Html>
@@ -2240,8 +2250,20 @@ function MeasurementOverlay({
                   </mesh>
 
                   {/* Sleek blue badge (slightly reduced size) */}
-                  <Html position={midpoint} center distanceFactor={15}>
-                    <div className="bg-[#0086ff] text-white text-[9.5px] font-sans font-bold px-1.5 py-0.5 rounded shadow-lg select-none pointer-events-none whitespace-nowrap">
+                  <Html position={midpoint} center distanceFactor={18}>
+                    <div style={{
+                      backgroundColor: '#0086ff',
+                      color: '#ffffff',
+                      fontSize: '8px',
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: 'bold',
+                      padding: '1px 4px',
+                      borderRadius: '3px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      userSelect: 'none',
+                      pointerEvents: 'none',
+                      whiteSpace: 'nowrap'
+                    }}>
                       {formatLength(actualSpacing, settings.unit)}
                     </div>
                   </Html>
