@@ -1984,6 +1984,234 @@ function rectsIntersect(rectA: { x: number; z: number }[], rectB: { x: number; z
   return true;
 }
 
+// ─── MEASUREMENT TOOL COMPONENTS ───
+
+function formatLength(meters: number, unit: 'ft' | 'cm') {
+  if (unit === 'ft') {
+    const totalInches = Math.round(meters * 39.3701);
+    const feet = Math.floor(totalInches / 12);
+    const inches = totalInches % 12;
+    return `${feet}' ${inches}"`;
+  } else {
+    return `${Math.round(meters * 100)} cm`;
+  }
+}
+
+function Tick({ position, rotation, color }: { position: [number, number, number], rotation: THREE.Quaternion, color: string }) {
+  return (
+    <mesh position={position} quaternion={rotation}>
+      <boxGeometry args={[0.06, 0.008, 0.06]} />
+      <meshBasicMaterial color={color} />
+    </mesh>
+  );
+}
+
+function DimensionLine({ start, end, color = "#000000", label }: { start: [number, number, number], end: [number, number, number], color?: string, label?: string }) {
+  const p1 = new THREE.Vector3(...start);
+  const p2 = new THREE.Vector3(...end);
+  const midpoint = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+
+  const direction = new THREE.Vector3().subVectors(p2, p1);
+  const len = direction.length();
+  const up = new THREE.Vector3(0, 1, 0);
+  const rotation = new THREE.Quaternion().setFromUnitVectors(up, direction.clone().normalize());
+
+  return (
+    <group>
+      <mesh position={midpoint} quaternion={rotation}>
+        <boxGeometry args={[0.015, len, 0.015]} />
+        <meshBasicMaterial color={color} />
+      </mesh>
+      <Tick position={start} rotation={rotation} color={color} />
+      <Tick position={end} rotation={rotation} color={color} />
+      {label && (
+        <Html position={midpoint} center distanceFactor={15}>
+          <div className="bg-[#1e3a8a] text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-md whitespace-nowrap select-none pointer-events-none">
+            {label}
+          </div>
+        </Html>
+      )}
+    </group>
+  );
+}
+
+function MeasurementLine({ id, start, end, label, onDelete }: { id: number | string, start: [number, number, number], end: [number, number, number], label: string, onDelete: () => void }) {
+  const p1 = new THREE.Vector3(...start);
+  const p2 = new THREE.Vector3(...end);
+  const midpoint = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+
+  const direction = new THREE.Vector3().subVectors(p2, p1);
+  const len = direction.length();
+  const up = new THREE.Vector3(0, 1, 0);
+  const rotation = new THREE.Quaternion().setFromUnitVectors(up, direction.clone().normalize());
+
+  return (
+    <group>
+      <mesh position={midpoint} quaternion={rotation}>
+        <boxGeometry args={[0.02, len, 0.02]} />
+        <meshBasicMaterial color="#ef4444" />
+      </mesh>
+      <Html position={midpoint} center distanceFactor={15}>
+        <div className="bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded shadow-md flex items-center gap-1.5 whitespace-nowrap">
+          <span>{label}</span>
+          <button 
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="hover:bg-red-600 rounded-full w-3.5 h-3.5 flex items-center justify-center text-[8px] font-extrabold border border-white/40 cursor-pointer"
+          >
+            &times;
+          </button>
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+function MeasurementOverlay({
+  settings,
+  walls,
+  placedItems,
+  selectedItemId,
+  savedMeasurements,
+  onDeleteMeasurement,
+  measureStartPoint,
+  measureTempEndPoint,
+}: {
+  settings: any;
+  walls: any[];
+  placedItems: any[];
+  selectedItemId: string | null | undefined;
+  savedMeasurements: any[];
+  onDeleteMeasurement: (idx: number) => void;
+  measureStartPoint: THREE.Vector3 | null;
+  measureTempEndPoint: THREE.Vector3 | null;
+}) {
+  return (
+    <group>
+      {/* 1. Room Dimensions */}
+      {settings.roomDimensions && walls.map((wall, idx) => {
+        const dx = wall.p2[0] - wall.p1[0];
+        const dz = wall.p2[1] - wall.p1[1];
+        const len = wall.len;
+        const ux = dx / len;
+        const uz = dz / len;
+        const ox = uz * 0.35; // Outward shift
+        const oz = -ux * 0.35;
+
+        const startPt: [number, number, number] = [wall.p1[0] + ox, 0.05, wall.p1[1] + oz];
+        const endPt: [number, number, number] = [wall.p2[0] + ox, 0.05, wall.p2[1] + oz];
+        
+        return (
+          <DimensionLine
+            key={`room-dim-${idx}`}
+            start={startPt}
+            end={endPt}
+            color="#4b5563"
+            label={formatLength(len, settings.unit)}
+          />
+        );
+      })}
+
+      {/* 2. Product Spacing (Clearance to walls) */}
+      {settings.productSpacing && (() => {
+        if (!selectedItemId) return null;
+        const item = placedItems.find(i => i.id === selectedItemId);
+        if (!item) return null;
+
+        const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
+
+        return walls.map((wall, idx) => {
+          const dx = wall.p2[0] - wall.p1[0];
+          const dz = wall.p2[1] - wall.p1[1];
+          const ux = itemPos.x - wall.p1[0];
+          const uz = itemPos.z - wall.p1[1];
+          const wallLenSq = wall.len * wall.len;
+          const t = Math.max(0, Math.min(1, wallLenSq > 0 ? (ux * dx + uz * dz) / wallLenSq : 0));
+          const projX = wall.p1[0] + t * dx;
+          const projZ = wall.p1[1] + t * dz;
+          const dist = Math.hypot(itemPos.x - projX, itemPos.z - projZ);
+
+          const startPt: [number, number, number] = [itemPos.x, 0.05, itemPos.z];
+          const endPt: [number, number, number] = [projX, 0.05, projZ];
+
+          return (
+            <DimensionLine
+              key={`prod-space-${idx}`}
+              start={startPt}
+              end={endPt}
+              color="#2563eb"
+              label={formatLength(dist, settings.unit)}
+            />
+          );
+        });
+      })()}
+
+      {/* 3. Product Dimensions (Bounding Box) */}
+      {settings.productDimensions && (() => {
+        if (!selectedItemId) return null;
+        const item = placedItems.find(i => i.id === selectedItemId);
+        if (!item) return null;
+
+        const w = 1.0;
+        const d = 1.0;
+        const halfW = w / 2;
+        const halfD = d / 2;
+        const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
+
+        const startW: [number, number, number] = [itemPos.x - halfW, 0.05, itemPos.z + halfD + 0.1];
+        const endW: [number, number, number] = [itemPos.x + halfW, 0.05, itemPos.z + halfD + 0.1];
+
+        const startD: [number, number, number] = [itemPos.x - halfW - 0.1, 0.05, itemPos.z - halfD];
+        const endD: [number, number, number] = [itemPos.x - halfW - 0.1, 0.05, itemPos.z + halfD];
+
+        return (
+          <group>
+            <DimensionLine start={startW} end={endW} color="#059669" label={formatLength(w, settings.unit)} />
+            <DimensionLine start={startD} end={endD} color="#059669" label={formatLength(d, settings.unit)} />
+          </group>
+        );
+      })()}
+
+      {/* 4. Saved Point-to-Point Measurements */}
+      {savedMeasurements.map((m, idx) => {
+        const startPt: [number, number, number] = [m.point_a_x, m.point_a_y, m.point_a_z];
+        const endPt: [number, number, number] = [m.point_b_x, m.point_b_y, m.point_b_z];
+        const dist = new THREE.Vector3(...startPt).distanceTo(new THREE.Vector3(...endPt));
+        return (
+          <MeasurementLine
+            key={`saved-meas-${idx}`}
+            id={idx}
+            start={startPt}
+            end={endPt}
+            label={formatLength(dist, settings.unit)}
+            onDelete={() => onDeleteMeasurement(idx)}
+          />
+        );
+      })}
+
+      {/* 5. Active Point-to-Point Measuring Line (Dashed/Red) */}
+      {measureStartPoint && measureTempEndPoint && (() => {
+        const startPt: [number, number, number] = [measureStartPoint.x, measureStartPoint.y, measureStartPoint.z];
+        const endPt: [number, number, number] = [measureTempEndPoint.x, measureTempEndPoint.y, measureTempEndPoint.z];
+        const dist = measureStartPoint.distanceTo(measureTempEndPoint);
+        return (
+          <group>
+            <mesh position={new THREE.Vector3().addVectors(measureStartPoint, measureTempEndPoint).multiplyScalar(0.5)} quaternion={new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3().subVectors(measureTempEndPoint, measureStartPoint).normalize())}>
+              <boxGeometry args={[0.015, dist, 0.015]} />
+              <meshBasicMaterial color="#ef4444" />
+            </mesh>
+            <Html position={new THREE.Vector3().addVectors(measureStartPoint, measureTempEndPoint).multiplyScalar(0.5)} center distanceFactor={15}>
+              <div className="bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded shadow-md whitespace-nowrap">
+                {formatLength(dist, settings.unit)}
+              </div>
+            </Html>
+          </group>
+        );
+      })()}
+    </group>
+  );
+}
+
 // ─── BATHROOM SCENE ──────────────────────────────────────────────────────────
 
 function BathroomScene({
@@ -2006,6 +2234,15 @@ function BathroomScene({
   activePlacement,
   setActivePlacement,
   CustomFurniture,
+  measurementSettings,
+  isMeasuring,
+  setIsMeasuring,
+  savedMeasurements,
+  setSavedMeasurements,
+  measureStartPoint,
+  setMeasureStartPoint,
+  measureTempEndPoint,
+  setMeasureTempEndPoint,
 }: {
   state: DesignState;
   setState: React.Dispatch<React.SetStateAction<DesignState>>;
@@ -2026,6 +2263,15 @@ function BathroomScene({
   activePlacement: { type: 'door' | 'window'; style: string; name: string; width: number; height: number; sillHeight: number } | null;
   setActivePlacement: (ap: any) => void;
   CustomFurniture?: any;
+  measurementSettings?: any;
+  isMeasuring?: boolean;
+  setIsMeasuring?: (v: boolean) => void;
+  savedMeasurements?: any[];
+  setSavedMeasurements?: React.Dispatch<React.SetStateAction<any[]>>;
+  measureStartPoint?: THREE.Vector3 | null;
+  setMeasureStartPoint?: (p: THREE.Vector3 | null) => void;
+  measureTempEndPoint?: THREE.Vector3 | null;
+  setMeasureTempEndPoint?: (p: THREE.Vector3 | null) => void;
 }) {
   const { camera, gl } = useThree();
   const { selectedWallIdx, setSelectedWallIdx, activeCategory, recordHistory } = useDesignerStore();
@@ -2554,10 +2800,36 @@ function BathroomScene({
         position={[0, 0, 0]}
         receiveShadow
         onClick={(e) => {
+          if (isMeasuring && setSavedMeasurements && setMeasureStartPoint && setIsMeasuring) {
+            e.stopPropagation();
+            const pt = e.point;
+            if (!measureStartPoint) {
+              setMeasureStartPoint(pt);
+            } else {
+              setSavedMeasurements(prev => [...prev, {
+                point_a_x: measureStartPoint.x,
+                point_a_y: measureStartPoint.y,
+                point_a_z: measureStartPoint.z,
+                point_b_x: pt.x,
+                point_b_y: pt.y,
+                point_b_z: pt.z,
+                distance: measureStartPoint.distanceTo(pt)
+              }]);
+              setMeasureStartPoint(null);
+              setIsMeasuring(false);
+            }
+            return;
+          }
           remoteLog("FLOOR CLICKED, designType:", state.designType);
           if (state.designType === 'bathroom') {
             e.stopPropagation();
             setSelectedWallIdx(null);
+          }
+        }}
+        onPointerMove={(e) => {
+          if (isMeasuring && measureStartPoint && setMeasureTempEndPoint) {
+            e.stopPropagation();
+            setMeasureTempEndPoint(e.point);
           }
         }}
       >
@@ -3017,6 +3289,23 @@ function BathroomScene({
         </group>
       )}
 
+      {measurementSettings && (
+        <MeasurementOverlay
+          settings={measurementSettings}
+          walls={walls}
+          placedItems={placedItems}
+          selectedItemId={selectedItemId}
+          savedMeasurements={savedMeasurements || []}
+          onDeleteMeasurement={(idx) => {
+            if (setSavedMeasurements) {
+              setSavedMeasurements(prev => prev.filter((_, i) => i !== idx));
+            }
+          }}
+          measureStartPoint={measureStartPoint || null}
+          measureTempEndPoint={measureTempEndPoint || null}
+        />
+      )}
+ 
       <OrbitControls
         ref={controlsRef}
         enabled={orbitEnabled}
@@ -3512,6 +3801,15 @@ function RoomPreview3D({
   recordHistory,
   setOrbitEnabled,
   CustomFurniture,
+  measurementSettings,
+  isMeasuring,
+  setIsMeasuring,
+  savedMeasurements,
+  setSavedMeasurements,
+  measureStartPoint,
+  setMeasureStartPoint,
+  measureTempEndPoint,
+  setMeasureTempEndPoint,
 }: {
   shape: RoomShape;
   width: number;
@@ -3533,6 +3831,15 @@ function RoomPreview3D({
   onRemoveWallOpening: (id: string) => void;
   activePlacement: { type: 'door' | 'window'; style: string; name: string; width: number; height: number; sillHeight: number } | null;
   setActivePlacement: (ap: any) => void; placedItems?: any[]; setPlacedItems?: any; isPlacingItem?: any; setIsPlacingItem?: any; selectedItemId?: string | null; setSelectedItemId?: any; recordHistory?: any; setOrbitEnabled?: any; CustomFurniture?: any;
+  measurementSettings?: any;
+  isMeasuring?: boolean;
+  setIsMeasuring?: (v: boolean) => void;
+  savedMeasurements?: any[];
+  setSavedMeasurements?: React.Dispatch<React.SetStateAction<any[]>>;
+  measureStartPoint?: THREE.Vector3 | null;
+  setMeasureStartPoint?: (p: THREE.Vector3 | null) => void;
+  measureTempEndPoint?: THREE.Vector3 | null;
+  setMeasureTempEndPoint?: (p: THREE.Vector3 | null) => void;
 }) {
   const ref = useRef<THREE.Group>(null);
   const { camera, gl } = useThree();
@@ -3864,6 +4171,26 @@ function RoomPreview3D({
         receiveShadow={wizardStep !== 2}
         position={[0, -0.01, 0]}
         onClick={(e) => {
+          if (isMeasuring && setSavedMeasurements && setMeasureStartPoint && setIsMeasuring) {
+            e.stopPropagation();
+            const pt = e.point;
+            if (!measureStartPoint) {
+              setMeasureStartPoint(pt);
+            } else {
+              setSavedMeasurements(prev => [...prev, {
+                point_a_x: measureStartPoint.x,
+                point_a_y: measureStartPoint.y,
+                point_a_z: measureStartPoint.z,
+                point_b_x: pt.x,
+                point_b_y: pt.y,
+                point_b_z: pt.z,
+                distance: measureStartPoint.distanceTo(pt)
+              }]);
+              setMeasureStartPoint(null);
+              setIsMeasuring(false);
+            }
+            return;
+          }
           if (isPlacingItem) {
             e.stopPropagation();
             recordHistory([...placedItems, isPlacingItem]);
@@ -3871,6 +4198,12 @@ function RoomPreview3D({
             setIsPlacingItem(null);
           } else if (selectedRoomType === 'bathroom') {
             setSelectedWallIdx(null);
+          }
+        }}
+        onPointerMove={(e) => {
+          if (isMeasuring && measureStartPoint && setMeasureTempEndPoint) {
+            e.stopPropagation();
+            setMeasureTempEndPoint(e.point);
           }
         }}
       >
@@ -4370,6 +4703,23 @@ function RoomPreview3D({
         </group>
       )}
 
+      {measurementSettings && (
+        <MeasurementOverlay
+          settings={measurementSettings}
+          walls={walls}
+          placedItems={placedItems}
+          selectedItemId={selectedItemId}
+          savedMeasurements={savedMeasurements || []}
+          onDeleteMeasurement={(idx) => {
+            if (setSavedMeasurements) {
+              setSavedMeasurements(prev => prev.filter((_, i) => i !== idx));
+            }
+          }}
+          measureStartPoint={measureStartPoint || null}
+          measureTempEndPoint={measureTempEndPoint || null}
+        />
+      )}
+
     </group>
   );
 }
@@ -4404,6 +4754,20 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
   }, [wizardCategory]);
 
   const { state, setState, topView, setTopView, activeSideView, setActiveSideView, zoomTrigger, setZoomTrigger, numWalls, setNumWalls, wizardStep, setWizardStep, fadeState, setFadeState, selectedRoomType, setSelectedRoomType, subRoomType, setSubRoomType, projectName, setProjectName, selectedShape, setSelectedShape, dimensionsUnit, setDimensionsUnit, widthInput, setWidthInput, lengthInput, setLengthInput, heightInput, setHeightInput, projectId, setProjectId, validationErrors, setValidationErrors, isSubmitting, setIsSubmitting, previewZoomTrigger, setPreviewZoomTrigger, activePlacement, setActivePlacement, wizardWallOpenings, setWizardWallOpenings, placedItems, setPlacedItems, selectedItemId, setSelectedItemId, isPlacingItem, setIsPlacingItem, activeCategory, setActiveCategory, showRoomCustomizer, setShowRoomCustomizer, showSummaryModal, setShowSummaryModal, showRoomTypeModal, setShowRoomTypeModal, orbitEnabled, setOrbitEnabled, undoStack, setUndoStack, redoStack, setRedoStack, recordHistory, handleUndo, handleRedo } = useDesignerStore();
+ 
+  // ─── MEASUREMENT TOOL STATES ───
+  const [showMeasurementPanel, setShowMeasurementPanel] = useState(false);
+  const [measurementSettings, setMeasurementSettings] = useState({
+    productDimensions: false,
+    productSpacing: false,
+    roomDimensions: false,
+    unit: 'ft' as 'ft' | 'cm',
+  });
+  const [isMeasuring, setIsMeasuring] = useState(false);
+  const [savedMeasurements, setSavedMeasurements] = useState<any[]>([]);
+  const [measureStartPoint, setMeasureStartPoint] = useState<THREE.Vector3 | null>(null);
+  const [measureTempEndPoint, setMeasureTempEndPoint] = useState<THREE.Vector3 | null>(null);
+
 
 
   // ─── WIZARD ONBOARDING STATE ───
@@ -4526,6 +4890,9 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
 
         setWizardWallOpenings(mappedOpenings);
         setPlacedItems(mappedItems);
+        if (data.measurements) {
+          setSavedMeasurements(data.measurements);
+        }
 
         // Go straight to the workspace step (Step 5)!
         setWizardStep(5);
@@ -5059,7 +5426,8 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
           openings,
           items,
           floorTextureUrl: state.floorTextureUrl,
-          wallTextureUrl: state.wallTextureUrl
+          wallTextureUrl: state.wallTextureUrl,
+          measurements: savedMeasurements
         })
       });
 
@@ -5926,6 +6294,15 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
                     selectedItemId={selectedItemId}
                     setSelectedItemId={setSelectedItemId}
                     recordHistory={recordHistory}
+                    measurementSettings={measurementSettings}
+                    isMeasuring={isMeasuring}
+                    setIsMeasuring={setIsMeasuring}
+                    savedMeasurements={savedMeasurements}
+                    setSavedMeasurements={setSavedMeasurements}
+                    measureStartPoint={measureStartPoint}
+                    setMeasureStartPoint={setMeasureStartPoint}
+                    measureTempEndPoint={measureTempEndPoint}
+                    setMeasureTempEndPoint={setMeasureTempEndPoint}
                   />
                   <OrbitControls ref={wizardControlsRef} enabled={orbitEnabled} enableRotate={wizardStep !== 2} enableDamping dampingFactor={0.05} maxPolarAngle={Math.PI / 2.1} />
                 </Suspense>
@@ -6011,6 +6388,15 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
               activePlacement={activePlacement}
               setActivePlacement={setActivePlacement}
               CustomFurniture={CustomFurniture}
+              measurementSettings={measurementSettings}
+              isMeasuring={isMeasuring}
+              setIsMeasuring={setIsMeasuring}
+              savedMeasurements={savedMeasurements}
+              setSavedMeasurements={setSavedMeasurements}
+              measureStartPoint={measureStartPoint}
+              setMeasureStartPoint={setMeasureStartPoint}
+              measureTempEndPoint={measureTempEndPoint}
+              setMeasureTempEndPoint={setMeasureTempEndPoint}
             />
           </Suspense>
         </Canvas>
@@ -6150,6 +6536,105 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
               <path d="M21 7v6h-6" /><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7" />
             </svg>
           </button>
+        </div>
+
+        <div className="w-[1px] h-5 bg-gray-200" />
+
+        {/* Measurement tool button & popup panel */}
+        <div className="relative">
+          <button
+            id="btn-measurement"
+            onClick={() => setShowMeasurementPanel(!showMeasurementPanel)}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+              showMeasurementPanel ? 'bg-black text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            title="Measurement Options"
+          >
+            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M21.3 8.24 15.76 2.7a1 1 0 0 0-1.41 0L3.27 13.78a1 1 0 0 0 0 1.41l5.54 5.54a1 1 0 0 0 1.41 0L21.3 9.66a1 1 0 0 0 0-1.42ZM7.5 17.5l1.5-1.5M10.5 14.5l1.5-1.5M13.5 11.5l1.5-1.5M16.5 8.5l1.5-1.5" />
+            </svg>
+          </button>
+
+          {showMeasurementPanel && (
+            <div className="absolute bottom-full mb-3 right-0 bg-white border border-gray-200 shadow-2xl rounded-2xl p-4 flex flex-col gap-4 min-w-[240px] z-50">
+              <div className="flex justify-between items-center gap-4">
+                <span className="text-xs font-bold text-gray-700">Product dimensions</span>
+                <label className="relative inline-flex items-center cursor-pointer select-none">
+                  <input 
+                    type="checkbox" 
+                    checked={measurementSettings.productDimensions} 
+                    onChange={(e) => setMeasurementSettings(prev => ({ ...prev, productDimensions: e.target.checked }))} 
+                    className="sr-only peer" 
+                  />
+                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
+                </label>
+              </div>
+
+              <div className="flex justify-between items-center gap-4">
+                <span className="text-xs font-bold text-gray-700">Product spacing</span>
+                <label className="relative inline-flex items-center cursor-pointer select-none">
+                  <input 
+                    type="checkbox" 
+                    checked={measurementSettings.productSpacing} 
+                    onChange={(e) => setMeasurementSettings(prev => ({ ...prev, productSpacing: e.target.checked }))} 
+                    className="sr-only peer" 
+                  />
+                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
+                </label>
+              </div>
+
+              <div className="flex justify-between items-center gap-4">
+                <span className="text-xs font-bold text-gray-700">Room dimensions</span>
+                <label className="relative inline-flex items-center cursor-pointer select-none">
+                  <input 
+                    type="checkbox" 
+                    checked={measurementSettings.roomDimensions} 
+                    onChange={(e) => setMeasurementSettings(prev => ({ ...prev, roomDimensions: e.target.checked }))} 
+                    className="sr-only peer" 
+                  />
+                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
+                </label>
+              </div>
+
+              <div className="h-[1px] bg-gray-100" />
+
+              {/* Free-form measure tool toggle button */}
+              <div className="flex justify-between items-center gap-4">
+                <span className="text-xs font-bold text-gray-700">Measure Point-to-Point</span>
+                <button
+                  type="button"
+                  onClick={() => setIsMeasuring(!isMeasuring)}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                    isMeasuring ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {isMeasuring ? 'Active (Click 3D)' : 'Start'}
+                </button>
+              </div>
+
+              <div className="h-[1px] bg-gray-100" />
+
+              <div className="flex justify-between items-center gap-4">
+                <span className="text-xs font-bold text-gray-700">Unit</span>
+                <div className="flex bg-gray-100 rounded-lg p-0.5 border border-gray-200/50">
+                  <button 
+                    type="button"
+                    onClick={() => setMeasurementSettings(prev => ({ ...prev, unit: 'ft' }))}
+                    className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${measurementSettings.unit === 'ft' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                  >
+                    ft
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setMeasurementSettings(prev => ({ ...prev, unit: 'cm' }))}
+                    className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${measurementSettings.unit === 'cm' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                  >
+                    cm
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

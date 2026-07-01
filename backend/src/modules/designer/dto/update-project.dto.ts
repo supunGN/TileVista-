@@ -39,4 +39,13 @@ export class UpdateProjectDto {
     rotation_y: number;
     modelUrl?: string;
   }>;
+  measurements?: Array<{
+    point_a_x: number;
+    point_a_y: number;
+    point_a_z: number;
+    point_b_x: number;
+    point_b_y: number;
+    point_b_z: number;
+    distance: number;
+  }>;
 }
