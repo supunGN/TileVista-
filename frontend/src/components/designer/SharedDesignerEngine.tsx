@@ -4812,6 +4812,7 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
   const [savedMeasurements, setSavedMeasurements] = useState<any[]>([]);
   const [measureStartPoint, setMeasureStartPoint] = useState<THREE.Vector3 | null>(null);
   const [measureTempEndPoint, setMeasureTempEndPoint] = useState<THREE.Vector3 | null>(null);
+  const [isCustomisingRoom, setIsCustomisingRoom] = useState(false);
 
 
 
@@ -5678,6 +5679,115 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
     );
   };
 
+  if (isCustomisingRoom) {
+    return (
+      <div className="w-full h-full bg-[#ececec] relative overflow-hidden flex flex-col items-center justify-center">
+        <div className="w-full h-full relative">
+          <Canvas
+            camera={{ position: [0, 6.5, 0], fov: 42 }}
+            gl={{ antialias: true }}
+            style={{ width: '100%', height: '100%' }}
+            shadows={false}
+          >
+            <color attach="background" args={["#ececec"]} />
+            <ambientLight intensity={0.65} />
+            <directionalLight position={[5, 10, 5]} intensity={1.0} castShadow={false} />
+            <Suspense fallback={null}>
+              <CameraController wizardStep={2} controlsRef={wizardControlsRef} />
+              <RoomPreview3D
+                shape={selectedShape}
+                width={widthInMeters}
+                length={lengthInMeters}
+                height={heightInMeters}
+                unit={dimensionsUnit}
+                rotate={false}
+                onStartDrag={() => setOrbitEnabled(false)}
+                onEndDrag={() => setOrbitEnabled(true)}
+                onVertexDrag={handleVertexDrag}
+                onWallDrag={handleWallDrag}
+                previewZoomTrigger={previewZoomTrigger}
+                setPreviewZoomTrigger={setPreviewZoomTrigger}
+                selectedRoomType={selectedRoomType}
+                wizardStep={2}
+                wallOpenings={wizardWallOpenings}
+                onAddWallOpening={handleAddWallOpening}
+                onUpdateWallOpeningOffset={handleUpdateWallOpeningOffset}
+                onRemoveWallOpening={handleRemoveWallOpening}
+                activePlacement={activePlacement}
+                setActivePlacement={setActivePlacement}
+                placedItems={placedItems}
+                setPlacedItems={setPlacedItems}
+                isPlacingItem={isPlacingItem}
+                setIsPlacingItem={setIsPlacingItem}
+                selectedItemId={selectedItemId}
+                setSelectedItemId={setSelectedItemId}
+                recordHistory={recordHistory}
+                measurementSettings={measurementSettings}
+                isMeasuring={isMeasuring}
+                setIsMeasuring={setIsMeasuring}
+                savedMeasurements={savedMeasurements}
+                setSavedMeasurements={setSavedMeasurements}
+                measureStartPoint={measureStartPoint}
+                setMeasureStartPoint={setMeasureStartPoint}
+                measureTempEndPoint={measureTempEndPoint}
+                setMeasureTempEndPoint={setMeasureTempEndPoint}
+              />
+              <OrbitControls ref={wizardControlsRef} enabled={orbitEnabled} enableRotate={false} enableDamping dampingFactor={0.05} maxPolarAngle={Math.PI / 2.1} />
+            </Suspense>
+          </Canvas>
+
+          {/* Floating Zoom Controls for Preview */}
+          {selectedShape && (
+            <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-20">
+              <button
+                onClick={() => setPreviewZoomTrigger('in')}
+                className="w-10 h-10 bg-white hover:bg-gray-50 border border-gray-250 shadow-md rounded-full flex items-center justify-center text-[#1A1A1A] transition-all hover:scale-105 active:scale-95"
+                title="Zoom In"
+              >
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setPreviewZoomTrigger('out')}
+                className="w-10 h-10 bg-white hover:bg-gray-50 border border-gray-255 shadow-md rounded-full flex items-center justify-center text-[#1A1A1A] transition-all hover:scale-105 active:scale-95"
+                title="Zoom Out"
+              >
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M5 12h14" />
+                </svg>
+              </button>
+            </div>
+          )}
+
+          {/* Floating Done Button at the bottom center */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
+            <button
+              onClick={() => {
+                const wFt = cmToFeet(widthInMeters * 100);
+                const dFt = cmToFeet(lengthInMeters * 100);
+                const hFt = cmToFeet(heightInMeters * 100);
+                setState((prev) => ({
+                  ...prev,
+                  widthFt: wFt,
+                  depthFt: dFt,
+                  heightFt: hFt,
+                }));
+                setIsCustomisingRoom(false);
+              }}
+              className="bg-black hover:bg-[#222] text-white px-7 py-2.5 rounded-full shadow-2xl flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider transition-all hover:scale-105 active:scale-95 border border-black/10"
+            >
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (wizardStep < 5) {
     return (
       <div className="flex h-screen bg-[#F0EFEB] font-sans overflow-hidden select-none relative">
@@ -6483,8 +6593,8 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
         {/* Customise room */}
         <button
           id="btn-customise"
-          onClick={() => setShowRoomCustomizer(!showRoomCustomizer)}
-          className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold uppercase rounded-full tracking-wider transition-all ${showRoomCustomizer ? 'bg-black text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          onClick={() => setIsCustomisingRoom(true)}
+          className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold uppercase rounded-full tracking-wider transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
         >
           <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
@@ -6631,15 +6741,7 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
         )}
       </div>
 
-      {/* ── CUSTOMISE ROOM DRAWER ── */}
-      {showRoomCustomizer && (
-        <CustomiseRoomDrawer
-          state={state}
-          numWalls={numWalls}
-          onChange={update}
-          onClose={() => setShowRoomCustomizer(false)}
-        />
-      )}
+
 
 
       {/* ── SAVE DESIGN MODAL ── */}
