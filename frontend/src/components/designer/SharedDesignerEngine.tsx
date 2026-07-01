@@ -3796,16 +3796,49 @@ function RoomPreview3D({
           );
           hit.x = snapped.x;
           hit.z = snapped.z;
-        }
 
-        if (isPlacingItem) {
-          setIsPlacingItem({ ...isPlacingItem, position: [hit.x, 0, hit.z] });
-        } else if (draggingItemIdRef.current) {
-          setPlacedItems(placedItems.map(item =>
-            item.id === draggingItemIdRef.current
-              ? { ...item, position: [hit.x, 0, hit.z] }
-              : item
-          ));
+          // Collision checking
+          let collides = false;
+          const candidateCorners = getItemCorners(hit.x, hit.z, itemW, itemD, itemToMove.rotation || 0);
+          const currentActiveId = activeId || (isPlacingItem ? isPlacingItem.id : null);
+          
+          for (const other of placedItems) {
+            if (other.id === currentActiveId) continue;
+            
+            let otherW = 1.0, otherD = 1.0;
+            const otherDims = globalItemDimensions.get(other.id);
+            if (otherDims) {
+              otherW = otherDims.width;
+              otherD = otherDims.depth;
+            } else {
+              const ot = other.type;
+              if (ot === 'beds' || ot === 'bed') { otherW = 2.1; otherD = 2.1; }
+              else if (ot === 'wardrobes' || ot === 'wardrobe') { otherW = 1.25; otherD = 1.25; }
+              else if (ot === 'sofa' || ot === 'sofas') { otherW = 2.15; otherD = 2.15; }
+              else if (ot === 'table' || ot === 'dressing_table') { otherW = 1.55; otherD = 1.55; }
+              else if (ot === 'chair' || ot === 'chairs') { otherW = 0.65; otherD = 0.65; }
+              else if (ot === 'tv_cabinet') { otherW = 1.55; otherD = 1.55; }
+              else if (ot === 'coffee_table') { otherW = 1.1; otherD = 1.1; }
+            }
+            
+            const otherCorners = getItemCorners(other.position[0], other.position[2], otherW, otherD, other.rotation || 0);
+            if (rectsIntersect(candidateCorners, otherCorners)) {
+              collides = true;
+              break;
+            }
+          }
+
+          if (!collides) {
+            if (isPlacingItem) {
+              setIsPlacingItem({ ...isPlacingItem, position: [hit.x, 0, hit.z] });
+            } else if (draggingItemIdRef.current) {
+              setPlacedItems(placedItems.map(item =>
+                item.id === draggingItemIdRef.current
+                  ? { ...item, position: [hit.x, 0, hit.z] }
+                  : item
+              ));
+            }
+          }
         }
       }
     };
