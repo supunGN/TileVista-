@@ -4192,7 +4192,8 @@ function RoomPreview3D({
             }
           }
 
-          if (!collides) {
+          // Always allow free movement in normal room designer (no collision lock)
+          if (true) {
             if (isPlacingItem) {
               setIsPlacingItem({ ...isPlacingItem, position: [hit.x, 0, hit.z] });
             } else if (draggingItemIdRef.current) {
@@ -4760,7 +4761,7 @@ function RoomPreview3D({
         </group>
       )}
 
-      {measurementSettings && (
+      {selectedRoomType === 'bathroom' && measurementSettings && (
         <MeasurementOverlay
           settings={measurementSettings}
           walls={walls}
@@ -6587,75 +6588,79 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
           </button>
         </div>
 
-        <div className="w-[1px] h-5 bg-gray-200" />
+        {selectedRoomType === 'bathroom' && (
+          <>
+            <div className="w-[1px] h-5 bg-gray-200" />
 
-        {/* Measurement tool button & popup panel */}
-        <div className="relative">
-          <button
-            id="btn-measurement"
-            onClick={() => setShowMeasurementPanel(!showMeasurementPanel)}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-              showMeasurementPanel ? 'bg-black text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-            title="Measurement Options"
-          >
-            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M21.3 8.24 15.76 2.7a1 1 0 0 0-1.41 0L3.27 13.78a1 1 0 0 0 0 1.41l5.54 5.54a1 1 0 0 0 1.41 0L21.3 9.66a1 1 0 0 0 0-1.42ZM7.5 17.5l1.5-1.5M10.5 14.5l1.5-1.5M13.5 11.5l1.5-1.5M16.5 8.5l1.5-1.5" />
-            </svg>
-          </button>
+            {/* Measurement tool button & popup panel */}
+            <div className="relative">
+              <button
+                id="btn-measurement"
+                onClick={() => setShowMeasurementPanel(!showMeasurementPanel)}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                  showMeasurementPanel ? 'bg-black text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                title="Measurement Options"
+              >
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M21.3 8.24 15.76 2.7a1 1 0 0 0-1.41 0L3.27 13.78a1 1 0 0 0 0 1.41l5.54 5.54a1 1 0 0 0 1.41 0L21.3 9.66a1 1 0 0 0 0-1.42ZM7.5 17.5l1.5-1.5M10.5 14.5l1.5-1.5M13.5 11.5l1.5-1.5M16.5 8.5l1.5-1.5" />
+                </svg>
+              </button>
 
-          {showMeasurementPanel && (
-            <div className="absolute bottom-full mb-3 right-0 bg-white border border-gray-200 shadow-2xl rounded-2xl p-4 flex flex-col gap-4 min-w-[240px] z-50">
-              <div className="flex justify-between items-center gap-4">
-                <span className="text-xs font-bold text-gray-700">Product spacing</span>
-                <label className="relative inline-flex items-center cursor-pointer select-none">
-                  <input 
-                    type="checkbox" 
-                    checked={measurementSettings.productSpacing} 
-                    onChange={(e) => setMeasurementSettings(prev => ({ ...prev, productSpacing: e.target.checked }))} 
-                    className="sr-only peer" 
-                  />
-                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
-                </label>
-              </div>
+              {showMeasurementPanel && (
+                <div className="absolute bottom-full mb-3 right-0 bg-white border border-gray-200 shadow-2xl rounded-2xl p-4 flex flex-col gap-4 min-w-[240px] z-50">
+                  <div className="flex justify-between items-center gap-4">
+                    <span className="text-xs font-bold text-gray-700">Product spacing</span>
+                    <label className="relative inline-flex items-center cursor-pointer select-none">
+                      <input 
+                        type="checkbox" 
+                        checked={measurementSettings.productSpacing} 
+                        onChange={(e) => setMeasurementSettings(prev => ({ ...prev, productSpacing: e.target.checked }))} 
+                        className="sr-only peer" 
+                      />
+                      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
+                    </label>
+                  </div>
 
-              <div className="flex justify-between items-center gap-4">
-                <span className="text-xs font-bold text-gray-700">Room dimensions</span>
-                <label className="relative inline-flex items-center cursor-pointer select-none">
-                  <input 
-                    type="checkbox" 
-                    checked={measurementSettings.roomDimensions} 
-                    onChange={(e) => setMeasurementSettings(prev => ({ ...prev, roomDimensions: e.target.checked }))} 
-                    className="sr-only peer" 
-                  />
-                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
-                </label>
-              </div>
+                  <div className="flex justify-between items-center gap-4">
+                    <span className="text-xs font-bold text-gray-700">Room dimensions</span>
+                    <label className="relative inline-flex items-center cursor-pointer select-none">
+                      <input 
+                        type="checkbox" 
+                        checked={measurementSettings.roomDimensions} 
+                        onChange={(e) => setMeasurementSettings(prev => ({ ...prev, roomDimensions: e.target.checked }))} 
+                        className="sr-only peer" 
+                      />
+                      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
+                    </label>
+                  </div>
 
-              <div className="h-[1px] bg-gray-100" />
+                  <div className="h-[1px] bg-gray-100" />
 
-              <div className="flex justify-between items-center gap-4">
-                <span className="text-xs font-bold text-gray-700">Unit</span>
-                <div className="flex bg-gray-100 rounded-lg p-0.5 border border-gray-200/50">
-                  <button 
-                    type="button"
-                    onClick={() => setMeasurementSettings(prev => ({ ...prev, unit: 'ft' }))}
-                    className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${measurementSettings.unit === 'ft' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
-                  >
-                    ft
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setMeasurementSettings(prev => ({ ...prev, unit: 'cm' }))}
-                    className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${measurementSettings.unit === 'cm' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
-                  >
-                    cm
-                  </button>
+                  <div className="flex justify-between items-center gap-4">
+                    <span className="text-xs font-bold text-gray-700">Unit</span>
+                    <div className="flex bg-gray-100 rounded-lg p-0.5 border border-gray-200/50">
+                      <button 
+                        type="button"
+                        onClick={() => setMeasurementSettings(prev => ({ ...prev, unit: 'ft' }))}
+                        className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${measurementSettings.unit === 'ft' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                      >
+                        ft
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setMeasurementSettings(prev => ({ ...prev, unit: 'cm' }))}
+                        className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition-all ${measurementSettings.unit === 'cm' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-black'}`}
+                      >
+                        cm
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* ── CUSTOMISE ROOM DRAWER ── */}
