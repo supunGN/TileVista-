@@ -3,8 +3,10 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, Search, RefreshCw, Phone, Mail, MapPin } from 'lucide-react';
+import { ShoppingCart, Search, RefreshCw, Phone, Mail, MapPin, User } from 'lucide-react';
 import { useAuth } from '../../features/auth/AuthContext';
+import { MegaMenuDropdown } from '../../components/shared/MegaMenuDropdown';
+import { useCart } from '../../features/cart/hooks/useCart';
 
 export default function PublicLayout({
   children,
@@ -14,6 +16,8 @@ export default function PublicLayout({
 
   const pathname = usePathname();
   const { user, isAuthenticated, logout } = useAuth();
+  const { items } = useCart();
+
 
 
 
@@ -65,6 +69,26 @@ export default function PublicLayout({
           <nav className="hidden md:flex items-center gap-8 lg:gap-10">
             {navigation.map((item) => {
               const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+              
+              if (item.name === 'Shop') {
+                return (
+                  <div key={item.href} className="group relative py-6 -my-6">
+                    <button
+                      className={`flex items-center gap-1 text-xs font-semibold tracking-widest uppercase pb-1 transition-all cursor-default ${active
+                        ? 'text-[#1A1A1A] border-b border-[#1A1A1A]'
+                        : 'text-gray-500 group-hover:text-[#1A1A1A] group-hover:border-b group-hover:border-gray-300'
+                      }`}
+                    >
+                      {item.name}
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-70 group-hover:opacity-100 transition-opacity"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+
+                    {/* Mega Menu Dropdown */}
+                    <MegaMenuDropdown />
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={item.href}
@@ -94,9 +118,11 @@ export default function PublicLayout({
               aria-label="Shopping Cart"
             >
               <ShoppingCart size={20} strokeWidth={1.8} />
-              <span className="absolute -top-1.5 -right-0.5 bg-[#D4C5B9] text-white text-[8px] font-bold rounded-[6px] w-[10px] h-[17px] flex items-center justify-center leading-none">
-                1
-              </span>
+              {items.length > 0 && (
+                <span className="absolute -top-1.5 -right-0.5 bg-[#D4C5B9] text-white text-[8px] font-bold rounded-[6px] w-[14px] h-[14px] flex items-center justify-center leading-none">
+                  {items.length}
+                </span>
+              )}
             </Link>
 
             {/* User profile Link */}
@@ -118,7 +144,7 @@ export default function PublicLayout({
                 className="w-8 h-8 rounded-full bg-[#1A1A1A]/5 border border-gray-200 flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors overflow-hidden"
                 aria-label="User Profile Login"
               >
-                <div className="w-3.5 h-3.5 rounded-full bg-gray-400"></div>
+                <User size={16} className="text-gray-500" />
               </Link>
             )}
           </div>

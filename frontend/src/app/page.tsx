@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 
 // Import landing sections
@@ -12,21 +12,21 @@ import { CuratedPackages } from '../components/landing/CuratedPackages';
 import { PlannerIntro } from '../components/landing/PlannerIntro';
 import { ExperienceCenter } from '../components/landing/ExperienceCenter';
 import { Footer } from '../components/landing/Footer';
+import { useCart } from '../features/cart/hooks/useCart';
 
 export default function Home() {
   const router = useRouter();
-  const [cartCount, setCartCount] = useState<number>(1); // Mock cart count
+  const { items } = useCart();
 
   const handleAddToCartPackage = (pkgId: string) => {
-    setCartCount(prev => prev + 1);
-    alert(`Successfully added curated package (${pkgId === 'pkg-minimalist-oasis' ? 'The Minimalist Oasis' : 'Classic Marble Luxury'}) to your shopping cart!`);
+    alert(`Package additions will be enabled in the next sprint.`);
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#D4C5B9] selection:text-[#1A1A1A]">
       {/* Navigation Bar */}
       <Navbar 
-        cartCount={cartCount} 
+        cartCount={items.length} 
       />
 
       {/* Main Landing Sections */}
@@ -35,15 +35,15 @@ export default function Home() {
         <Hero 
           onLaunchDesigner={() => router.push('/designer')} 
           onExplorePackages={() => router.push('/packages')}
-          onExploreTiles={() => router.push('/products?category=tiles')}
-          onBrowseProducts={() => router.push('/products')}
+          onExploreTiles={() => router.push('/products/tiles')}
+          onBrowseProducts={() => router.push('/products/tiles')}
         />
 
         {/* About Section */}
         <About />
 
         {/* Catalog Categories Grid */}
-        <Categories onSelectCategory={(catTag) => router.push('/products')} />
+        <Categories onSelectCategory={(categoryId) => router.push(`/products/${categoryId}`)} />
 
         {/* Curated Package Suites Carousel */}
         <CuratedPackages 

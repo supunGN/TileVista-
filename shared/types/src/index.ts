@@ -34,9 +34,11 @@ export interface Product {
 
 // --- CART & ORDERS TYPES ---
 export interface CartItem {
-  productId: string;
-  product: Product;
+  osposItemId: number;
   quantity: number;
+  lineTotal: number;
+  isAvailable: boolean;
+  item: any; // We can type this as UnifiedItem or OSPOSItem later, using any for now to bypass strict old Product type
 }
 
 export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';

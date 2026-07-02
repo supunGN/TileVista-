@@ -48,12 +48,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+      const sessionId = localStorage.getItem('tilevista_cart_session');
+      
       const res = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password: pass }),
+        body: JSON.stringify({ email, password: pass, sessionId }),
       });
 
       if (!res.ok) {
@@ -95,6 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
       const { pass, ...rest } = dto;
+      const sessionId = localStorage.getItem('tilevista_cart_session');
       
       const res = await fetch(`${apiUrl}/auth/register`, {
         method: 'POST',
@@ -104,6 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({
           ...rest,
           password: pass,
+          sessionId,
         }),
       });
 

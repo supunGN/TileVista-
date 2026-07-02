@@ -1,22 +1,50 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Phone, MapPin, Clock, Mail, CheckCircle, ArrowRight } from 'lucide-react';
 import { ExperienceCenter } from '../../../components/landing/ExperienceCenter';
+import { useAuth } from '../../../features/auth/AuthContext';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (formData.name && formData.email && formData.message) {
-      setSubmitted(true);
+  useEffect(() => {
+    if (!user) {
+      setSubmitted(false);
       setFormData({ name: '', email: '', subject: '', message: '' });
     }
+  }, [user]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.message) return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+      const res = await fetch(`${apiUrl}/inquiries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to submit inquiry');
+      }
+
+      setSubmitted(true);
+      setFormData({ name: '', email: '', subject: '', message: '' });
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
   };
-
-
 
   return (
     <div className="py-8 font-sans max-w-7xl mx-auto space-y-16">
@@ -46,7 +74,7 @@ export default function ContactPage() {
               <CheckCircle size={32} className="text-emerald-500" />
               <h3 className="font-bold text-sm tracking-wide uppercase">Message Sent Successfully</h3>
               <p className="text-xs font-light text-emerald-700 max-w-md leading-relaxed">
-                Thank you for contacting Alahapperuma Trade Center. A showroom representative will review your request and get back to you shortly.
+                Your inquiry has been received successfully. The showroom team will review the request and a response will be sent to your email address.
               </p>
               <button 
                 onClick={() => setSubmitted(false)}
@@ -107,11 +135,13 @@ export default function ContactPage() {
 
               <button
                 type="submit"
-                className="w-full sm:w-auto bg-[#1A1A1A] hover:bg-[#D4C5B9] hover:text-[#1A1A1A] text-white font-semibold text-xs tracking-widest uppercase px-8 py-3.5 flex items-center justify-center gap-2.5 transition-all duration-300"
+                disabled={loading}
+                className={`w-full sm:w-auto bg-[#1A1A1A] hover:bg-[#D4C5B9] hover:text-[#1A1A1A] text-white font-semibold text-xs tracking-widest uppercase px-8 py-3.5 flex items-center justify-center gap-2.5 transition-all duration-300 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <span>Submit Inquiry</span>
-                <ArrowRight size={14} />
+                {loading ? 'SENDING...' : 'SUBMIT INQUIRY'} <ArrowRight size={14} />
               </button>
+              
+              {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
             </form>
           )}
         </div>

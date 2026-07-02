@@ -118,5 +118,17 @@ export class AuthService {
     };
     return this.login(result);
   }
+
+  async linkCart(userId: string, sessionId: string) {
+    if (!sessionId || !userId) return;
+    try {
+      await this.prisma.carts.updateMany({
+        where: { session_id: sessionId },
+        data: { user_id: userId },
+      });
+    } catch (err) {
+      console.error('Failed to link cart to user:', err);
+    }
+  }
 }
 

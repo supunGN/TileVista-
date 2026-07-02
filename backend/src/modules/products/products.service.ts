@@ -35,6 +35,9 @@ export class ProductsService {
     dto.brand = osposItem.brand ?? null;
     dto.color = osposItem.color ?? null;
 
+    // 1. Map OSPOS Brand attribute
+    dto.brand = osposItem.attributes?.['Brand'] || osposItem.attributes?.['brand'] || null;
+
     if (dbProduct && dbProduct.product_assets) {
       const asset = dbProduct.product_assets;
       dto.imageUrl = asset.image_url ?? null;
@@ -50,8 +53,8 @@ export class ProductsService {
       dto.tags = asset.product_asset_tags
         ? asset.product_asset_tags.map((pat: any) => pat.tags?.tag_name).filter(Boolean)
         : [];
-      dto.material = osposItem.material || asset.material_type || null;
-      dto.finish = osposItem.color || asset.color_family || null;
+      dto.material = asset.material_type || osposItem.material || null;
+      dto.finish = asset.color_family || osposItem.color || null;
       dto.isEnabled = dbProduct.is_active ?? true;
       dto.notes = null;
       dto.hasAssetEntry = true;
@@ -75,7 +78,7 @@ export class ProductsService {
    * Returns all active OSPOS items merged with their visual asset entries.
    * If includeHidden is false, it only returns items that have an asset entry and are enabled/visible.
    */
-  async findAll(includeHidden: boolean = false): Promise<UnifiedItemDto[]> {
+  async findAll(includeHidden: boolean = false, filters: any = {}): Promise<UnifiedItemDto[]> {
     const [osposItems, dbProducts] = await Promise.all([
       this.osposService.fetchAllItems(),
       this.prisma.products.findMany({
@@ -161,9 +164,69 @@ export class ProductsService {
     }
 
     if (!includeHidden) {
-      // Filter out items that have no local DB entry or have product_assets.is_visible = false.
-      // (buildUnifiedItem already sets isEnabled = product_assets?.is_visible ?? is_active ?? true)
-      return result.filter((item) => item.hasAssetEntry && item.isEnabled);
+      result = result.filter((item) => item.hasAssetEntry && item.isEnabled);
+    }
+
+    // Apply Dynamic Filters
+    const {
+      categoryId,
+      subcategoryId,
+      search,
+      brand,
+      material,
+      finish,
+      size,
+      minPrice,
+      maxPrice,
+    } = filters;
+
+    if (categoryId !== undefined) {
+      result = result.filter((item) => item.categoryId === categoryId);
+    }
+
+    if (subcategoryId !== undefined) {
+      result = result.filter((item) => item.subcategoryId === subcategoryId);
+    }
+
+    if (search) {
+      const searchLower = search.toLowerCase();
+      result = result.filter((item) => {
+        const nameMatches = item.name.toLowerCase().includes(searchLower);
+        const skuMatches = item.sku.toLowerCase().includes(searchLower);
+        const descMatches = item.description ? item.description.toLowerCase().includes(searchLower) : false;
+        const materialMatches = item.material ? item.material.toLowerCase().includes(searchLower) : false;
+        const finishMatches = item.finish ? item.finish.toLowerCase().includes(searchLower) : false;
+        const tagsMatch = item.tags.some(tag => tag.toLowerCase().includes(searchLower));
+        return nameMatches || skuMatches || descMatches || materialMatches || finishMatches || tagsMatch;
+      });
+    }
+
+    if (brand) {
+      const brandsLower = brand.toLowerCase().split(',');
+      result = result.filter((item) => item.brand && brandsLower.includes(item.brand.toLowerCase()));
+    }
+
+    if (material) {
+      const materialsLower = material.toLowerCase().split(',');
+      result = result.filter((item) => item.material && materialsLower.includes(item.material.toLowerCase()));
+    }
+
+    if (finish) {
+      const finishesLower = finish.toLowerCase().split(',');
+      result = result.filter((item) => item.finish && finishesLower.includes(item.finish.toLowerCase()));
+    }
+
+    if (size) {
+      const sizesLower = size.toLowerCase().split(',');
+      result = result.filter((item) => item.tags.some(tag => sizesLower.includes(tag.toLowerCase())));
+    }
+
+    if (minPrice !== undefined) {
+      result = result.filter((item) => item.price >= minPrice);
+    }
+
+    if (maxPrice !== undefined) {
+      result = result.filter((item) => item.price <= maxPrice);
     }
 
     return result;
@@ -211,8 +274,9 @@ export class ProductsService {
 
     const osposItem = osposItems.find((i) => i.item_id === osposItemId);
     if (!osposItem) {
-      if (dbProduct) {
-        this.logger.warn(`OSPOS item details not available for product ID ${osposItemId}. Returning local database metadata with fallback stock status.`);
+      // If OSPOS returned NO items at all, assume it's down and return a fallback
+      if (dbProduct && osposItems.length === 0) {
+        this.logger.warn(`OSPOS connection failed. Returning local database metadata for product ID ${osposItemId} with fallback stock status.`);
         const fallbackOsposItem: OsposItem = {
           item_id: dbProduct.ospos_item_id,
           name: `Product ${dbProduct.ospos_item_id}`,
@@ -230,6 +294,8 @@ export class ProductsService {
         }
         return fallbackUnified;
       }
+      
+      // If OSPOS is online (length > 0) but the item wasn't found, it means it was deleted in OSPOS.
       throw new NotFoundException(`Product with ID ${osposItemId} not found.`);
     }
 
@@ -244,7 +310,60 @@ export class ProductsService {
    * Fetches the category hierarchy from OSPOS.
    */
   async getCategories(): Promise<any[]> {
-    return this.osposService.fetchCategories();
+    const categories = await this.osposService.fetchCategories();
+    if (categories && categories.length > 0) {
+      return categories;
+    }
+    this.logger.warn('OSPOS categories unavailable. Returning fallback category structure.');
+    return [
+      { id: 1, name: 'Tiles', subcategories: [
+          { id: 1, name: 'Floor Tiles' }, { id: 2, name: 'Wall Tiles' }, 
+          { id: 3, name: 'Outdoor Tiles' }, { id: 4, name: 'Mosaics' }
+        ] 
+      },
+      { id: 2, name: 'Wash Basins', subcategories: [
+          { id: 5, name: 'Vessel' }, { id: 6, name: 'Wall Hung' }, { id: 7, name: 'Floor Standing' }
+        ] 
+      },
+      { id: 3, name: 'Water Closets', subcategories: [
+          { id: 8, name: 'Floor Mounted' }, { id: 9, name: 'Wall Hung' }, { id: 10, name: 'Smart WC' }
+        ] 
+      },
+      { id: 4, name: 'Accessories', subcategories: [
+          { id: 11, name: 'Faucets' }, { id: 12, name: 'Bath & Shower' },
+          { id: 13, name: 'Kitchen Sinks' }, { id: 14, name: 'Mirrors' }
+        ] 
+      },
+    ];
+  }
+
+  /**
+   * GET available filters (brands, materials, finishes, sizes) dynamically
+   */
+  async getAvailableFilters(categoryId?: number) {
+    const filters: any = categoryId !== undefined ? { categoryId } : {};
+    // Fetch all active items, merging OSPOS + TileVista local data
+    const items = await this.findAll(false, filters);
+
+    const brands = new Set<string>();
+    const materials = new Set<string>();
+    const finishes = new Set<string>();
+    const sizes = new Set<string>();
+
+    items.forEach((item) => {
+      if (item.brand) brands.add(item.brand);
+      if (item.material) materials.add(item.material);
+      if (item.finish) finishes.add(item.finish);
+      // Wait, UnifiedItemDto doesn't have sizes yet, but if it's in tags we could use it, 
+      // or we can just leave sizes empty for now until the size feature is fully built.
+    });
+
+    return {
+      brands: Array.from(brands).sort(),
+      materials: Array.from(materials).sort(),
+      finishes: Array.from(finishes).sort(),
+      sizes: Array.from(sizes).sort(),
+    };
   }
 
   // ─── INTERNAL HELPERS ────────────────────────────────────────────────────────
