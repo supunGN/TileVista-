@@ -16,6 +16,7 @@ export interface OsposItem {
   description: string;
   price: number;
   quantity: number;
+  attributes?: Record<string, string>;
 }
 
 /**
@@ -54,7 +55,6 @@ export class OsposIntegrationService {
       return [];
     }
   }
-
 
   /**
    * Fetches the category tree from OSPOS.

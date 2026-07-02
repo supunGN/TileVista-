@@ -2,31 +2,47 @@ import { useState, useEffect, useCallback } from 'react';
 import { UnifiedItem, Category } from '../types';
 import { fetchProducts, fetchCategories } from '../api/products.api';
 
-export const useProducts = () => {
+export const useProducts = (filters: any = {}) => {
   const [items, setItems] = useState<UnifiedItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [itemsData, categoriesData] = await Promise.all([
-        fetchProducts(),
-        fetchCategories().catch(() => [] as Category[]), // Failing categories shouldn't break items
-      ]);
-      setItems(itemsData);
-      setCategories(categoriesData);
-    } catch (err: any) {
-      setError(err.message || 'An error occurred while fetching the catalog.');
-    } finally {
-      setLoading(false);
-    }
+  // We stringify filters to safely use it in the dependency array
+  const filtersString = JSON.stringify(filters);
+
+  // Fetch categories only once
+  useEffect(() => {
+    fetchCategories()
+      .then(setCategories)
+      .catch(() => setCategories([]));
   }, []);
 
+  const loadData = useCallback(async (abortSignal?: AbortSignal) => {
+    try {
+      const parsedFilters = JSON.parse(filtersString);
+      if (parsedFilters.__pause) {
+        return; // Skip fetching, keep current items (initially empty)
+      }
+      setLoading(true);
+      setError(null);
+      const itemsData = await fetchProducts(parsedFilters);
+      if (abortSignal?.aborted) return;
+      setItems(itemsData);
+    } catch (err: any) {
+      if (abortSignal?.aborted) return;
+      setError(err.message || 'An error occurred while fetching the catalog.');
+    } finally {
+      if (!abortSignal?.aborted && !JSON.parse(filtersString).__pause) {
+        setLoading(false);
+      }
+    }
+  }, [filtersString]);
+
   useEffect(() => {
-    loadData();
+    const abortController = new AbortController();
+    loadData(abortController.signal);
+    return () => abortController.abort();
   }, [loadData]);
 
   return { items, categories, loading, error, reload: loadData };

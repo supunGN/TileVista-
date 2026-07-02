@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ShoppingCart, Search, Phone, MapPin } from 'lucide-react';
+import { MegaMenuDropdown } from '../shared/MegaMenuDropdown';
 
 interface NavbarProps {
   cartCount: number;
@@ -55,12 +56,17 @@ export const Navbar: React.FC<NavbarProps> = ({ cartCount }) => {
             >
               Home
             </Link>
-            <Link 
-              href="/products" 
-              className="text-xs font-semibold tracking-widest text-gray-500 uppercase pb-1 hover:text-[#1A1A1A] hover:border-b hover:border-gray-300 transition"
-            >
-              Shop
-            </Link>
+            <div className="group relative py-6 -my-6">
+              <button
+                className="flex items-center gap-1 text-xs font-semibold tracking-widest text-gray-500 uppercase pb-1 group-hover:text-[#1A1A1A] group-hover:border-b group-hover:border-gray-300 transition-all cursor-default"
+              >
+                Shop
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-70 group-hover:opacity-100 transition-opacity"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+
+              {/* Mega Menu Dropdown */}
+              <MegaMenuDropdown />
+            </div>
             <Link 
               href="/packages" 
               className="text-xs font-semibold tracking-widest text-gray-500 uppercase pb-1 hover:text-[#1A1A1A] hover:border-b hover:border-gray-300 transition"

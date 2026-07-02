@@ -11,20 +11,37 @@ import { ProductSearch } from './components/ProductSearch';
 import { ProductFilters } from './components/ProductFilters';
 import { ProductGrid } from './components/ProductGrid';
 import { Pagination } from './components/Pagination';
+import { SubcategoryNav } from './components/SubcategoryNav';
 
-export const ProductList: React.FC = () => {
-  const { items, categories, loading, error, reload } = useProducts();
+interface ProductListProps {
+  categorySlug?: string;
+}
+
+export const ProductList: React.FC<ProductListProps> = ({ categorySlug }) => {
+  // First, we still need categories to map the slug. But we'll let useProducts handle it.
+  // We'll manage the filter state first.
+  // Wait, useProducts(filters) will fetch everything. We need the categories before we can map slug -> ID.
+  // It's a chicken and egg problem unless useProducts always returns categories on first load.
+  // Actually, we can fetch categories inside useProducts as usual, but the first call might not have the correct categoryId if categories aren't loaded yet.
+  
+  // To keep it simple, we'll let useProductFilters receive the categories from useProducts.
+  const { categories } = useProducts({});
+  const filterState = useProductFilters(categories, categorySlug);
+  
+  // If we are on a category page (categorySlug exists), wait until activeCategory is resolved
+  // before fetching items. Otherwise, we fetch the whole catalog initially which flashes wrong items.
+  const isReadyToFetch = !categorySlug || filterState.activeCategory !== null;
+  const initialFilters = isReadyToFetch ? filterState.appliedFilters : { __pause: true };
+  
+  const { items, loading, error, reload } = useProducts(initialFilters);
   
   const {
     search,
     setSearch,
-    selectedCategoryId,
-    setSelectedCategoryId,
     selectedSubcategoryId,
     setSelectedSubcategoryId,
-    filteredProducts,
     activeCategory,
-  } = useProductFilters(items, categories);
+  } = filterState;
 
   const {
     currentPage,
@@ -32,33 +49,31 @@ export const ProductList: React.FC = () => {
     startIndex,
     getPageNumbers,
     goToPage,
-  } = usePagination(filteredProducts.length, ITEMS_PER_PAGE, [search, selectedCategoryId, selectedSubcategoryId]);
+  } = usePagination(items.length, ITEMS_PER_PAGE, [filterState.appliedFilters]);
 
-  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const paginatedProducts = items.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   return (
-    <div className="py-8 font-sans max-w-7xl mx-auto space-y-10 px-4">
+    <div className="py-8 font-sans max-w-7xl mx-auto space-y-8 px-4">
       
+      {/* Header and Search */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <ProductHeader />
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-[#1A1A1A] capitalize">
+            {activeCategory ? `${activeCategory.name} Collection` : 'Product Catalog'}
+          </h1>
+          <p className="text-sm text-gray-500 mt-2 font-light">
+            {activeCategory ? `Explore our premium range of ${activeCategory.name.toLowerCase()}` : 'Browse our extensive catalog'}
+          </p>
+        </div>
         <ProductSearch 
           search={search} 
           setSearch={setSearch} 
-          onReload={reload} 
+          onSearch={filterState.applyFilters} 
           loading={loading} 
-        />
-      </div>
-
-      {!loading && !error && (
-        <ProductFilters
-          categories={categories}
-          selectedCategoryId={selectedCategoryId}
-          setSelectedCategoryId={setSelectedCategoryId}
-          selectedSubcategoryId={selectedSubcategoryId}
-          setSelectedSubcategoryId={setSelectedSubcategoryId}
           activeCategory={activeCategory}
         />
-      )}
+      </div>
 
       {loading ? (
         <div className="py-32 flex flex-col items-center justify-center text-gray-400 gap-3">
@@ -69,34 +84,54 @@ export const ProductList: React.FC = () => {
         <div className="py-20 text-center border border-dashed border-red-200 bg-red-50/20 max-w-lg mx-auto p-8 rounded">
           <p className="text-red-650 font-medium text-sm mb-4">{error}</p>
           <button
-            onClick={reload}
+            onClick={() => reload()}
             className="px-6 py-2.5 bg-red-650 hover:bg-red-700 text-white font-bold text-xs tracking-widest uppercase"
           >
             Retry Catalog
           </button>
         </div>
       ) : (
-        <>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-gray-400 font-mono tracking-wider uppercase">
-              Showing {filteredProducts.length > 0 ? startIndex + 1 : 0}–{Math.min(startIndex + ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} products
-            </span>
-            {totalPages > 1 && (
+        <div className="flex flex-col lg:flex-row gap-10 items-start">
+          
+          {/* LEFT SIDEBAR: Filters */}
+          <aside className="w-full lg:w-64 flex-shrink-0 lg:sticky lg:top-24 lg:h-[calc(100vh-120px)] overflow-y-auto pr-6 border-r border-[#D4C5B9]/40 pb-10 thin-scrollbar">
+            <ProductFilters filterState={filterState} />
+          </aside>
+          
+          {/* RIGHT MAIN CONTENT */}
+          <main className="flex-grow w-full">
+            <SubcategoryNav 
+              activeCategory={activeCategory} 
+              selectedSubcategoryId={selectedSubcategoryId} 
+              setSelectedSubcategoryId={setSelectedSubcategoryId} 
+            />
+
+            <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
               <span className="text-[10px] text-gray-400 font-mono tracking-wider uppercase">
-                Page {currentPage} of {totalPages}
+                Showing {items.length > 0 ? startIndex + 1 : 0}–{Math.min(startIndex + ITEMS_PER_PAGE, items.length)} of {items.length} products
               </span>
-            )}
-          </div>
+              {totalPages > 1 && (
+                <span className="text-[10px] text-gray-400 font-mono tracking-wider uppercase">
+                  Page {currentPage} of {totalPages}
+                </span>
+              )}
+            </div>
 
-          <ProductGrid products={paginatedProducts} />
+            <ProductGrid products={paginatedProducts} />
 
-          <Pagination 
-            currentPage={currentPage}
-            totalPages={totalPages}
-            getPageNumbers={getPageNumbers}
-            goToPage={goToPage}
-          />
-        </>
+            <div className="flex flex-col md:flex-row items-center justify-between border-t border-gray-150 pt-4 mt-12 gap-4">
+              <span className="text-xs text-gray-500 font-medium">
+                Showing {items.length > 0 ? startIndex + 1 : 0}–{Math.min(startIndex + ITEMS_PER_PAGE, items.length)} of {items.length} products
+              </span>
+              <Pagination 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                getPageNumbers={getPageNumbers}
+                goToPage={goToPage}
+              />
+            </div>
+          </main>
+        </div>
       )}
     </div>
   );

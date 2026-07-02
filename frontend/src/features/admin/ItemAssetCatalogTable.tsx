@@ -1,16 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Upload, 
-  Box, 
-  CheckCircle, 
-  XCircle, 
-  Save, 
-  Loader2, 
-  Edit2, 
-  Search, 
-  RefreshCw, 
+import {
+  Upload,
+  Box,
+  CheckCircle,
+  XCircle,
+  Save,
+  Loader2,
+  Edit2,
+  Search,
+  RefreshCw,
   X,
   FileImage,
   Layers,
@@ -49,8 +49,12 @@ export const ItemAssetCatalogTable: React.FC = () => {
   const [search, setSearch] = useState<string>('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | 'ALL'>('ALL');
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<number | 'ALL'>('ALL');
+
+  const [appliedSearch, setAppliedSearch] = useState<string>('');
+  const [appliedCategoryId, setAppliedCategoryId] = useState<number | 'ALL'>('ALL');
+  const [appliedSubcategoryId, setAppliedSubcategoryId] = useState<number | 'ALL'>('ALL');
   const [categories, setCategories] = useState<any[]>([]);
-  
+
   // Drawer Editing State
   const [editingItem, setEditingItem] = useState<UnifiedItem | null>(null);
   const [saving, setSaving] = useState<boolean>(false);
@@ -242,14 +246,14 @@ export const ItemAssetCatalogTable: React.FC = () => {
   };
 
   const filteredItems = items.filter((item) => {
-    const matchesSearch = 
-      item.name.toLowerCase().includes(search.toLowerCase()) || 
+    const matchesSearch =
+      item.name.toLowerCase().includes(search.toLowerCase()) ||
       item.sku.toLowerCase().includes(search.toLowerCase()) ||
       item.category.toLowerCase().includes(search.toLowerCase());
-    
+
     const matchesCategory = selectedCategoryId === 'ALL' ? true : item.categoryId === selectedCategoryId;
     const matchesSubcategory = selectedSubcategoryId === 'ALL' ? true : item.subcategoryId === selectedSubcategoryId;
-    
+
     return matchesSearch && matchesCategory && matchesSubcategory;
   });
 
@@ -257,97 +261,96 @@ export const ItemAssetCatalogTable: React.FC = () => {
 
   return (
     <div className="relative flex flex-col lg:flex-row gap-6">
-      
+
       {/* Left / Main Table Section */}
       <div className="flex-1 bg-white border border-gray-200 p-8 shadow-sm">
-        
+
         {/* Header with Search and Category filters */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-gray-100">
           <div>
             <h3 className="text-base font-semibold text-[#1A1A1A] tracking-wider uppercase">Item Visual Assets</h3>
             <p className="text-[10px] text-gray-400 font-light mt-0.5">Enrich POS-synced showroom articles with image files and 3D GLB canvas elements.</p>
           </div>
-          
-          <button 
+
+          <button
             onClick={fetchItems}
             disabled={loading}
             className="border border-gray-300 hover:border-[#1A1A1A] text-[#1A1A1A] font-semibold text-[10px] tracking-wider uppercase px-4 py-2.5 transition-all flex items-center gap-1.5 disabled:opacity-50"
           >
-            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> 
+            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
             <span>Reload Items</span>
           </button>
         </div>
 
         {/* Search Input and Filter Row */}
-        <div className="flex flex-col mb-6">
-          <div className="flex flex-col md:flex-row gap-4 mb-3">
+        <div className="flex flex-col mb-6 bg-[#F9F9F7] border border-gray-200 p-4">
+          <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <input
                 type="text"
                 placeholder="Search by name, SKU, category..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-[#F9F9F7] border border-gray-200 px-4 py-2.5 pl-9 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] font-light transition-colors"
+                className="w-full bg-white border border-gray-200 px-4 py-2.5 pl-9 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] font-light transition-colors"
               />
               <Search size={13} className="text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             </div>
 
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                onClick={() => { setSelectedCategoryId('ALL'); setSelectedSubcategoryId('ALL'); }}
-                className={`px-4 py-2 text-[10px] font-bold tracking-widest uppercase transition-all border ${
-                  selectedCategoryId === 'ALL'
-                    ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white'
-                    : 'bg-white border-gray-200 text-gray-400 hover:text-[#1A1A1A] hover:bg-gray-50'
-                }`}
-              >
-                ALL
-              </button>
+            <select
+              value={selectedCategoryId}
+              onChange={(e) => {
+                const val = e.target.value === 'ALL' ? 'ALL' : Number(e.target.value);
+                setSelectedCategoryId(val);
+                setSelectedSubcategoryId('ALL');
+              }}
+              className="bg-white border border-gray-200 px-4 py-2.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] min-w-[160px]"
+            >
+              <option value="ALL">All Categories</option>
               {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => { setSelectedCategoryId(cat.id); setSelectedSubcategoryId('ALL'); }}
-                  className={`px-4 py-2 text-[10px] font-bold tracking-widest uppercase transition-all border ${
-                    selectedCategoryId === cat.id
-                      ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white'
-                      : 'bg-white border-gray-200 text-gray-400 hover:text-[#1A1A1A] hover:bg-gray-50'
-                  }`}
-                >
-                  {cat.name}
-                </button>
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
-            </div>
-          </div>
+            </select>
 
-          {/* Subcategories Row */}
-          {selectedCategoryId !== 'ALL' && activeCategory && activeCategory.subcategories?.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-1 pt-3 border-t border-gray-100 items-center justify-end">
-              <span className="text-[10px] text-gray-400 uppercase tracking-widest font-semibold mr-2">Filter by:</span>
-              <button
-                onClick={() => setSelectedSubcategoryId('ALL')}
-                className={`px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase transition-all duration-300 ${
-                  selectedSubcategoryId === 'ALL'
-                    ? 'bg-[#D4C5B9] text-[#1A1A1A]'
-                    : 'bg-white border border-gray-200 text-gray-500 hover:text-[#1A1A1A] hover:border-[#D4C5B9]'
-                }`}
-              >
-                All {activeCategory.name}
-              </button>
-              {activeCategory.subcategories.map((sub: any) => (
-                <button
-                  key={sub.id}
-                  onClick={() => setSelectedSubcategoryId(sub.id)}
-                  className={`px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase transition-all duration-300 ${
-                    selectedSubcategoryId === sub.id
-                      ? 'bg-[#D4C5B9] text-[#1A1A1A]'
-                      : 'bg-white border border-gray-200 text-gray-500 hover:text-[#1A1A1A] hover:border-[#D4C5B9]'
-                  }`}
-                >
-                  {sub.name}
-                </button>
+            <select
+              value={selectedSubcategoryId}
+              onChange={(e) => {
+                const val = e.target.value === 'ALL' ? 'ALL' : Number(e.target.value);
+                setSelectedSubcategoryId(val);
+              }}
+              disabled={selectedCategoryId === 'ALL' || !activeCategory?.subcategories?.length}
+              className="bg-white border border-gray-200 px-4 py-2.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] min-w-[160px] disabled:opacity-50"
+            >
+              <option value="ALL">All Subcategories</option>
+              {activeCategory?.subcategories?.map((sub: any) => (
+                <option key={sub.id} value={sub.id}>{sub.name}</option>
               ))}
-            </div>
-          )}
+            </select>
+
+            <button
+              onClick={() => {
+                setAppliedSearch(search);
+                setAppliedCategoryId(selectedCategoryId);
+                setAppliedSubcategoryId(selectedSubcategoryId);
+              }}
+              className="px-6 py-2.5 text-[10px] bg-[#1A1A1A] hover:bg-black text-white font-bold tracking-widest uppercase transition-colors whitespace-nowrap"
+            >
+              Apply Filter
+            </button>
+
+            <button
+              onClick={() => {
+                setSearch('');
+                setSelectedCategoryId('ALL');
+                setSelectedSubcategoryId('ALL');
+                setAppliedSearch('');
+                setAppliedCategoryId('ALL');
+                setAppliedSubcategoryId('ALL');
+              }}
+              className="px-6 py-2.5 text-[10px] bg-white border border-gray-200 text-gray-500 hover:text-[#1A1A1A] hover:bg-gray-50 font-bold tracking-widest uppercase transition-colors whitespace-nowrap"
+            >
+              Reset
+            </button>
+          </div>
         </div>
 
         {/* Items Listing Table */}
@@ -359,7 +362,7 @@ export const ItemAssetCatalogTable: React.FC = () => {
         ) : error ? (
           <div className="py-12 border border-dashed border-red-200 bg-red-50/20 text-center text-red-600 px-6 rounded-sm">
             <p className="text-sm font-semibold">{error}</p>
-            <button 
+            <button
               onClick={fetchItems}
               className="mt-4 px-4 py-2 text-[10px] bg-red-600 hover:bg-red-700 text-white uppercase font-bold tracking-widest"
             >
@@ -440,11 +443,10 @@ export const ItemAssetCatalogTable: React.FC = () => {
                     <td className="py-4 px-2 text-right">
                       <button
                         onClick={() => openEditDrawer(item)}
-                        className={`text-[9px] font-bold tracking-widest uppercase px-3 py-1.5 transition-all flex items-center gap-1 ml-auto border ${
-                          editingItem?.itemId === item.itemId 
-                            ? 'bg-[#D4C5B9] text-[#1A1A1A] border-[#D4C5B9]' 
+                        className={`text-[9px] font-bold tracking-widest uppercase px-3 py-1.5 transition-all flex items-center gap-1 ml-auto border ${editingItem?.itemId === item.itemId
+                            ? 'bg-[#D4C5B9] text-[#1A1A1A] border-[#D4C5B9]'
                             : 'bg-[#1A1A1A] hover:bg-[#D4C5B9] text-white border-[#1A1A1A] hover:border-[#D4C5B9]'
-                        }`}
+                          }`}
                       >
                         <Edit2 size={10} />
                         <span>Manage</span>
@@ -462,7 +464,7 @@ export const ItemAssetCatalogTable: React.FC = () => {
       {editingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
           <div className="bg-white border border-gray-200 w-full max-w-2xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
-            
+
             {/* Modal Header */}
             <div className="flex justify-between items-start mb-6 pb-4 border-b border-gray-100">
               <div>
@@ -470,7 +472,7 @@ export const ItemAssetCatalogTable: React.FC = () => {
                 <h3 className="text-xl font-semibold text-[#1A1A1A] tracking-tight mt-0.5">{editingItem.name}</h3>
                 <p className="text-xs text-gray-400 font-light mt-0.5">{editingItem.sku} • {formatCurrency(editingItem.price)}</p>
               </div>
-              <button 
+              <button
                 onClick={closeEditDrawer}
                 className="p-1.5 hover:bg-gray-50 border border-transparent hover:border-gray-200 text-gray-400 hover:text-black transition"
               >
@@ -488,20 +490,20 @@ export const ItemAssetCatalogTable: React.FC = () => {
 
             {/* Asset Upload Segment */}
             <div className="space-y-6 mb-8 border-b border-gray-100 pb-6">
-              
+
               {/* Media Asset Preview Grid */}
               <div className="grid grid-cols-2 gap-4">
                 {/* Image upload preview */}
                 <div className="border border-gray-200 p-3 flex flex-col items-center justify-center text-center bg-[#F9F9F7] relative h-36">
                   {editingItem.imageUrl ? (
                     <>
-                      <img 
-                        src={`${STATIC_BASE}${editingItem.imageUrl}`} 
-                        alt="Product preview" 
+                      <img
+                        src={`${STATIC_BASE}${editingItem.imageUrl}`}
+                        alt="Product preview"
                         className="w-full h-full object-contain absolute inset-0 p-2"
                       />
                       <div className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-center justify-center p-2">
-                        <button 
+                        <button
                           onClick={() => imageInputRef.current?.click()}
                           className="px-2 py-1.5 bg-white text-[9.5px] font-bold text-black uppercase tracking-wider"
                         >
@@ -513,7 +515,7 @@ export const ItemAssetCatalogTable: React.FC = () => {
                     <div className="space-y-1.5">
                       <FileImage size={24} className="text-gray-400 mx-auto" />
                       <span className="text-[9px] font-bold text-gray-400 tracking-wider uppercase block">No Image Asset</span>
-                      <button 
+                      <button
                         onClick={() => imageInputRef.current?.click()}
                         className="text-[9px] text-[#D4C5B9] font-bold uppercase underline hover:text-[#1A1A1A] block mx-auto"
                       >
@@ -526,12 +528,12 @@ export const ItemAssetCatalogTable: React.FC = () => {
                       <Loader2 className="animate-spin text-[#1A1A1A]" size={20} />
                     </div>
                   )}
-                  <input 
-                    type="file" 
-                    ref={imageInputRef} 
-                    onChange={handleImageUpload} 
-                    accept="image/*" 
-                    className="hidden" 
+                  <input
+                    type="file"
+                    ref={imageInputRef}
+                    onChange={handleImageUpload}
+                    accept="image/*"
+                    className="hidden"
                   />
                 </div>
 
@@ -542,7 +544,7 @@ export const ItemAssetCatalogTable: React.FC = () => {
                       <Box size={28} className="text-emerald-600 mx-auto animate-pulse" />
                       <span className="text-[9px] font-bold text-emerald-800 tracking-widest uppercase block">3D GLB Model Ready</span>
                       <span className="text-[7.5px] font-mono text-gray-400 truncate max-w-[140px] block">{editingItem.glbUrl.split('/').pop()}</span>
-                      <button 
+                      <button
                         onClick={() => glbInputRef.current?.click()}
                         className="text-[9px] text-gray-500 font-bold uppercase underline hover:text-black block mx-auto"
                       >
@@ -553,7 +555,7 @@ export const ItemAssetCatalogTable: React.FC = () => {
                     <div className="space-y-1.5">
                       <Layers size={24} className="text-gray-400 mx-auto" />
                       <span className="text-[9px] font-bold text-gray-400 tracking-wider uppercase block">No 3D Model</span>
-                      <button 
+                      <button
                         onClick={() => glbInputRef.current?.click()}
                         className="text-[9px] text-[#D4C5B9] font-bold uppercase underline hover:text-[#1A1A1A] block mx-auto"
                       >
@@ -566,12 +568,12 @@ export const ItemAssetCatalogTable: React.FC = () => {
                       <Loader2 className="animate-spin text-[#1A1A1A]" size={20} />
                     </div>
                   )}
-                  <input 
-                    type="file" 
-                    ref={glbInputRef} 
-                    onChange={handleGlbUpload} 
-                    accept=".glb" 
-                    className="hidden" 
+                  <input
+                    type="file"
+                    ref={glbInputRef}
+                    onChange={handleGlbUpload}
+                    accept=".glb"
+                    className="hidden"
                   />
                 </div>
               </div>
@@ -579,39 +581,39 @@ export const ItemAssetCatalogTable: React.FC = () => {
 
             {/* Asset Metadata Configuration Form */}
             <form onSubmit={handleSaveAsset} className="space-y-5">
-              
+
               {/* Scale configuration */}
               <div>
                 <label className="text-[10px] font-bold tracking-widest text-[#1A1A1A] uppercase block mb-2">3D Scale Multipliers (X, Y, Z)</label>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <span className="text-[9px] text-gray-400 font-bold uppercase font-mono block mb-1">X Width</span>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       step="0.01"
                       className="w-full bg-[#F9F9F7] border border-gray-200 px-3 py-2 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] font-mono"
-                      value={scaleX} 
-                      onChange={(e) => setScaleX(parseFloat(e.target.value) || 0)} 
+                      value={scaleX}
+                      onChange={(e) => setScaleX(parseFloat(e.target.value) || 0)}
                     />
                   </div>
                   <div>
                     <span className="text-[9px] text-gray-400 font-bold uppercase font-mono block mb-1">Y Height</span>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       step="0.01"
                       className="w-full bg-[#F9F9F7] border border-gray-200 px-3 py-2 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] font-mono"
-                      value={scaleY} 
-                      onChange={(e) => setScaleY(parseFloat(e.target.value) || 0)} 
+                      value={scaleY}
+                      onChange={(e) => setScaleY(parseFloat(e.target.value) || 0)}
                     />
                   </div>
                   <div>
                     <span className="text-[9px] text-gray-400 font-bold uppercase font-mono block mb-1">Z Depth</span>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       step="0.01"
                       className="w-full bg-[#F9F9F7] border border-gray-200 px-3 py-2 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] font-mono"
-                      value={scaleZ} 
-                      onChange={(e) => setScaleZ(parseFloat(e.target.value) || 0)} 
+                      value={scaleZ}
+                      onChange={(e) => setScaleZ(parseFloat(e.target.value) || 0)}
                     />
                   </div>
                 </div>
@@ -621,11 +623,11 @@ export const ItemAssetCatalogTable: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] font-bold tracking-widest text-[#1A1A1A] uppercase block mb-1.5">Rotation (Y-Axis °)</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     className="w-full bg-[#F9F9F7] border border-gray-200 px-3 py-2 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] font-mono"
-                    value={rotationY} 
-                    onChange={(e) => setRotationY(parseFloat(e.target.value) || 0)} 
+                    value={rotationY}
+                    onChange={(e) => setRotationY(parseFloat(e.target.value) || 0)}
                   />
                 </div>
                 <div>
@@ -647,22 +649,22 @@ export const ItemAssetCatalogTable: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] font-bold tracking-widest text-[#1A1A1A] uppercase block mb-1.5">Material Composition</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="e.g. Ceramic, Brass"
                     className="w-full bg-[#F9F9F7] border border-gray-200 px-3 py-2 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9]"
-                    value={material} 
-                    onChange={(e) => setMaterial(e.target.value)} 
+                    value={material}
+                    onChange={(e) => setMaterial(e.target.value)}
                   />
                 </div>
                 <div>
                   <label className="text-[10px] font-bold tracking-widest text-[#1A1A1A] uppercase block mb-1.5">Tags (comma-separated)</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="e.g. wall, black, premium"
                     className="w-full bg-[#F9F9F7] border border-gray-200 px-3 py-2 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9]"
-                    value={tagsInput} 
-                    onChange={(e) => setTagsInput(e.target.value)} 
+                    value={tagsInput}
+                    onChange={(e) => setTagsInput(e.target.value)}
                   />
                 </div>
               </div>
@@ -688,7 +690,7 @@ export const ItemAssetCatalogTable: React.FC = () => {
 
               <div>
                 <label className="text-[10px] font-bold tracking-widest text-[#1A1A1A] uppercase block mb-1.5">Showroom Staff Notes</label>
-                <textarea 
+                <textarea
                   rows={2}
                   placeholder="Internal notes regarding scale references or supplier specifics..."
                   className="w-full bg-[#F9F9F7] border border-gray-200 px-3 py-2 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] font-light"

@@ -20,6 +20,7 @@ import {
   Bell,
   X,
   PackagePlus,
+  MessageSquare,
 } from 'lucide-react';
 
 const API_BASE = 'http://localhost:4000/api';
@@ -37,6 +38,7 @@ export default function AdminLayout({
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(false);
   const [lastKnownCount, setLastKnownCount] = useState<number | null>(null);
   const [showNewItemPulse, setShowNewItemPulse] = useState<boolean>(false);
+  const [pendingInquiriesCount, setPendingInquiriesCount] = useState<number>(0);
 
   const fetchPendingCount = useCallback(async () => {
     try {
@@ -62,6 +64,16 @@ export default function AdminLayout({
       setPendingCount(count);
       setPendingItems(Array.isArray(data) ? data.slice(0, 5) : []); // Keep top 5 for preview
       setLastKnownCount(count);
+
+      // Fetch pending inquiries
+      const inqResponse = await fetch(`${API_BASE}/inquiries`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (inqResponse.ok) {
+        const inqData = await inqResponse.json();
+        const pendingInqs = Array.isArray(inqData) ? inqData.filter((i: any) => i.status === 'pending').length : 0;
+        setPendingInquiriesCount(pendingInqs);
+      }
     } catch {
       // Silently fail — don't break the admin panel over a notification check
     }
@@ -80,6 +92,7 @@ export default function AdminLayout({
     { name: 'Analytics', href: '/admin/analytics', icon: <LineChart size={16} /> },
     { name: 'Item Assets', href: '/admin/items', icon: <Box size={16} />, badge: pendingCount },
     { name: 'Packages', href: '/admin/packages', icon: <Grid3X3 size={16} /> },
+    { name: 'Inquiries', href: '/admin/inquiries', icon: <MessageSquare size={16} />, badge: pendingInquiriesCount },
     { name: 'Settings', href: '/admin/settings', icon: <SettingsIcon size={16} /> },
   ];
 
@@ -126,7 +139,7 @@ export default function AdminLayout({
                 >
                   {link.icon}
                   <span>{link.name}</span>
-                  {'badge' in link && link.badge > 0 && (
+                  {('badge' in link && (link.badge as number) > 0) ? (
                     <span className={`
                       ml-auto min-w-[20px] h-5 flex items-center justify-center
                       text-[10px] font-bold rounded-full px-1.5
@@ -135,7 +148,7 @@ export default function AdminLayout({
                     `}>
                       {link.badge}
                     </span>
-                  )}
+                  ) : null}
                 </Link>
               );
             })}

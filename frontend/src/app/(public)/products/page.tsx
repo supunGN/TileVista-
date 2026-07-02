@@ -1,6 +1,5 @@
-import React from 'react';
-import { ProductList } from '@/features/products';
+import { redirect } from 'next/navigation';
 
 export default function ProductsPage() {
-  return <ProductList />;
+  redirect('/products/tiles');
 }

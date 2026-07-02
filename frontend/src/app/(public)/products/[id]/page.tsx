@@ -2,11 +2,18 @@
 
 import React from 'react';
 import { useParams } from 'next/navigation';
-import { ProductDetails } from '@/features/products';
+import { ProductDetails, ProductList } from '@/features/products';
 
-export default function ProductPage() {
+export default function ProductOrCategoryPage() {
   const params = useParams();
-  const id = params?.id ? Number(params.id) : null;
+  const slug = params?.id as string;
   
-  return <ProductDetails id={id} />;
+  const isNumeric = /^\d+$/.test(slug);
+
+  if (isNumeric) {
+    return <ProductDetails id={Number(slug)} />;
+  }
+
+  // Otherwise, it's a category slug
+  return <ProductList categorySlug={slug} />;
 }

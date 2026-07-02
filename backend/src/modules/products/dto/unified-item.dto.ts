@@ -25,6 +25,9 @@ export class UnifiedItemDto {
   /** Live quantity at location 1 from OSPOS */
   quantity: number;
 
+  /** Brand retrieved from OSPOS custom attributes */
+  brand: string | null;
+
   // ── Asset Catalog Fields (from TileVista product_assets) ─────────────
   /** Full URL to the product image, or null if no image uploaded */
   imageUrl: string | null;

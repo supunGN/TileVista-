@@ -9,7 +9,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() body: LoginDto) {
+  async login(@Body() body: LoginDto & { sessionId?: string }) {
     const password = body.password || body.pass;
     if (!password) {
       throw new UnauthorizedException('Password is required');
@@ -18,12 +18,20 @@ export class AuthController {
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    return this.authService.login(user);
+    const result = await this.authService.login(user);
+    if (body.sessionId) {
+      await this.authService.linkCart(user.id, body.sessionId);
+    }
+    return result;
   }
 
   @Post('register')
-  async register(@Body() body: RegisterDto) {
-    return this.authService.register(body);
+  async register(@Body() body: RegisterDto & { sessionId?: string }) {
+    const result = await this.authService.register(body);
+    if (body.sessionId && result.user) {
+      await this.authService.linkCart(result.user.id, body.sessionId);
+    }
+    return result;
   }
 }
 

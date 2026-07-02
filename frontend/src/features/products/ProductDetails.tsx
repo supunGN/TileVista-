@@ -9,6 +9,7 @@ import { OrbitControls, Stage, useGLTF } from '@react-three/drei';
 import { useProduct } from './hooks/useProduct';
 import { formatLKR, getBrand, getFallbackImage } from './utils';
 import { STATIC_BASE } from './constants';
+import { useCart } from '../cart/hooks/useCart';
 
 function Model({ url }: { url: string }) {
   const { scene } = useGLTF(url);
@@ -22,11 +23,13 @@ interface ProductDetailsProps {
 export const ProductDetails: React.FC<ProductDetailsProps> = ({ id }) => {
   const router = useRouter();
   const { product, relatedItems, loading, error, reload } = useProduct(id);
-  
+
   const [viewMode, setViewMode] = useState<'image' | 'model3d'>('image');
   const [quantity, setQuantity] = useState<number>(1);
   const [mounted, setMounted] = useState<boolean>(false);
   const [addedToCart, setAddedToCart] = useState<boolean>(false);
+  const [isAdding, setIsAdding] = useState<boolean>(false);
+  const { addItem } = useCart();
 
   useEffect(() => {
     setMounted(true);
@@ -75,9 +78,18 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ id }) => {
     );
   }
 
-  const handleAddToCart = () => {
-    setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 2000);
+  const handleAddToCart = async () => {
+    if (!product) return;
+    setIsAdding(true);
+    const res = await addItem(product.itemId, quantity);
+    setIsAdding(false);
+    
+    if (res.success) {
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 2000);
+    } else {
+      alert(res.error || 'Failed to add item to cart');
+    }
   };
 
   const productImageUrl = product.imageUrl ? `${STATIC_BASE}${product.imageUrl}` : getFallbackImage(product.category);
@@ -194,7 +206,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ id }) => {
           <div className="space-y-3">
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-[10px] font-bold tracking-[0.25em] text-[#D4C5B9] uppercase">
-                {getBrand(product.name)}
+                {getBrand(product)}
               </span>
               {product.finish && (
                 <span className="text-[9px] font-mono tracking-widest bg-gray-50 border border-gray-200 px-2 py-0.5 text-gray-500 uppercase">
@@ -268,13 +280,18 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ id }) => {
 
             <button
               onClick={handleAddToCart}
-              disabled={isOutOfStock}
+              disabled={isOutOfStock || isAdding}
               className={`w-full font-semibold text-xs tracking-[0.15em] uppercase py-4 transition-all duration-300 shadow-sm flex items-center justify-center gap-3 disabled:opacity-30 disabled:hover:bg-[#1A1A1A] disabled:hover:text-white ${addedToCart ? 'bg-emerald-600 text-white' : 'bg-[#1A1A1A] hover:bg-[#D4C5B9] hover:text-[#1A1A1A] text-white'}`}
             >
               {addedToCart ? (
                 <>
                   <Check size={15} className="animate-bounce" />
                   <span>Added to Showroom Cart</span>
+                </>
+              ) : isAdding ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  <span>Adding...</span>
                 </>
               ) : (
                 <>
@@ -296,7 +313,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ id }) => {
         </div>
       </div>
 
-      {relatedItems.length > 0 && (
+      {/* {relatedItems.length > 0 && (
         <div className="border-t border-gray-100 pt-14 space-y-8">
           <div className="flex justify-between items-end">
             <div>
@@ -350,7 +367,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ id }) => {
             })}
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };
