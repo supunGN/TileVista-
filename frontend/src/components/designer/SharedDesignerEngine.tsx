@@ -2741,17 +2741,11 @@ function BathroomScene({
         const ux = dx / wall.len, uz = dz / wall.len;
         let nx = -uz, nz = ux;
 
-        // Calculate room center to guarantee wall normal points INSIDE the room
-        let avgX = 0, avgZ = 0;
-        walls.forEach(w => { avgX += w.cx; avgZ += w.cz; });
-        const roomCenterX = avgX / walls.length;
-        const roomCenterZ = avgZ / walls.length;
-        
-        const toCenterX = roomCenterX - wall.cx;
-        const toCenterZ = roomCenterZ - wall.cz;
-        const dot = nx * toCenterX + nz * toCenterZ;
+        const polyCorners = walls.map(w => [w.p1[0], w.p1[1]] as [number, number]);
+        const testX = wall.cx + nx * 0.1;
+        const testZ = wall.cz + nz * 0.1;
         rotY = wall.rotY;
-        if (dot < 0) {
+        if (!isPointIn2DPolygon(testX, testZ, polyCorners)) {
           nx = -nx;
           nz = -nz;
           rotY += Math.PI;
