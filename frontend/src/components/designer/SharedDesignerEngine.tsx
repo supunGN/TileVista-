@@ -137,7 +137,62 @@ function closestPointOnPolygon(pt: { x: number, z: number }, polygon: [number, n
   return closestPt;
 }
 
-function clampItemToPolygon(pt: { x: number, z: number }, width: number, depth: number, rotation: number, polygon: [number, number][], shape: string = 'rectangular', roomW: number = 10, roomD: number = 10): { x: number, z: number } {
+function isPointIn2DPolygon(x: number, y: number, polygon: [number, number][]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i][0], yi = polygon[i][1];
+    const xj = polygon[j][0], yj = polygon[j][1];
+    
+    const intersect = ((yi > y) !== (yj > y))
+        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function isItemFullyInsideRoom(x: number, z: number, width: number, depth: number, rotation: number, polygon: [number, number][]): boolean {
+  const corners = getItemCorners(x, z, width, depth, rotation);
+  return corners.every(c => isPointIn2DPolygon(c.x, -c.z, polygon));
+}
+
+function getGuaranteedInsidePoint(polygon: [number, number][]): { x: number, z: number } {
+  let sumX = 0, sumZ = 0;
+  polygon.forEach(p => {
+    sumX += p[0];
+    sumZ += -p[1];
+  });
+  const centerX = sumX / polygon.length;
+  const centerZ = sumZ / polygon.length;
+  
+  if (isPointIn2DPolygon(centerX, -centerZ, polygon)) {
+    return { x: centerX, z: centerZ };
+  }
+  
+  const v0 = polygon[0];
+  const vx = v0[0];
+  const vz = -v0[1];
+  
+  for (let t = 0.1; t < 1.0; t += 0.1) {
+    const tx = vx + (centerX - vx) * t;
+    const tz = vz + (centerZ - vz) * t;
+    if (isPointIn2DPolygon(tx, -tz, polygon)) {
+      return { x: tx, z: tz };
+    }
+  }
+  return { x: vx, z: vz };
+}
+
+function clampItemToPolygon(
+  pt: { x: number, z: number },
+  width: number,
+  depth: number,
+  rotation: number,
+  polygon: [number, number][],
+  shape: string = 'rectangular',
+  roomW: number = 10,
+  roomD: number = 10,
+  prevPt?: { x: number, z: number }
+): { x: number, z: number } {
   const poly3D = polygon.map(p => ({ x: p[0], z: -p[1] }));
   if (poly3D.length === 0) return pt;
 
@@ -160,10 +215,43 @@ function clampItemToPolygon(pt: { x: number, z: number }, width: number, depth: 
   const bufferZ = rotatedD / 2;
 
   // Clamp the item center inside the room boundaries
-  return {
-    x: Math.max(minX + bufferX, Math.min(maxX - bufferX, pt.x)),
-    z: Math.max(minZ + bufferZ, Math.min(maxZ - bufferZ, pt.z))
-  };
+  const targetX = Math.max(minX + bufferX, Math.min(maxX - bufferX, pt.x));
+  const targetZ = Math.max(minZ + bufferZ, Math.min(maxZ - bufferZ, pt.z));
+
+  // If the target is fully inside the room shape, use it!
+  if (isItemFullyInsideRoom(targetX, targetZ, width, depth, rotation, polygon)) {
+    return { x: targetX, z: targetZ };
+  }
+
+  // If a valid previous position is provided, try to slide or fall back
+  if (prevPt && isItemFullyInsideRoom(prevPt.x, prevPt.z, width, depth, rotation, polygon)) {
+    // Try sliding in X
+    if (isItemFullyInsideRoom(targetX, prevPt.z, width, depth, rotation, polygon)) {
+      return { x: targetX, z: prevPt.z };
+    }
+    // Try sliding in Z
+    if (isItemFullyInsideRoom(prevPt.x, targetZ, width, depth, rotation, polygon)) {
+      return { x: prevPt.x, z: targetZ };
+    }
+    // Fall back to previous point
+    return prevPt;
+  }
+
+  // Ray-march from a guaranteed inside point towards the target
+  const start = getGuaranteedInsidePoint(polygon);
+  let best = { x: start.x, z: start.z };
+  
+  for (let i = 0; i <= 20; i++) {
+    const t = i / 20;
+    const testX = start.x + (targetX - start.x) * t;
+    const testZ = start.z + (targetZ - start.z) * t;
+    if (isItemFullyInsideRoom(testX, testZ, width, depth, rotation, polygon)) {
+      best = { x: testX, z: testZ };
+    } else {
+      break;
+    }
+  }
+  return best;
 }
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
@@ -2687,7 +2775,8 @@ function BathroomScene({
           itemToMove.rotation || 0,
           polyCorners,
           'rectangular',
-          10, 10
+          10, 10,
+          itemToMove.position ? { x: itemToMove.position[0], z: itemToMove.position[2] } : undefined
         );
         posX = snapped.x;
         posZ = snapped.z;
@@ -4151,7 +4240,8 @@ function RoomPreview3D({
             polygon,
             shape,
             Math.max(1.5, width),
-            Math.max(1.5, length)
+            Math.max(1.5, length),
+            itemToMove.position ? { x: itemToMove.position[0], z: itemToMove.position[2] } : undefined
           );
           hit.x = snapped.x;
           hit.z = snapped.z;
