@@ -4769,6 +4769,84 @@ function RoomPreview3D({
   );
 }
 
+const MemoizedCanvas = React.memo(({
+  state,
+  setState,
+  topView,
+  activeSideView,
+  setActiveSideView,
+  zoomTrigger,
+  setZoomTrigger,
+  setNumWalls,
+  placedItems,
+  setPlacedItems,
+  selectedItemId,
+  setSelectedItemId,
+  isPlacingItem,
+  setIsPlacingItem,
+  orbitEnabled,
+  setOrbitEnabled,
+  activePlacement,
+  setActivePlacement,
+  CustomFurniture,
+  measurementSettings,
+  isMeasuring,
+  setIsMeasuring,
+  savedMeasurements,
+  setSavedMeasurements,
+  measureStartPoint,
+  setMeasureStartPoint,
+  measureTempEndPoint,
+  setMeasureTempEndPoint,
+  activeCategory
+}: any) => {
+  return (
+    <div className={`h-full overflow-hidden transition-all duration-300 ${activeCategory === 'bathware_products' ? 'w-[calc(100%-420px)] flex-none' : 'flex-1 w-full'}`}>
+      <Canvas
+        camera={{ position: [6, 5, 8], fov: 45 }}
+        gl={{ antialias: true, alpha: false }}
+        style={{ width: '100%', height: '100%' }}
+        shadows
+      >
+        <color attach="background" args={["#ececec"]} />
+        <Suspense fallback={null}>
+          <BathroomScene
+            state={state}
+            setState={setState}
+            topView={topView}
+            activeSideView={activeSideView}
+            setActiveSideView={setActiveSideView}
+            zoomTrigger={zoomTrigger}
+            setZoomTrigger={setZoomTrigger}
+            setNumWalls={setNumWalls}
+            placedItems={placedItems}
+            setPlacedItems={setPlacedItems}
+            selectedItemId={selectedItemId}
+            setSelectedItemId={setSelectedItemId}
+            isPlacingItem={isPlacingItem}
+            setIsPlacingItem={setIsPlacingItem}
+            orbitEnabled={orbitEnabled}
+            setOrbitEnabled={setOrbitEnabled}
+            activePlacement={activePlacement}
+            setActivePlacement={setActivePlacement}
+            CustomFurniture={CustomFurniture}
+            measurementSettings={measurementSettings}
+            isMeasuring={isMeasuring}
+            setIsMeasuring={setIsMeasuring}
+            savedMeasurements={savedMeasurements}
+            setSavedMeasurements={setSavedMeasurements}
+            measureStartPoint={measureStartPoint}
+            setMeasureStartPoint={setMeasureStartPoint}
+            measureTempEndPoint={measureTempEndPoint}
+            setMeasureTempEndPoint={setMeasureTempEndPoint}
+          />
+        </Suspense>
+      </Canvas>
+    </div>
+  );
+});
+MemoizedCanvas.displayName = 'MemoizedCanvas';
+
 // ─── SUMMARY MODAL ───────────────────────────────────────────────────────────
 
 function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { catalog: any[], categories: any[], CustomFurniture?: any }) {
@@ -6516,53 +6594,42 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
     <div className="flex h-screen bg-[#F0EFEB] font-sans overflow-hidden select-none relative">
 
       {/* ── HEADER ── */}
-      <DesignerToolbar />
+      <DesignerToolbar onSave={handleSaveDesign} />
 
       <ProductPanel />
 
       {/* ── 3D CANVAS ── */}
-      <div className={`h-full overflow-hidden transition-all duration-300 ${activeCategory === 'bathware_products' ? 'w-[calc(100%-420px)] flex-none' : 'flex-1 w-full'}`}>
-        <Canvas
-          camera={{ position: [6, 5, 8], fov: 45 }}
-          gl={{ antialias: true, alpha: false }}
-          style={{ width: '100%', height: '100%' }}
-          shadows
-        >
-          <color attach="background" args={["#ececec"]} />
-          <Suspense fallback={null}>
-            <BathroomScene
-              state={state}
-              setState={setState}
-              topView={topView}
-              activeSideView={activeSideView}
-              setActiveSideView={setActiveSideView}
-              zoomTrigger={zoomTrigger}
-              setZoomTrigger={setZoomTrigger}
-              setNumWalls={setNumWalls}
-              placedItems={placedItems}
-              setPlacedItems={setPlacedItems}
-              selectedItemId={selectedItemId}
-              setSelectedItemId={setSelectedItemId}
-              isPlacingItem={isPlacingItem}
-              setIsPlacingItem={setIsPlacingItem}
-              orbitEnabled={orbitEnabled}
-              setOrbitEnabled={setOrbitEnabled}
-              activePlacement={activePlacement}
-              setActivePlacement={setActivePlacement}
-              CustomFurniture={CustomFurniture}
-              measurementSettings={measurementSettings}
-              isMeasuring={isMeasuring}
-              setIsMeasuring={setIsMeasuring}
-              savedMeasurements={savedMeasurements}
-              setSavedMeasurements={setSavedMeasurements}
-              measureStartPoint={measureStartPoint}
-              setMeasureStartPoint={setMeasureStartPoint}
-              measureTempEndPoint={measureTempEndPoint}
-              setMeasureTempEndPoint={setMeasureTempEndPoint}
-            />
-          </Suspense>
-        </Canvas>
-      </div>
+      <MemoizedCanvas
+        state={state}
+        setState={setState}
+        topView={topView}
+        activeSideView={activeSideView}
+        setActiveSideView={setActiveSideView}
+        zoomTrigger={zoomTrigger}
+        setZoomTrigger={setZoomTrigger}
+        setNumWalls={setNumWalls}
+        placedItems={placedItems}
+        setPlacedItems={setPlacedItems}
+        selectedItemId={selectedItemId}
+        setSelectedItemId={setSelectedItemId}
+        isPlacingItem={isPlacingItem}
+        setIsPlacingItem={setIsPlacingItem}
+        orbitEnabled={orbitEnabled}
+        setOrbitEnabled={setOrbitEnabled}
+        activePlacement={activePlacement}
+        setActivePlacement={setActivePlacement}
+        CustomFurniture={CustomFurniture}
+        measurementSettings={measurementSettings}
+        isMeasuring={isMeasuring}
+        setIsMeasuring={setIsMeasuring}
+        savedMeasurements={savedMeasurements}
+        setSavedMeasurements={setSavedMeasurements}
+        measureStartPoint={measureStartPoint}
+        setMeasureStartPoint={setMeasureStartPoint}
+        measureTempEndPoint={measureTempEndPoint}
+        setMeasureTempEndPoint={setMeasureTempEndPoint}
+        activeCategory={activeCategory}
+      />
 
       {/* ── BOTTOM CONTROL BAR ── */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/85 backdrop-blur-md border border-gray-200/80 shadow-2xl rounded-full px-5 py-2.5 flex items-center gap-4 z-20">
