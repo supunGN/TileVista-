@@ -152,30 +152,30 @@ function isPointIn2DPolygon(x: number, y: number, polygon: [number, number][]): 
 
 function isItemFullyInsideRoom(x: number, z: number, width: number, depth: number, rotation: number, polygon: [number, number][]): boolean {
   const corners = getItemCorners(x, z, width, depth, rotation);
-  return corners.every(c => isPointIn2DPolygon(c.x, -c.z, polygon));
+  return corners.every(c => isPointIn2DPolygon(c.x, c.z, polygon));
 }
 
 function getGuaranteedInsidePoint(polygon: [number, number][]): { x: number, z: number } {
   let sumX = 0, sumZ = 0;
   polygon.forEach(p => {
     sumX += p[0];
-    sumZ += -p[1];
+    sumZ += p[1];
   });
   const centerX = sumX / polygon.length;
   const centerZ = sumZ / polygon.length;
   
-  if (isPointIn2DPolygon(centerX, -centerZ, polygon)) {
+  if (isPointIn2DPolygon(centerX, centerZ, polygon)) {
     return { x: centerX, z: centerZ };
   }
   
   const v0 = polygon[0];
   const vx = v0[0];
-  const vz = -v0[1];
+  const vz = v0[1];
   
   for (let t = 0.1; t < 1.0; t += 0.1) {
     const tx = vx + (centerX - vx) * t;
     const tz = vz + (centerZ - vz) * t;
-    if (isPointIn2DPolygon(tx, -tz, polygon)) {
+    if (isPointIn2DPolygon(tx, tz, polygon)) {
       return { x: tx, z: tz };
     }
   }
@@ -193,7 +193,7 @@ function clampItemToPolygon(
   roomD: number = 10,
   prevPt?: { x: number, z: number }
 ): { x: number, z: number } {
-  const poly3D = polygon.map(p => ({ x: p[0], z: -p[1] }));
+  const poly3D = polygon.map(p => ({ x: p[0], z: p[1] }));
   if (poly3D.length === 0) return pt;
 
   let minX = Infinity, maxX = -Infinity;
@@ -2767,7 +2767,7 @@ function BathroomScene({
         posZ = wall.p1[1] + uz * snappedOffset + nz * bias;
       } else {
         // Free movement inside boundaries (Normal room designer)
-        const polyCorners = walls.map(w => [w.p1[0], -w.p1[1]] as [number, number]);
+        const polyCorners = walls.map(w => [w.p1[0], w.p1[1]] as [number, number]);
         const snapped = clampItemToPolygon(
           { x: pt.x, z: pt.z },
           itemW,
