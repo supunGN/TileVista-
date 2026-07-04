@@ -198,11 +198,8 @@ export function getActiveCatalog(designType: 'room' | 'bathroom', subRoomType?: 
 export function getActiveCategories(designType: 'room' | 'bathroom', subRoomType?: 'dining_room' | 'bed_room' | 'living_room') {
   const common = [
     { id: 'openings', label: 'Doors & Windows', icon: OPENINGS_ICON },
+    { id: 'wall_colours', label: 'Wall Colours', icon: WALL_COLORS_ICON },
   ];
-  if (designType === 'bathroom') {
-    common.push({ id: 'wall_colours', label: 'Wall Colours', icon: WALL_COLORS_ICON });
-  }
-
   if (designType === 'room') {
     let cats = [
       { id: 'sofa', label: 'Sofa & Lounge', icon: SOFA_ICON },
@@ -234,6 +231,7 @@ export function getActiveCategories(designType: 'room' | 'bathroom', subRoomType
     }
     return [
       ...common,
+      { id: 'ospos_tiles', label: 'Load Tiles', icon: OSPOS_TILES_ICON },
       ...cats
     ];
   }

@@ -6173,7 +6173,14 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
                         <div className="space-y-2">
                           <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase block">Categories</span>
                           <div className="grid grid-cols-2 gap-2.5">
-                            {categories.map((cat) => (
+                            {categories
+                              .filter((cat) => {
+                                if (selectedRoomType === 'room') {
+                                  return cat.id !== 'wall_colours' && cat.id !== 'ospos_tiles' && cat.id !== 'wall_tiles' && cat.id !== 'floor_tiles';
+                                }
+                                return true;
+                              })
+                              .map((cat) => (
                               <button
                                 key={cat.id}
                                 onClick={() => setWizardCategory(cat.id)}
