@@ -693,10 +693,12 @@ export function getActiveCatalog(designType: 'room' | 'bathroom', subRoomType?: 
 }
 
 export function getActiveCategories(designType: 'room' | 'bathroom', subRoomType?: 'dining_room' | 'bed_room' | 'living_room') {
+  const common = [
+    { id: 'openings', label: 'Doors & Windows', icon: OPENINGS_ICON },
+    { id: 'wall_colours', label: 'Wall Colours', icon: WALL_COLORS_ICON },
+    { id: 'ospos_tiles', label: 'Load Tiles', icon: OSPOS_TILES_ICON }
+  ];
   if (designType === 'room') {
-    const common = [
-      { id: 'openings', label: 'Doors & Windows', icon: OPENINGS_ICON },
-    ];
     let cats = [
       { id: 'sofa', label: 'Sofa & Lounge', icon: SOFA_ICON },
       { id: 'bed', label: 'Beds', icon: BED_ICON },
@@ -731,7 +733,7 @@ export function getActiveCategories(designType: 'room' | 'bathroom', subRoomType
     ];
   }
   return [
-    { id: 'openings', label: 'Doors & Windows', icon: OPENINGS_ICON },
+    ...common,
     { id: 'sink', label: 'Wash Basin', icon: SINK_ICON },
     { id: 'bathtub', label: 'Bathtubs', icon: BATHTUB_ICON },
     { id: 'towel_rail', label: 'Towel Rails', icon: TOWEL_RAIL_ICON },
@@ -5188,22 +5190,22 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
   };
 
   const widthInMeters = useMemo(() => {
-    if (wizardStep >= 3 && !isCustomisingRoom && state.widthFt) return state.widthFt * 0.3048;
+    if (wizardStep >= 3 && state.widthFt) return state.widthFt * 0.3048;
     const val = parseFloat(widthInput) || 0;
     return dimensionsUnit === 'cm' ? val / 100 : val;
-  }, [widthInput, dimensionsUnit, wizardStep, state.widthFt, isCustomisingRoom]);
+  }, [widthInput, dimensionsUnit, wizardStep, state.widthFt]);
 
   const lengthInMeters = useMemo(() => {
-    if (wizardStep >= 3 && !isCustomisingRoom && state.depthFt) return state.depthFt * 0.3048;
+    if (wizardStep >= 3 && state.depthFt) return state.depthFt * 0.3048;
     const val = parseFloat(lengthInput) || 0;
     return dimensionsUnit === 'cm' ? val / 100 : val;
-  }, [lengthInput, dimensionsUnit, wizardStep, state.depthFt, isCustomisingRoom]);
+  }, [lengthInput, dimensionsUnit, wizardStep, state.depthFt]);
 
   const heightInMeters = useMemo(() => {
-    if (wizardStep >= 3 && !isCustomisingRoom && state.heightFt) return state.heightFt * 0.3048;
+    if (wizardStep >= 3 && state.heightFt) return state.heightFt * 0.3048;
     const val = parseFloat(heightInput) || 0;
     return dimensionsUnit === 'cm' ? val / 100 : val;
-  }, [heightInput, dimensionsUnit, wizardStep, state.heightFt, isCustomisingRoom]);
+  }, [heightInput, dimensionsUnit, wizardStep, state.heightFt]);
 
   const handleWizardNext = async () => {
     if (wizardStep === 1) {
@@ -6588,18 +6590,10 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
 
         <div className="w-[1px] h-5 bg-gray-200" />
 
+        {/* Customise room */}
         <button
           id="btn-customise"
-          onClick={() => {
-            const wCm = Math.round(state.widthFt * 30.48);
-            const dCm = Math.round(state.depthFt * 30.48);
-            const hCm = Math.round(state.heightFt * 30.48);
-            setWidthInput(wCm.toString());
-            setLengthInput(dCm.toString());
-            setHeightInput(hCm.toString());
-            setDimensionsUnit('cm');
-            setIsCustomisingRoom(true);
-          }}
+          onClick={() => setIsCustomisingRoom(true)}
           className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold uppercase rounded-full tracking-wider transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
         >
           <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5">

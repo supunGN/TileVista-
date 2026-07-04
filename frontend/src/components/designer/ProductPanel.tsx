@@ -190,43 +190,43 @@ export default function ProductPanel() {
       {/* ── RIGHT SIDEBAR TOOLBAR ── */}
       {wizardStep === 5 && (
         <div className={`absolute transition-all duration-300 ${activeCategory === 'bathware_products' ? 'right-[440px]' : 'right-6'} top-1/2 -translate-y-1/2 flex flex-col gap-4 z-30`}>
-        {/* Home / exit */}
-        <button
-          id="btn-exit"
-          onClick={() => { window.location.href = '/designer'; }}
-          className="w-12 h-12 bg-black text-white hover:bg-[#333] shadow-xl rounded-xl flex items-center justify-center transition-all"
-          title="Exit to Designer"
-        >
-          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
-        </button>
+          {/* Home / exit */}
+          <button
+            id="btn-exit"
+            onClick={() => { window.location.href = '/designer'; }}
+            className="w-12 h-12 bg-black text-white hover:bg-[#333] shadow-xl rounded-xl flex items-center justify-center transition-all"
+            title="Exit to Designer"
+          >
+            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+          </button>
 
-        {/* Category icons */}
-        <div className="bg-black rounded-xl p-1.5 shadow-2xl flex flex-col gap-1.5 border border-white/10">
-          {getActiveCategories(state.designType, state.subRoomType)
-            .filter(cat => ['openings', 'wall_colours', 'ospos_tiles', 'wall_tiles', 'floor_tiles', 'bathware_products'].includes(cat.id))
-            .map(cat => (
-            <button
-              key={cat.id}
-              id={`btn-cat-${cat.id}`}
-              onClick={() => setActiveCategory(activeCategory === cat.id ? null : cat.id)}
-              className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${activeCategory === cat.id
-                ? 'bg-white text-black'
-                : 'text-gray-400 hover:text-white hover:bg-white/10'
-                }`}
-              title={cat.label}
-            >
-              {cat.icon}
-            </button>
-          ))}
+          {/* Category icons */}
+          <div className="bg-black rounded-xl p-1.5 shadow-2xl flex flex-col gap-1.5 border border-white/10">
+            {getActiveCategories(state.designType, state.subRoomType)
+              .filter(cat => ['openings', 'wall_colours', 'ospos_tiles', 'wall_tiles', 'floor_tiles', 'bathware_products'].includes(cat.id))
+              .map(cat => (
+              <button
+                key={cat.id}
+                id={`btn-cat-${cat.id}`}
+                onClick={() => setActiveCategory(activeCategory === cat.id ? null : cat.id)}
+                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${activeCategory === cat.id
+                  ? 'bg-white text-black'
+                  : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                title={cat.label}
+              >
+                {cat.icon}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-    )}
+      )}
 
       {/* ── ITEMS DRAWER (FLOATING DRAWER FOR TILES & OPENINGS) ── */}
-      {wizardStep === 5 && activeCategory && activeCategory !== 'bathware_products' && (
+      {activeCategory && activeCategory !== 'bathware_products' && (
         <div className={`absolute right-20 top-1/2 -translate-y-1/2 ${['ospos_tiles', 'wall_tiles', 'floor_tiles'].includes(activeCategory) ? 'w-[360px]' : 'w-64'} bg-white/95 backdrop-blur-md border border-gray-100 shadow-2xl rounded-2xl p-5 z-30 font-sans flex flex-col gap-4`}>
           <div className="flex justify-between items-center border-b border-gray-100 pb-2.5">
             <h3 className="text-xs font-bold tracking-wider text-[#1A1A1A] uppercase">
@@ -476,7 +476,7 @@ export default function ProductPanel() {
       )}
 
       {/* ── FULL-HEIGHT PRODUCT SIDEBAR (IKEA STYLE FOR BATHWARE PRODUCTS) ── */}
-      {wizardStep === 5 && activeCategory === 'bathware_products' && (
+      {activeCategory === 'bathware_products' && (
         <div className="fixed right-0 top-0 bottom-0 h-screen w-[420px] bg-white border-l border-gray-200 shadow-2xl z-40 flex flex-col font-sans transition-all duration-300">
           {selectedProductDetails ? (
             /* DETAILED VIEW (showing product info with action controls) */
