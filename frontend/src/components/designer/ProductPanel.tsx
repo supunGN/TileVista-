@@ -10,7 +10,7 @@ export default function ProductPanel() {
   const { 
     state, setState, activeCategory, setActiveCategory, 
     activePlacement, setActivePlacement, isPlacingItem, setIsPlacingItem, selectedItemId, setSelectedItemId, recordHistory, placedItems,
-    selectedItemColor, setSelectedItemColor, selectedWallIdx, setSelectedWallIdx
+    selectedItemColor, setSelectedItemColor, selectedWallIdx, setSelectedWallIdx, wizardStep
   } = useDesignerStore();
 
   const [dynamicItems, setDynamicItems] = useState<any[]>([]);
@@ -188,7 +188,8 @@ export default function ProductPanel() {
   return (
     <>
       {/* ── RIGHT SIDEBAR TOOLBAR ── */}
-      <div className={`absolute transition-all duration-300 ${activeCategory === 'bathware_products' ? 'right-[440px]' : 'right-6'} top-1/2 -translate-y-1/2 flex flex-col gap-4 z-30`}>
+      {wizardStep === 5 && (
+        <div className={`absolute transition-all duration-300 ${activeCategory === 'bathware_products' ? 'right-[440px]' : 'right-6'} top-1/2 -translate-y-1/2 flex flex-col gap-4 z-30`}>
         {/* Home / exit */}
         <button
           id="btn-exit"
@@ -222,9 +223,10 @@ export default function ProductPanel() {
           ))}
         </div>
       </div>
+    )}
 
       {/* ── ITEMS DRAWER (FLOATING DRAWER FOR TILES & OPENINGS) ── */}
-      {activeCategory && activeCategory !== 'bathware_products' && (
+      {wizardStep === 5 && activeCategory && activeCategory !== 'bathware_products' && (
         <div className={`absolute right-20 top-1/2 -translate-y-1/2 ${['ospos_tiles', 'wall_tiles', 'floor_tiles'].includes(activeCategory) ? 'w-[360px]' : 'w-64'} bg-white/95 backdrop-blur-md border border-gray-100 shadow-2xl rounded-2xl p-5 z-30 font-sans flex flex-col gap-4`}>
           <div className="flex justify-between items-center border-b border-gray-100 pb-2.5">
             <h3 className="text-xs font-bold tracking-wider text-[#1A1A1A] uppercase">
@@ -474,7 +476,7 @@ export default function ProductPanel() {
       )}
 
       {/* ── FULL-HEIGHT PRODUCT SIDEBAR (IKEA STYLE FOR BATHWARE PRODUCTS) ── */}
-      {activeCategory === 'bathware_products' && (
+      {wizardStep === 5 && activeCategory === 'bathware_products' && (
         <div className="fixed right-0 top-0 bottom-0 h-screen w-[420px] bg-white border-l border-gray-200 shadow-2xl z-40 flex flex-col font-sans transition-all duration-300">
           {selectedProductDetails ? (
             /* DETAILED VIEW (showing product info with action controls) */

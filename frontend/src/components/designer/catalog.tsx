@@ -196,11 +196,11 @@ export function getActiveCatalog(designType: 'room' | 'bathroom', subRoomType?: 
 }
 
 export function getActiveCategories(designType: 'room' | 'bathroom', subRoomType?: 'dining_room' | 'bed_room' | 'living_room') {
-  const common = [
-    { id: 'openings', label: 'Doors & Windows', icon: OPENINGS_ICON },
-    { id: 'wall_colours', label: 'Wall Colours', icon: WALL_COLORS_ICON },
-  ];
   if (designType === 'room') {
+    const common = [
+      { id: 'openings', label: 'Doors & Windows', icon: OPENINGS_ICON },
+      { id: 'wall_colours', label: 'Wall Colours', icon: WALL_COLORS_ICON },
+    ];
     let cats = [
       { id: 'sofa', label: 'Sofa & Lounge', icon: SOFA_ICON },
       { id: 'bed', label: 'Beds', icon: BED_ICON },
@@ -236,7 +236,7 @@ export function getActiveCategories(designType: 'room' | 'bathroom', subRoomType
     ];
   }
   return [
-    ...common,
+    { id: 'openings', label: 'Doors & Windows', icon: OPENINGS_ICON },
     { id: 'wall_tiles', label: 'Wall Tiles', icon: WALL_TILES_ICON },
     { id: 'floor_tiles', label: 'Floor Tiles', icon: FLOOR_TILES_ICON },
     { id: 'bathware_products', label: 'Add Product', icon: SINK_ICON },

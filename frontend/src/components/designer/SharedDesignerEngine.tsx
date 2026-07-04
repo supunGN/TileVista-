@@ -693,12 +693,12 @@ export function getActiveCatalog(designType: 'room' | 'bathroom', subRoomType?: 
 }
 
 export function getActiveCategories(designType: 'room' | 'bathroom', subRoomType?: 'dining_room' | 'bed_room' | 'living_room') {
-  const common = [
-    { id: 'openings', label: 'Doors & Windows', icon: OPENINGS_ICON },
-    { id: 'wall_colours', label: 'Wall Colours', icon: WALL_COLORS_ICON },
-    { id: 'ospos_tiles', label: 'Load Tiles', icon: OSPOS_TILES_ICON }
-  ];
   if (designType === 'room') {
+    const common = [
+      { id: 'openings', label: 'Doors & Windows', icon: OPENINGS_ICON },
+      { id: 'wall_colours', label: 'Wall Colours', icon: WALL_COLORS_ICON },
+      { id: 'ospos_tiles', label: 'Load Tiles', icon: OSPOS_TILES_ICON }
+    ];
     let cats = [
       { id: 'sofa', label: 'Sofa & Lounge', icon: SOFA_ICON },
       { id: 'bed', label: 'Beds', icon: BED_ICON },
@@ -733,7 +733,7 @@ export function getActiveCategories(designType: 'room' | 'bathroom', subRoomType
     ];
   }
   return [
-    ...common,
+    { id: 'openings', label: 'Doors & Windows', icon: OPENINGS_ICON },
     { id: 'sink', label: 'Wash Basin', icon: SINK_ICON },
     { id: 'bathtub', label: 'Bathtubs', icon: BATHTUB_ICON },
     { id: 'towel_rail', label: 'Towel Rails', icon: TOWEL_RAIL_ICON },
