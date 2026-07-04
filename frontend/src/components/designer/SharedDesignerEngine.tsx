@@ -4798,7 +4798,7 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
     }
   }, [wizardCategory]);
 
-  const { state, setState, topView, setTopView, activeSideView, setActiveSideView, zoomTrigger, setZoomTrigger, numWalls, setNumWalls, wizardStep, setWizardStep, fadeState, setFadeState, selectedRoomType, setSelectedRoomType, subRoomType, setSubRoomType, projectName, setProjectName, selectedShape, setSelectedShape, dimensionsUnit, setDimensionsUnit, widthInput, setWidthInput, lengthInput, setLengthInput, heightInput, setHeightInput, projectId, setProjectId, validationErrors, setValidationErrors, isSubmitting, setIsSubmitting, previewZoomTrigger, setPreviewZoomTrigger, activePlacement, setActivePlacement, wizardWallOpenings, setWizardWallOpenings, placedItems, setPlacedItems, selectedItemId, setSelectedItemId, isPlacingItem, setIsPlacingItem, activeCategory, setActiveCategory, showRoomCustomizer, setShowRoomCustomizer, showSummaryModal, setShowSummaryModal, showRoomTypeModal, setShowRoomTypeModal, orbitEnabled, setOrbitEnabled, undoStack, setUndoStack, redoStack, setRedoStack, recordHistory, handleUndo, handleRedo } = useDesignerStore();
+  const { state, setState, topView, setTopView, activeSideView, setActiveSideView, zoomTrigger, setZoomTrigger, numWalls, setNumWalls, wizardStep, setWizardStep, fadeState, setFadeState, selectedRoomType, setSelectedRoomType, subRoomType, setSubRoomType, projectName, setProjectName, selectedShape, setSelectedShape, dimensionsUnit, setDimensionsUnit, widthInput, setWidthInput, lengthInput, setLengthInput, heightInput, setHeightInput, projectId, setProjectId, validationErrors, setValidationErrors, isSubmitting, setIsSubmitting, previewZoomTrigger, setPreviewZoomTrigger, activePlacement, setActivePlacement, wizardWallOpenings, setWizardWallOpenings, placedItems, setPlacedItems, selectedItemId, setSelectedItemId, isPlacingItem, setIsPlacingItem, activeCategory, setActiveCategory, showRoomCustomizer, setShowRoomCustomizer, showSummaryModal, setShowSummaryModal, showRoomTypeModal, setShowRoomTypeModal, orbitEnabled, setOrbitEnabled, undoStack, setUndoStack, redoStack, setRedoStack, recordHistory, handleUndo, handleRedo, alertMessage, showAlert, hideAlert } = useDesignerStore();
  
   // ─── MEASUREMENT TOOL STATES ───
   const [showMeasurementPanel, setShowMeasurementPanel] = useState(false);
@@ -4944,7 +4944,7 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
         setWizardStep(5);
       } catch (err) {
         console.error("Load design error:", err);
-        alert("Failed to load saved design from the database.");
+        showAlert("Failed to load saved design from the database.");
       }
     };
 
@@ -5344,7 +5344,7 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
 
   const handleSaveDesign = async () => {
     if (!projectId) {
-      alert("No active project ID found. Please complete the wizard setup first.");
+      showAlert("No active project ID found. Please complete the wizard setup first.");
       return;
     }
 
@@ -5478,15 +5478,15 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
       });
 
       if (response.ok) {
-        alert("Design successfully saved to the database!");
+        showAlert("Design successfully saved to the database!");
       } else {
         const errText = await response.text();
         console.error("Save layout failed:", errText);
-        alert("Failed to save design to database. Check console for details.");
+        showAlert("Failed to save design to database. Check console for details.");
       }
     } catch (err) {
       console.error(err);
-      alert("Network error. Design saved offline.");
+      showAlert("Network error. Design saved offline.");
     } finally {
       setIsSubmitting(false);
     }
@@ -6753,6 +6753,31 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
 
       {/* ── SAVE DESIGN MODAL ── */}
       <SaveDesignModal />
+
+      {/* ── CUSTOM ALERT MODAL ── */}
+      {alertMessage && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4 border border-gray-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 rounded-full bg-[#1A1A1A] flex items-center justify-center text-[#D4C5B9] mb-4">
+              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <h3 className="text-base font-bold text-[#1A1A1A] tracking-tight">Notification</h3>
+            <p className="text-xs text-gray-500 font-light mt-2 leading-relaxed">
+              {alertMessage}
+            </p>
+            <button
+              onClick={hideAlert}
+              className="mt-6 w-full py-3 bg-[#1A1A1A] hover:bg-[#333] text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

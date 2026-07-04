@@ -10,7 +10,7 @@ export default function ProductPanel() {
   const { 
     state, setState, activeCategory, setActiveCategory, 
     activePlacement, setActivePlacement, isPlacingItem, setIsPlacingItem, selectedItemId, setSelectedItemId, recordHistory, placedItems,
-    selectedItemColor, setSelectedItemColor, selectedWallIdx, setSelectedWallIdx, wizardStep
+    selectedItemColor, setSelectedItemColor, selectedWallIdx, setSelectedWallIdx, wizardStep, showAlert
   } = useDesignerStore();
 
   const [dynamicItems, setDynamicItems] = useState<any[]>([]);
@@ -339,7 +339,7 @@ export default function ProductPanel() {
                                     });
                                     setSelectedWallIdx(null);
                                   } else {
-                                    alert("Please select a wall in the 3D view first to apply this tile.");
+                                    showAlert("Please select a wall in the 3D view first to apply this tile.");
                                   }
                                 } else {
                                   setState((prev: any) => ({
@@ -574,7 +574,7 @@ export default function ProductPanel() {
               <div className="p-6 border-t border-gray-100 bg-gray-50 flex flex-col gap-3">
                 <button
                   onClick={() => {
-                    alert(`Successfully added "${selectedProductDetails.name}" to your shopping cart!`);
+                    showAlert(`Successfully added "${selectedProductDetails.name}" to your shopping cart!`);
                   }}
                   className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-98 flex items-center justify-center gap-2"
                 >
