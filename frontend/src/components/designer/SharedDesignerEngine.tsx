@@ -2774,8 +2774,9 @@ function BathroomScene({
           itemD,
           itemToMove.rotation || 0,
           polyCorners,
-          'rectangular',
-          10, 10,
+          state.shape,
+          w,
+          d,
           itemToMove.position ? { x: itemToMove.position[0], z: itemToMove.position[2] } : undefined
         );
         posX = snapped.x;
