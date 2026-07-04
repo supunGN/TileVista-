@@ -696,8 +696,6 @@ export function getActiveCategories(designType: 'room' | 'bathroom', subRoomType
   if (designType === 'room') {
     const common = [
       { id: 'openings', label: 'Doors & Windows', icon: OPENINGS_ICON },
-      { id: 'wall_colours', label: 'Wall Colours', icon: WALL_COLORS_ICON },
-      { id: 'ospos_tiles', label: 'Load Tiles', icon: OSPOS_TILES_ICON }
     ];
     let cats = [
       { id: 'sofa', label: 'Sofa & Lounge', icon: SOFA_ICON },
