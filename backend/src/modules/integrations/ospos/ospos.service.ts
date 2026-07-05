@@ -19,6 +19,7 @@ export interface OsposItem {
   brand?: string | null;
   color?: string | null;
   material?: string | null;
+  attributes?: Record<string, string>;
 }
 
 /**
@@ -43,7 +44,7 @@ export class OsposIntegrationService {
     try {
       this.logger.log('Fetching full item catalog from OSPOS...');
       const response = await firstValueFrom(
-        this.httpService.get<OsposItem[]>(`${this.baseUrl}/items`, {
+        this.httpService.get<any[]>(`${this.baseUrl}/items`, {
           headers: {
             Authorization: this.secretToken,
             Accept: 'application/json',
@@ -51,13 +52,17 @@ export class OsposIntegrationService {
         }),
       );
       this.logger.log(`Received ${response.data.length} items from OSPOS.`);
-      return response.data;
+      return response.data.map((item) => ({
+        ...item,
+        brand: item.attributes?.Brand || item.brand || null,
+        color: item.attributes?.Color || item.color || null,
+        material: item.attributes?.Material || item.material || null,
+      }));
     } catch (error) {
       this.logger.error(`Failed to fetch item catalog from OSPOS: ${error.message}`);
       return [];
     }
   }
-
 
   /**
    * Fetches the category tree from OSPOS.

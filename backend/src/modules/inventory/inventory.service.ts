@@ -48,6 +48,8 @@ export class InventoryService {
         name: item.name,
         quantity: quantityAvailable, // Return effective stock
         category: item.category,
+        categoryId: item.category_id,
+        subcategoryId: item.subcategory_id,
         price: item.price,
       };
     });

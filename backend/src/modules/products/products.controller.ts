@@ -5,6 +5,7 @@ import {
   Post,
   Param,
   Body,
+  Query,
   ParseIntPipe,
   UseInterceptors,
   UploadedFile,
@@ -43,8 +44,35 @@ export class ProductsController {
    * Returns all active OSPOS items merged with their visual asset entries.
    */
   @Get('items')
-  async findAll() {
-    return this.productsService.findAll(false);
+  async findAll(
+    @Query('categoryId') categoryId?: string,
+    @Query('subcategoryId') subcategoryId?: string,
+    @Query('search') search?: string,
+    @Query('brand') brand?: string,
+    @Query('material') material?: string,
+    @Query('finish') finish?: string,
+    @Query('size') size?: string,
+    @Query('minPrice') minPrice?: string,
+    @Query('maxPrice') maxPrice?: string,
+  ) {
+    const filters = {
+      categoryId: categoryId ? parseInt(categoryId, 10) : undefined,
+      subcategoryId: subcategoryId === 'ALL' ? undefined : (subcategoryId ? parseInt(subcategoryId, 10) : undefined),
+      search,
+      brand,
+      material,
+      finish,
+      size,
+      minPrice: minPrice ? parseFloat(minPrice) : undefined,
+      maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+    };
+    return this.productsService.findAll(false, filters);
+  }
+
+  @Get('filters')
+  async getAvailableFilters(@Query('categoryId') categoryId?: string) {
+    const catId = categoryId ? parseInt(categoryId, 10) : undefined;
+    return this.productsService.getAvailableFilters(catId);
   }
 
   /**

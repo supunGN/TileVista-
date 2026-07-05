@@ -129,7 +129,7 @@ export default function PackagesPage() {
   };
 
   return (
-    <div className="py-8 font-sans max-w-7xl mx-auto space-y-12">
+    <div className="py-8 font-sans max-w-7xl mx-auto px-4 md:px-8 space-y-12">
       
       {/* Page Header */}
       <div className="border-b border-gray-100 pb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
