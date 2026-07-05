@@ -11,13 +11,14 @@ export const useProducts = (filters: any = {}) => {
   const filtersString = JSON.stringify(filters);
 
   const loadData = useCallback(async (abortSignal?: AbortSignal) => {
+    setLoading(true);
+    setError(null);
+    setItems([]); // Clear items immediately when load/filter changes to prevent stale content flash
     try {
       const parsedFilters = JSON.parse(filtersString);
       if (parsedFilters.__pause) {
-        return; // Skip fetching, keep current items (initially empty)
+        return; // Skip fetching, keep items empty and loading true
       }
-      setLoading(true);
-      setError(null);
       const itemsData = await fetchProducts(parsedFilters);
       if (abortSignal?.aborted) return;
       setItems(itemsData);

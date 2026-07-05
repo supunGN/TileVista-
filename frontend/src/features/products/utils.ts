@@ -17,3 +17,12 @@ export const getBrand = (product: { name: string; brand?: string | null }) => {
 export const getFallbackImage = (category: string) => {
   return '/images/placeholder.png';
 };
+
+export const getProductSlug = (product: { itemId: number; name: string }) => {
+  const cleanName = product.name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+  return `${product.itemId}-${cleanName}`;
+};

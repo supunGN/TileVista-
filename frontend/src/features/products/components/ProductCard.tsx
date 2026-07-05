@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Sparkles, Eye, ShoppingCart, Check, X, Plus, Minus } from 'lucide-react';
+import { Eye, ShoppingCart, Check, X, Plus, Minus } from 'lucide-react';
 import { UnifiedItem } from '../types';
-import { formatLKR, getFallbackImage } from '../utils';
+import { formatLKR, getFallbackImage, getProductSlug } from '../utils';
 import { STATIC_BASE } from '../constants';
 import { useCart } from '../../cart/hooks/useCart';
 
@@ -41,7 +41,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product }) 
   return (
     <>
       <div className="flex flex-col bg-white border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 group">
-        <Link href={`/products/${product.itemId}`} className="relative w-full aspect-square bg-[#F9F9F7] overflow-hidden block">
+        <Link href={`/products/${getProductSlug(product)}`} className="relative w-full aspect-square bg-[#F9F9F7] overflow-hidden block">
           <div
             className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
             style={{ backgroundImage: `url('${imageUrl}')` }}
@@ -52,17 +52,10 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product }) 
             {product.category}
           </span>
 
-          {/* 3D Model Availability tag */}
-          {product.glbUrl && (
-            <span className="absolute top-4 right-4 z-10 bg-[#1A1A1A] text-[#D4C5B9] font-bold text-[8px] uppercase tracking-widest px-2.5 py-1 flex items-center gap-1 shadow-sm border border-[#D4C5B9]/20">
-              <Sparkles size={9} />
-              <span>3D Canvas Ready</span>
-            </span>
-          )}
         </Link>
 
         <div className="p-5 flex flex-col flex-1">
-          <Link href={`/products/${product.itemId}`}>
+          <Link href={`/products/${getProductSlug(product)}`}>
             <h3 className="text-sm font-semibold text-[#1A1A1A] tracking-wide mb-1.5 line-clamp-1 hover:text-[#D4C5B9] transition-colors">
               {product.name}
             </h3>
@@ -74,7 +67,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product }) 
 
           <div className="border-t border-gray-100 pt-4 flex items-center justify-between gap-3 mt-auto">
             <Link
-              href={`/products/${product.itemId}`}
+              href={`/products/${getProductSlug(product)}`}
               className="border border-gray-200 hover:border-[#1A1A1A] text-gray-500 hover:text-[#1A1A1A] p-3 transition-all duration-300 flex items-center justify-center"
               aria-label="View Details"
             >
@@ -178,7 +171,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product }) 
                 </button>
               </div>
 
-              <Link href={`/products/${product.itemId}`} className="text-sm text-gray-500 underline hover:text-[#1A1A1A] transition-colors w-fit">
+              <Link href={`/products/${getProductSlug(product)}`} className="text-sm text-gray-500 underline hover:text-[#1A1A1A] transition-colors w-fit">
                 View More Details
               </Link>
             </div>

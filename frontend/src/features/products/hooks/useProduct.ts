@@ -30,15 +30,37 @@ export const useProduct = (id: number | null) => {
     loadData();
   }, [loadData]);
 
-  const relatedItems = allProducts
-    .filter(
-      (item) =>
-        item.isEnabled &&
-        product &&
-        item.category === product.category &&
-        item.itemId !== product.itemId
-    )
-    .slice(0, 3);
+  const relatedItems = (() => {
+    if (!product) return [];
+
+    // 1. Try matching subcategory
+    if (product.subcategoryId !== null && product.subcategoryId !== undefined) {
+      const sameSubcategory = allProducts.filter(
+        (item) =>
+          item.isEnabled &&
+          item.subcategoryId !== null &&
+          item.subcategoryId === product.subcategoryId &&
+          item.itemId !== product.itemId
+      );
+      if (sameSubcategory.length > 0) {
+        return sameSubcategory.slice(0, 3);
+      }
+    }
+
+    // 2. Fallback to matching parent category
+    if (product.categoryId !== null && product.categoryId !== undefined) {
+      const sameCategory = allProducts.filter(
+        (item) =>
+          item.isEnabled &&
+          item.categoryId !== null &&
+          item.categoryId === product.categoryId &&
+          item.itemId !== product.itemId
+      );
+      return sameCategory.slice(0, 3);
+    }
+
+    return [];
+  })();
 
   return { product, relatedItems, loading, error, reload: loadData };
 };

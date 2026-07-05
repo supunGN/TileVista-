@@ -20,14 +20,15 @@ interface ProductListProps {
 export const ProductList: React.FC<ProductListProps> = ({ categorySlug }) => {
   const { categories } = useCategories();
   const filterState = useProductFilters(categories, categorySlug);
-  
+
   // If we are on a category page (categorySlug exists), wait until activeCategory is resolved
-  // before fetching items. Otherwise, we fetch the whole catalog initially which flashes wrong items.
-  const isReadyToFetch = !categorySlug || filterState.activeCategory !== null;
+  // AND the applied filters have been updated to match the active category ID.
+  // Otherwise, we fetch the whole catalog initially which flashes wrong items.
+  const isReadyToFetch = !categorySlug || (filterState.activeCategory !== null && filterState.appliedFilters.categoryId === filterState.activeCategory.id);
   const initialFilters = isReadyToFetch ? filterState.appliedFilters : { __pause: true };
-  
+
   const { items, loading, error, reload } = useProducts(initialFilters);
-  
+
   const {
     search,
     setSearch,
@@ -46,24 +47,34 @@ export const ProductList: React.FC<ProductListProps> = ({ categorySlug }) => {
 
   const paginatedProducts = items.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
+  const displayTitle = activeCategory
+    ? `${activeCategory.name} Collection`
+    : categorySlug
+      ? `${categorySlug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())} Collection`
+      : 'Product Catalog';
+
+  const displaySubtitle = activeCategory || categorySlug
+    ? `Explore our premium range of ${(activeCategory?.name || categorySlug || '').toLowerCase().replace(/-/g, ' ')}`
+    : 'Browse our extensive catalog';
+
   return (
-    <div className="py-8 font-sans max-w-7xl mx-auto space-y-8 px-4">
-      
+    <div className="py-8 font-sans max-w-7xl mx-auto px-4 md:px-8 space-y-12">
+
       {/* Header and Search */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-[#1A1A1A] capitalize">
-            {activeCategory ? `${activeCategory.name} Collection` : 'Product Catalog'}
+            {displayTitle}
           </h1>
           <p className="text-sm text-gray-500 mt-2 font-light">
-            {activeCategory ? `Explore our premium range of ${activeCategory.name.toLowerCase()}` : 'Browse our extensive catalog'}
+            {displaySubtitle}
           </p>
         </div>
-        <ProductSearch 
-          search={search} 
-          setSearch={setSearch} 
-          onSearch={filterState.applyFilters} 
-          loading={loading} 
+        <ProductSearch
+          search={search}
+          setSearch={setSearch}
+          onSearch={filterState.applyFilters}
+          loading={loading}
           activeCategory={activeCategory}
         />
       </div>
@@ -71,7 +82,7 @@ export const ProductList: React.FC<ProductListProps> = ({ categorySlug }) => {
       {loading ? (
         <div className="py-32 flex flex-col items-center justify-center text-gray-400 gap-3">
           <Loader2 className="animate-spin text-[#D4C5B9]" size={32} />
-          <span className="text-xs font-light tracking-widest uppercase font-mono">Loading dynamic catalog...</span>
+          <span className="text-xs font-light tracking-widest uppercase font-mono">Loading...</span>
         </div>
       ) : error ? (
         <div className="py-20 text-center border border-dashed border-red-200 bg-red-50/20 max-w-lg mx-auto p-8 rounded">
@@ -85,18 +96,18 @@ export const ProductList: React.FC<ProductListProps> = ({ categorySlug }) => {
         </div>
       ) : (
         <div className="flex flex-col lg:flex-row gap-10 items-start">
-          
+
           {/* LEFT SIDEBAR: Filters */}
           <aside className="w-full lg:w-64 flex-shrink-0 lg:sticky lg:top-24 lg:h-[calc(100vh-120px)] overflow-y-auto pr-6 border-r border-[#D4C5B9]/40 pb-10 thin-scrollbar">
             <ProductFilters filterState={filterState} />
           </aside>
-          
+
           {/* RIGHT MAIN CONTENT */}
           <main className="flex-grow w-full">
-            <SubcategoryNav 
-              activeCategory={activeCategory} 
-              selectedSubcategoryId={selectedSubcategoryId} 
-              setSelectedSubcategoryId={setSelectedSubcategoryId} 
+            <SubcategoryNav
+              activeCategory={activeCategory}
+              selectedSubcategoryId={selectedSubcategoryId}
+              setSelectedSubcategoryId={setSelectedSubcategoryId}
             />
 
             <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
@@ -116,7 +127,7 @@ export const ProductList: React.FC<ProductListProps> = ({ categorySlug }) => {
               <span className="text-xs text-gray-500 font-medium">
                 Showing {items.length > 0 ? startIndex + 1 : 0}&ndash;{Math.min(startIndex + ITEMS_PER_PAGE, items.length)} of {items.length} products
               </span>
-              <Pagination 
+              <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
                 getPageNumbers={getPageNumbers}

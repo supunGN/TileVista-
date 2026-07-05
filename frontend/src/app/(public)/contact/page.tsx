@@ -47,7 +47,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="py-8 font-sans max-w-7xl mx-auto space-y-16">
+    <div className="py-8 font-sans max-w-7xl mx-auto px-4 md:px-8 space-y-16">
       
       {/* Editorial Title */}
       <div className="border-b border-gray-100 pb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -55,7 +55,7 @@ export default function ContactPage() {
           <span className="text-[10px] font-bold tracking-[0.3em] text-[#D4C5B9] uppercase block mb-2">
             GET IN TOUCH
           </span>
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-[#1A1A1A]">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-[#1A1A1A]">
             Contact Our Showroom
           </h1>
           <p className="text-sm text-gray-500 font-light mt-1.5 max-w-xl leading-relaxed">
@@ -93,7 +93,7 @@ export default function ContactPage() {
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full bg-white border border-gray-200 px-4 py-3 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] font-light transition-colors"
+                    className="w-full bg-white border border-gray-200 px-4 py-3.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] font-light transition-colors"
                     placeholder="Enter your name"
                   />
                 </div>
@@ -104,7 +104,7 @@ export default function ContactPage() {
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full bg-white border border-gray-200 px-4 py-3 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] font-light transition-colors"
+                    className="w-full bg-white border border-gray-200 px-4 py-3.5 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#D4C5B9] font-light transition-colors"
                     placeholder="name@domain.com"
                   />
                 </div>

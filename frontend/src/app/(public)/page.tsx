@@ -19,35 +19,32 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-white text-[#1A1A1A] font-sans selection:bg-[#D4C5B9] selection:text-[#1A1A1A]">
-      {/* Main Landing Sections */}
-      <main>
-        {/* Hero Widescreen Banner */}
-        <Hero 
-          onLaunchDesigner={() => router.push('/designer')} 
-          onExplorePackages={() => router.push('/packages')}
-          onExploreTiles={() => router.push('/products/tiles')}
-          onBrowseProducts={() => router.push('/products/tiles')}
-        />
+    <main>
+      {/* Hero Widescreen Banner */}
+      <Hero 
+        onLaunchDesigner={() => router.push('/designer')} 
+        onExplorePackages={() => router.push('/packages')}
+        onExploreTiles={() => router.push('/products/tiles')}
+        onBrowseProducts={() => router.push('/products/tiles')}
+      />
 
-        {/* About Section */}
-        <About />
+      {/* About Section */}
+      <About />
 
-        {/* Catalog Categories Grid */}
-        <Categories onSelectCategory={(categoryId) => router.push(`/products/${categoryId}`)} />
+      {/* Catalog Categories Grid */}
+      <Categories onSelectCategory={(categoryId) => router.push(`/products/${categoryId}`)} />
 
-        {/* Curated Suite Packages */}
-        <CuratedPackages 
-          onVisualizePackage={(pkgId) => router.push(`/designer?package=${pkgId}`)} 
-          onAddToCart={handleAddToCartPackage} 
-        />
+      {/* Curated Suite Packages */}
+      <CuratedPackages 
+        onVisualizePackage={(pkgId) => router.push(`/designer?package=${pkgId}`)} 
+        onAddToCart={handleAddToCartPackage} 
+      />
 
-        {/* 3D Blueprint CAD Workspace highlight */}
-        <PlannerIntro onStartDesign={() => router.push('/designer')} />
+      {/* 3D Blueprint CAD Workspace highlight */}
+      <PlannerIntro onStartDesign={() => router.push('/designer')} />
 
-        {/* Showroom Experience Center */}
-        <ExperienceCenter />
-      </main>
-    </div>
+      {/* Showroom Experience Center */}
+      <ExperienceCenter />
+    </main>
   );
 }

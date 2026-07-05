@@ -125,7 +125,7 @@ export const ProductFilters: React.FC<ProductFiltersProps> = React.memo(({ filte
           onClick={applyFilters}
           className="flex-1 bg-[#1A1A1A] hover:bg-[#D4C5B9] text-white hover:text-[#1A1A1A] py-3.5 text-xs font-bold tracking-widest uppercase transition-colors"
         >
-          Apply Filters
+          Apply
         </button>
       </div>
     </div>

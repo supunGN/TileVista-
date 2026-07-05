@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, Search, RefreshCw, Phone, Mail, MapPin, User } from 'lucide-react';
+import { ShoppingCart, RefreshCw, Phone, Mail, MapPin, User } from 'lucide-react';
 import { useAuth } from '../../features/auth/AuthContext';
 import { MegaMenuDropdown } from '../../components/shared/MegaMenuDropdown';
 import { useCart } from '../../features/cart/hooks/useCart';
@@ -106,11 +106,6 @@ export default function PublicLayout({
 
           {/* Right: Actions */}
           <div className="flex items-center gap-5">
-            {/* Search trigger */}
-            <button className="text-gray-700 hover:text-[#1A1A1A] p-1.5 transition-colors relative group">
-              <Search size={20} strokeWidth={1.8} />
-            </button>
-
             {/* Cart Icon with badge */}
             <Link
               href="/cart"
@@ -153,7 +148,7 @@ export default function PublicLayout({
       </header>
 
       {/* 3. Render Viewport Page Content */}
-      <main className="flex-grow max-w-7xl w-full mx-auto px-6 md:px-12 py-10 bg-white">
+      <main className="flex-grow w-full">
         {children}
       </main>
 
@@ -182,10 +177,10 @@ export default function PublicLayout({
 
             {/* Quicklinks Map */}
             <nav className="flex flex-wrap items-center gap-x-6 gap-y-3 text-[10.5px] font-semibold tracking-widest uppercase text-gray-400">
-              <Link href="/products" className="hover:text-white transition-colors">Shop</Link>
               <Link href="/packages" className="hover:text-white transition-colors">Packages</Link>
               <Link href="/designer" className="hover:text-white transition-colors">3D Designer</Link>
               <Link href="/cart" className="hover:text-white transition-colors">Cart</Link>
+              <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
               <span className="opacity-60 cursor-not-allowed">FAQs</span>
               <span className="opacity-60 cursor-not-allowed">Privacy</span>
             </nav>
