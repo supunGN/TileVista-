@@ -1,7 +1,10 @@
 import React from 'react';
+import type { useProductFilters } from '../hooks/useProductFilters';
+
+type ProductFilterState = ReturnType<typeof useProductFilters>;
 
 interface ProductFiltersProps {
-  filterState: any; // We use any for brevity here, should be the return type of useProductFilters
+  filterState: ProductFilterState;
 }
 
 export const ProductFilters: React.FC<ProductFiltersProps> = React.memo(({ filterState }) => {
