@@ -136,8 +136,8 @@ export default function ProductPanel() {
 
     // Snaps all "Bath & Shower" (OSPOS subcategoryId 17) items to walls
     if (subcatId === 17) {
-      // Exclude floor-standing enclosures/boxes/bathtubs
-      if (nameLower.includes('enclosure') || nameLower.includes('box') || nameLower.includes('cabin') || nameLower.includes('bath') || nameLower.includes('tub')) {
+      // Exclude floor-standing enclosures/boxes
+      if (nameLower.includes('enclosure') || nameLower.includes('box') || nameLower.includes('cabin')) {
         return false;
       }
       return true;
@@ -323,6 +323,16 @@ export default function ProductPanel() {
                       const priceWhole = Math.floor(item.price || 0);
                       const priceDecimal = ((item.price || 0) % 1).toFixed(2).substring(1);
 
+
+
+
+
+
+                      /* apply wall tiles and notification*/
+
+
+
+
                       return (
                         <button
                           key={idx}
@@ -401,6 +411,11 @@ export default function ProductPanel() {
                   </div>
                 )}
               </div>
+
+
+
+              /* render openings*/
+
             ) : activeCategory === 'openings' ? (
               <div className="space-y-4">
                 <div className="space-y-1.5">
@@ -762,6 +777,12 @@ export default function ProductPanel() {
           </button>
         </div>
       )}
+
+
+
+
+
+
 
       {/* ── SELECTED ITEM ACTIONS ── */}
       {selectedItem && !isPlacingItem && (
