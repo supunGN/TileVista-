@@ -112,21 +112,6 @@ model design_items {
   @@index([product_id], map: "fk_design_item_product")
 }
 
-model design_measurements {
-  measurement_id String       @id @db.Char(36)
-  design_id      String       @db.Char(36)
-  point_a_x      Decimal?     @db.Decimal(10, 2)
-  point_a_y      Decimal?     @db.Decimal(10, 2)
-  point_a_z      Decimal?     @db.Decimal(10, 2)
-  point_b_x      Decimal?     @db.Decimal(10, 2)
-  point_b_y      Decimal?     @db.Decimal(10, 2)
-  point_b_z      Decimal?     @db.Decimal(10, 2)
-  distance       Decimal?     @db.Decimal(10, 2)
-  room_designs   room_designs @relation(fields: [design_id], references: [design_id], onDelete: Cascade, onUpdate: Restrict, map: "fk_measurement_design")
-
-  @@index([design_id], map: "fk_measurement_design")
-}
-
 model design_openings {
   opening_id   String                @id @db.Char(36)
   design_id    String                @db.Char(36)
@@ -142,16 +127,6 @@ model design_openings {
 
   @@index([design_id], map: "fk_opening_design")
   @@index([wall_id], map: "fk_opening_wall")
-}
-
-model design_snapshots {
-  snapshot_id  String       @id @db.Char(36)
-  design_id    String       @db.Char(36)
-  image_url    String?      @db.VarChar(500)
-  created_at   DateTime?    @default(now()) @db.DateTime(0)
-  room_designs room_designs @relation(fields: [design_id], references: [design_id], onDelete: Cascade, onUpdate: Restrict, map: "fk_snapshot_design")
-
-  @@index([design_id], map: "fk_snapshot_design")
 }
 
 model design_walls {
@@ -332,9 +307,7 @@ model room_designs {
   design_elements     design_elements[]
   design_items        design_items[]
   custom_design_items custom_design_items[]
-  design_measurements design_measurements[]
   design_openings     design_openings[]
-  design_snapshots    design_snapshots[]
   design_walls        design_walls[]
   orders              orders[]
   users               users                     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: Restrict, map: "fk_design_user")
