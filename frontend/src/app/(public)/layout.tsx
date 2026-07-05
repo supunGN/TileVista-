@@ -17,6 +17,7 @@ export default function PublicLayout({
   const pathname = usePathname();
   const { user, isAuthenticated, logout } = useAuth();
   const { items } = useCart();
+  const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
 
 
 
@@ -69,7 +70,7 @@ export default function PublicLayout({
           <nav className="hidden md:flex items-center gap-8 lg:gap-10">
             {navigation.map((item) => {
               const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-              
+
               if (item.name === 'Shop') {
                 return (
                   <div key={item.href} className="group relative py-6 -my-6">
@@ -77,10 +78,10 @@ export default function PublicLayout({
                       className={`flex items-center gap-1 text-xs font-semibold tracking-widest uppercase pb-1 transition-all cursor-default ${active
                         ? 'text-[#1A1A1A] border-b border-[#1A1A1A]'
                         : 'text-gray-500 group-hover:text-[#1A1A1A] group-hover:border-b group-hover:border-gray-300'
-                      }`}
+                        }`}
                     >
                       {item.name}
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-70 group-hover:opacity-100 transition-opacity"><path d="m6 9 6 6 6-6"/></svg>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-70 group-hover:opacity-100 transition-opacity"><path d="m6 9 6 6 6-6" /></svg>
                     </button>
 
                     {/* Mega Menu Dropdown */}
@@ -94,8 +95,8 @@ export default function PublicLayout({
                   key={item.href}
                   href={item.href}
                   className={`text-xs font-semibold tracking-widest uppercase pb-1 transition-all ${active
-                      ? 'text-[#1A1A1A] border-b border-[#1A1A1A]'
-                      : 'text-gray-500 hover:text-[#1A1A1A] hover:border-b hover:border-gray-300'
+                    ? 'text-[#1A1A1A] border-b border-[#1A1A1A]'
+                    : 'text-gray-500 hover:text-[#1A1A1A] hover:border-b hover:border-gray-300'
                     }`}
                 >
                   {item.name}
@@ -127,7 +128,7 @@ export default function PublicLayout({
                   Hello, <span className="font-semibold text-[#1A1A1A]">{user.firstName || user.email.split('@')[0]}</span>
                 </span>
                 <button
-                  onClick={logout}
+                  onClick={() => setShowLogoutConfirm(true)}
                   className="text-[9px] font-bold tracking-wider text-gray-400 hover:text-red-600 uppercase border border-gray-200 px-2.5 py-1.5 hover:border-red-200 transition-colors bg-[#F9F9F7]"
                 >
                   Sign Out
@@ -246,6 +247,33 @@ export default function PublicLayout({
 
         </div>
       </footer>
+
+      {/* Sign Out Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowLogoutConfirm(false)}>
+          <div className="bg-white p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 text-center font-sans" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-[#1A1A1A] mb-2">Sign Out</h3>
+            <p className="text-sm text-gray-500 mb-6 font-light leading-relaxed">Are you sure you want to sign out of your account?</p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="px-6 py-2 text-xs font-semibold uppercase tracking-wider text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  logout();
+                  setShowLogoutConfirm(false);
+                }}
+                className="px-6 py-2 text-xs font-bold uppercase tracking-wider text-white bg-red-600 hover:bg-red-700 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

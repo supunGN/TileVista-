@@ -193,11 +193,7 @@ export class ProductsService {
       result = result.filter((item) => {
         const nameMatches = item.name.toLowerCase().includes(searchLower);
         const skuMatches = item.sku.toLowerCase().includes(searchLower);
-        const descMatches = item.description ? item.description.toLowerCase().includes(searchLower) : false;
-        const materialMatches = item.material ? item.material.toLowerCase().includes(searchLower) : false;
-        const finishMatches = item.finish ? item.finish.toLowerCase().includes(searchLower) : false;
-        const tagsMatch = item.tags.some(tag => tag.toLowerCase().includes(searchLower));
-        return nameMatches || skuMatches || descMatches || materialMatches || finishMatches || tagsMatch;
+        return nameMatches || skuMatches;
       });
     }
 
