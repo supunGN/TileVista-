@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Loader2 } from 'lucide-react';
-import { useProducts } from './hooks/useProducts';
+import { useCategories, useProducts } from './hooks/useProducts';
 import { useProductFilters } from './hooks/useProductFilters';
 import { usePagination } from './hooks/usePagination';
 import { ITEMS_PER_PAGE } from './constants';
@@ -18,14 +18,7 @@ interface ProductListProps {
 }
 
 export const ProductList: React.FC<ProductListProps> = ({ categorySlug }) => {
-  // First, we still need categories to map the slug. But we'll let useProducts handle it.
-  // We'll manage the filter state first.
-  // Wait, useProducts(filters) will fetch everything. We need the categories before we can map slug -> ID.
-  // It's a chicken and egg problem unless useProducts always returns categories on first load.
-  // Actually, we can fetch categories inside useProducts as usual, but the first call might not have the correct categoryId if categories aren't loaded yet.
-  
-  // To keep it simple, we'll let useProductFilters receive the categories from useProducts.
-  const { categories } = useProducts({});
+  const { categories } = useCategories();
   const filterState = useProductFilters(categories, categorySlug);
   
   // If we are on a category page (categorySlug exists), wait until activeCategory is resolved

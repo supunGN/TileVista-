@@ -4,19 +4,11 @@ import { fetchProducts, fetchCategories } from '../api/products.api';
 
 export const useProducts = (filters: any = {}) => {
   const [items, setItems] = useState<UnifiedItem[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   // We stringify filters to safely use it in the dependency array
   const filtersString = JSON.stringify(filters);
-
-  // Fetch categories only once
-  useEffect(() => {
-    fetchCategories()
-      .then(setCategories)
-      .catch(() => setCategories([]));
-  }, []);
 
   const loadData = useCallback(async (abortSignal?: AbortSignal) => {
     try {
@@ -45,5 +37,17 @@ export const useProducts = (filters: any = {}) => {
     return () => abortController.abort();
   }, [loadData]);
 
-  return { items, categories, loading, error, reload: loadData };
+  return { items, loading, error, reload: loadData };
+};
+
+export const useCategories = () => {
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    fetchCategories()
+      .then(setCategories)
+      .catch(() => setCategories([]));
+  }, []);
+
+  return { categories };
 };
