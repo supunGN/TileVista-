@@ -66,7 +66,6 @@ export class ProductsController {
       minPrice: minPrice ? parseFloat(minPrice) : undefined,
       maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
     };
-    require('fs').appendFileSync('debug.log', JSON.stringify(filters) + '\n');
     return this.productsService.findAll(false, filters);
   }
 
