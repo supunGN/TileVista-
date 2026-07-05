@@ -421,7 +421,10 @@ export default function ProductPanel() {
                 <div className="space-y-1.5">
                   <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase block">Doors</span>
                   <div className="grid grid-cols-2 gap-2">
+
                     {DOOR_STYLES.map((door) => (
+
+
                       <button
                         key={door.id}
                         onClick={() => {
@@ -450,7 +453,9 @@ export default function ProductPanel() {
                 <div className="space-y-1.5 pt-2 border-t border-gray-100">
                   <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase block">Windows</span>
                   <div className="grid grid-cols-2 gap-2">
+
                     {WINDOW_STYLES.map((win) => (
+
                       <button
                         key={win.id}
                         onClick={() => {
@@ -503,6 +508,10 @@ export default function ProductPanel() {
 
 
       {/* ── FULL-HEIGHT PRODUCT SIDEBAR ( FOR BATHWARE PRODUCTS) ── */}
+
+
+
+
       {activeCategory === 'bathware_products' && (
         <div className="fixed right-0 top-0 bottom-0 h-screen w-[420px] bg-white border-l border-gray-200 shadow-2xl z-40 flex flex-col font-sans transition-all duration-300">
           {selectedProductDetails ? (
@@ -638,6 +647,11 @@ export default function ProductPanel() {
 
           ) : (
             /* PRODUCTS CATALOG GRID (category list layout) */
+
+
+
+
+
             <div className="flex-1 flex flex-col h-full bg-white">
               {/* Header */}
               <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-center justify-between">
@@ -738,6 +752,10 @@ export default function ProductPanel() {
           )}
         </div>
       )}
+
+
+
+
 
       {/* ── PLACING ITEM CONFIRMATION ── */}
       {isPlacingItem && (

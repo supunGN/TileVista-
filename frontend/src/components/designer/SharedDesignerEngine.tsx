@@ -6372,6 +6372,10 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
                           </div>
                         </div>
                       </>
+
+
+                      /* door and windows*/
+
                     ) : wizardCategory === 'openings' ? (
                       <>
                         <button
