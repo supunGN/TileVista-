@@ -35,22 +35,24 @@ export default function DesignerToolbar({ onSave }: { onSave: () => Promise<void
         </div>
       </div>
 
-      <div className="absolute bottom-6 left-6 z-30 pointer-events-auto">
-        <div id="price-display" className="bg-white border border-gray-200 shadow-lg rounded-full h-12 px-2 py-1 flex items-center gap-4">
-          <div className="flex items-center gap-2 pl-4">
-            <span className="font-bold text-sm text-gray-400">Rs</span>
-            <span className="font-mono font-bold text-base text-[#1A1A1A]">{totalPrice.toFixed(2)}</span>
+      {store.state.designType === 'bathroom' && (
+        <div className="absolute bottom-6 left-6 z-30 pointer-events-auto">
+          <div id="price-display" className="bg-white border border-gray-200 shadow-lg rounded-full h-12 px-2 py-1 flex items-center gap-4">
+            <div className="flex items-center gap-2 pl-4">
+              <span className="font-bold text-sm text-gray-400">Rs</span>
+              <span className="font-mono font-bold text-base text-[#1A1A1A]">{totalPrice.toFixed(2)}</span>
+            </div>
+            <button
+              id="btn-summary"
+              onClick={() => store.setShowSummaryModal(true)}
+              className="px-5 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-[#1A1A1A] transition-all"
+            >
+              Summary
+              <ArrowLeft className="rotate-180" size={10} />
+            </button>
           </div>
-          <button
-            id="btn-summary"
-            onClick={() => store.setShowSummaryModal(true)}
-            className="px-5 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-[#1A1A1A] transition-all"
-          >
-            Summary
-            <ArrowLeft className="rotate-180" size={10} />
-          </button>
         </div>
-      </div>
+      )}
     </>
   );
 }

@@ -546,6 +546,24 @@ function RugModel({ selected }: { selected: boolean }) {
   );
 }
 
+const isBathtub = (type?: string, name?: string) => {
+  const t = (type || '').toLowerCase();
+  const n = (name || '').toLowerCase();
+  return t === 'bathtub' || n.includes('bath tub') || n.includes('bathtub') || n.includes('bath');
+};
+
+const isShower = (type?: string, name?: string) => {
+  const t = (type || '').toLowerCase();
+  const n = (name || '').toLowerCase();
+  return t === 'shower' || n.includes('shower');
+};
+
+const isSink = (type?: string, name?: string) => {
+  const t = (type || '').toLowerCase();
+  const n = (name || '').toLowerCase();
+  return t === 'sink' || t === 'basin' || n.includes('sink') || n.includes('basin');
+};
+
 function DynamicFurnitureModel({ item, selected, CustomFurniture }: { item: any, selected: boolean, CustomFurniture?: any }) {
   // If a GLB model exists, ALWAYS prioritize it over the procedural models
   if (item.model) {
@@ -602,6 +620,13 @@ function GLBModel({ url, selected, item }: { url: string, selected: boolean, ite
     else if (t === 'chair' || t === 'chairs') targetSize = 2.0;
     else if (t === 'tv_cabinet' || t === 'cabinet') targetSize = 5.0;
     else if (t === 'coffee_table') targetSize = 3.5;
+    else if (isBathtub(t, item.name)) targetSize = 6.8;
+    else if (isShower(t, item.name)) targetSize = 3.3;
+    else if (t === 'toilet') targetSize = 2.6;
+    else if (isSink(t, item.name)) targetSize = 2.8;
+    else if (t === 'washing_machine') targetSize = 2.8;
+    else if (t === 'towel_rail') targetSize = 2.0;
+    else if (t === 'light') targetSize = 0.8;
 
     // Cap the targetSize based on room size so items don't overflow small rooms
     if (state && state.widthFt && state.depthFt) {
@@ -609,8 +634,9 @@ function GLBModel({ url, selected, item }: { url: string, selected: boolean, ite
       const dMeters = state.depthFt * 0.3048;
       const maxRoomDim = Math.min(Math.max(1.5, wMeters), Math.max(1.5, dMeters));
 
-      // Target world size is targetSize * 0.3048. It should not exceed 80% of the room's smallest dimension
-      const maxTargetWorldSize = maxRoomDim * 0.8;
+      // Target world size is targetSize * 0.3048. It should not exceed 80% (95% for bathtubs, beds, sofas) of the room's smallest dimension
+      const limitFactor = (isBathtub(t, item.name) || t === 'beds' || t === 'bed' || t === 'sofa' || t === 'sofas') ? 0.95 : 0.8;
+      const maxTargetWorldSize = maxRoomDim * limitFactor;
       const currentTargetWorldSize = targetSize * 0.3048;
 
       if (currentTargetWorldSize > maxTargetWorldSize) {
@@ -2030,7 +2056,7 @@ function formatLength(meters: number, unit: 'ft' | 'cm') {
   }
 }
 
-function getItemDimensions(type: string): { width: number, depth: number } {
+function getItemDimensions(type: string, name?: string): { width: number, depth: number } {
   const t = type;
   if (t === 'beds' || t === 'bed') return { width: 2.1, depth: 2.1 };
   if (t === 'wardrobes' || t === 'wardrobe') return { width: 1.25, depth: 1.25 };
@@ -2040,9 +2066,9 @@ function getItemDimensions(type: string): { width: number, depth: number } {
   if (t === 'tv_cabinet') return { width: 1.55, depth: 1.55 };
   if (t === 'coffee_table') return { width: 1.1, depth: 1.1 };
   
-  if (t === 'sink') return { width: 1.6 * 0.3048, depth: 1.4 * 0.3048 };
-  if (t === 'bathtub') return { width: 4.3 * 0.3048, depth: 2.3 * 0.3048 };
-  if (t === 'shower') return { width: 3.0 * 0.3048, depth: 3.0 * 0.3048 };
+  if (isSink(t, name)) return { width: 1.6 * 0.3048, depth: 1.4 * 0.3048 };
+  if (isBathtub(t, name)) return { width: 4.3 * 0.3048, depth: 2.3 * 0.3048 };
+  if (isShower(t, name)) return { width: 3.0 * 0.3048, depth: 3.0 * 0.3048 };
   if (t === 'toilet') return { width: 1.4 * 0.3048, depth: 2.2 * 0.3048 };
   if (t === 'towel_rail') return { width: 1.8 * 0.3048, depth: 0.4 * 0.3048 };
   if (t === 'washing_machine') return { width: 2.0 * 0.3048, depth: 2.0 * 0.3048 };
@@ -2778,7 +2804,11 @@ function BathroomScene({
       }
 
       let heightY = 0;
-      if (itemToMove.isWallMounted) {
+      const isBathtubItem = isBathtub(itemToMove.type, itemToMove.name);
+      const isShowerItem = isShower(itemToMove.type, itemToMove.name);
+      const isWallMounted = isBathtubItem ? false : (itemToMove.isWallMounted || isShowerItem);
+      
+      if (isWallMounted) {
         const wallIdx = selectedRoomType === 'bathroom' ? undefined : undefined;
         let nx = 0, nz = 1, wallCx = 0, wallCz = 0;
         
@@ -2814,21 +2844,24 @@ function BathroomScene({
         );
         const wallPt = new THREE.Vector3();
         let itemHeight = 1.5; // fallback
-        if (dims && dims.height) {
+        if (isShowerItem) {
+          itemHeight = 2.1; // Procedural shower height
+        } else if (dims && dims.height) {
           itemHeight = dims.height;
         }
-        // Top of item (heightY + itemHeight) must stay below (h - 0.20) buffer to never touch the roof/ceiling
-        const maxH = Math.max(0.2, h - itemHeight - 0.20);
+        
+        const minH = isShowerItem ? 1.0 : 0.1;
+        const maxH = Math.max(minH, h - itemHeight - 0.10);
         heightY = 1.37;
         if (raycasterRef.ray.intersectPlane(wallPlane, wallPt)) {
-          heightY = Math.max(0.1, Math.min(maxH, wallPt.y));
+          heightY = Math.max(minH, Math.min(maxH, wallPt.y));
         }
       }
 
       // Check collision against all other items (oriented bounding boxes)
       const candidateCorners = getItemCorners(posX, posZ, itemW, itemD, rotY + rotOffset);
       let collides = false;
-      if (selectedRoomType === 'bathroom') {
+      if (true) {
         for (const other of placedItems) {
           if (other.id === activeId) continue;
           
@@ -2837,6 +2870,10 @@ function BathroomScene({
           if (otherDims) {
             otherW = otherDims.width;
             otherD = otherDims.depth;
+          } else {
+            const fallback = getItemDimensions(other.type);
+            otherW = fallback.width;
+            otherD = fallback.depth;
           }
           
           const otherCorners = getItemCorners(other.position[0], other.position[2], otherW, otherD, other.rotation);
@@ -4272,8 +4309,8 @@ function RoomPreview3D({
             }
           }
 
-          // Always allow free movement in normal room designer (no collision lock)
-          if (true) {
+           // Do not allow movement if it causes collision (collision lock)
+          if (!collides) {
             if (isPlacingItem) {
               setIsPlacingItem({ ...isPlacingItem, position: [hit.x, 0, hit.z] });
             } else if (draggingItemIdRef.current) {
@@ -4741,7 +4778,7 @@ function RoomPreview3D({
               <>
                 {/* Architectural dimension text embedded in line */}
                 <Html
-                  position={[wall.cx + normalX * 0.75, 0.05, wall.cz + normalZ * 0.75]}
+                  position={[wall.cx + normalX * 0.35, 0.05, wall.cz + normalZ * 0.35]}
                   center
                   zIndexRange={[100, 0]}
                 >
@@ -4756,30 +4793,30 @@ function RoomPreview3D({
                 </Html>
 
                 {/* Main dimension line (thin) */}
-                <mesh position={[wall.cx + normalX * 0.75, 0.01, wall.cz + normalZ * 0.75]} rotation={[0, wall.rotY, 0]}>
+                <mesh position={[wall.cx + normalX * 0.35, 0.01, wall.cz + normalZ * 0.35]} rotation={[0, wall.rotY, 0]}>
                   <boxGeometry args={[wall.len, 0.003, 0.003]} />
                   <meshBasicMaterial color="#71717a" />
                 </mesh>
 
                 {/* Start slash tick at 45 degrees */}
-                <mesh position={[wall.p1[0] + normalX * 0.75, 0.01, wall.p1[1] + normalZ * 0.75]} rotation={[0, wall.rotY + Math.PI / 4, 0]}>
+                <mesh position={[wall.p1[0] + normalX * 0.35, 0.01, wall.p1[1] + normalZ * 0.35]} rotation={[0, wall.rotY + Math.PI / 4, 0]}>
                   <boxGeometry args={[0.003, 0.003, 0.12]} />
                   <meshBasicMaterial color="#52525b" />
                 </mesh>
 
                 {/* End slash tick at 45 degrees */}
-                <mesh position={[wall.p2[0] + normalX * 0.75, 0.01, wall.p2[1] + normalZ * 0.75]} rotation={[0, wall.rotY + Math.PI / 4, 0]}>
+                <mesh position={[wall.p2[0] + normalX * 0.35, 0.01, wall.p2[1] + normalZ * 0.35]} rotation={[0, wall.rotY + Math.PI / 4, 0]}>
                   <boxGeometry args={[0.003, 0.003, 0.12]} />
                   <meshBasicMaterial color="#52525b" />
                 </mesh>
 
                 {/* Extension guide lines */}
-                <mesh position={[wall.p1[0] + normalX * 0.21, 0.01, wall.p1[1] + normalZ * 0.21]} rotation={[0, wall.rotY + Math.PI / 2, 0]}>
-                  <boxGeometry args={[0.75, 0.001, 0.001]} />
+                <mesh position={[wall.p1[0] + normalX * 0.175, 0.01, wall.p1[1] + normalZ * 0.175]} rotation={[0, wall.rotY + Math.PI / 2, 0]}>
+                  <boxGeometry args={[0.35, 0.001, 0.001]} />
                   <meshBasicMaterial color="#d4d4d8" transparent opacity={0.6} />
                 </mesh>
-                <mesh position={[wall.p2[0] + normalX * 0.21, 0.01, wall.p2[1] + normalZ * 0.21]} rotation={[0, wall.rotY + Math.PI / 2, 0]}>
-                  <boxGeometry args={[0.75, 0.001, 0.001]} />
+                <mesh position={[wall.p2[0] + normalX * 0.175, 0.01, wall.p2[1] + normalZ * 0.175]} rotation={[0, wall.rotY + Math.PI / 2, 0]}>
+                  <boxGeometry args={[0.35, 0.001, 0.001]} />
                   <meshBasicMaterial color="#d4d4d8" transparent opacity={0.6} />
                 </mesh>
               </>
@@ -4975,7 +5012,26 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
   const [savedMeasurements, setSavedMeasurements] = useState<any[]>([]);
   const [measureStartPoint, setMeasureStartPoint] = useState<THREE.Vector3 | null>(null);
   const [measureTempEndPoint, setMeasureTempEndPoint] = useState<THREE.Vector3 | null>(null);
-  const [isCustomisingRoom, setIsCustomisingRoom] = useState(false);
+  const [customiseFromWorkspace, setCustomiseFromWorkspace] = useState(false);
+
+  const openCustomiseFromWorkspace = () => {
+    const wCm = Math.round(state.widthFt * 30.48);
+    const lCm = Math.round(state.depthFt * 30.48);
+    const hCm = Math.round(state.heightFt * 30.48);
+
+    if (dimensionsUnit === 'm') {
+      setWidthInput((wCm / 100).toFixed(1));
+      setLengthInput((lCm / 100).toFixed(1));
+      setHeightInput((hCm / 100).toFixed(1));
+    } else {
+      setWidthInput(wCm.toString());
+      setLengthInput(lCm.toString());
+      setHeightInput(hCm.toString());
+    }
+
+    setCustomiseFromWorkspace(true);
+    setWizardStep(2);
+  };
 
 
 
@@ -5069,15 +5125,20 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
 
         // Map placed items
         const mappedItems = (data.items || []).map((it: any) => {
-          const isWallMounted = it.position[1] > 0.5;
+          const type = it.type || 'sink';
+          const name = it.name || '';
+          const isBathtubItem = isBathtub(type, name);
+          const isWallMounted = isBathtubItem ? false : (it.position && it.position[1] > 0.5);
+          const posY = isBathtubItem ? 0 : (it.position ? it.position[1] : 0);
+          const position = it.position ? [it.position[0], posY, it.position[2]] : [0, posY, 0];
           return {
             id: it.id,
-            type: it.type || 'sink',
+            type,
             name: it.name || (it.type ? (it.type.toUpperCase() + ' UNIT') : 'Unit'),
             model: it.modelUrl,
             cost: 250.00,
-            position: it.position,
-            rotation: it.rotation[1],
+            position,
+            rotation: (it.rotation && Array.isArray(it.rotation)) ? it.rotation[1] : (it.rotation_y || 0),
             isWallMounted
           };
         });
@@ -5353,22 +5414,22 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
   };
 
   const widthInMeters = useMemo(() => {
-    if (wizardStep >= 3 && state.widthFt) return state.widthFt * 0.3048;
+    if (wizardStep >= 3 && !customiseFromWorkspace && state.widthFt) return state.widthFt * 0.3048;
     const val = parseFloat(widthInput) || 0;
     return dimensionsUnit === 'cm' ? val / 100 : val;
-  }, [widthInput, dimensionsUnit, wizardStep, state.widthFt]);
+  }, [widthInput, dimensionsUnit, wizardStep, customiseFromWorkspace, state.widthFt]);
 
   const lengthInMeters = useMemo(() => {
-    if (wizardStep >= 3 && state.depthFt) return state.depthFt * 0.3048;
+    if (wizardStep >= 3 && !customiseFromWorkspace && state.depthFt) return state.depthFt * 0.3048;
     const val = parseFloat(lengthInput) || 0;
     return dimensionsUnit === 'cm' ? val / 100 : val;
-  }, [lengthInput, dimensionsUnit, wizardStep, state.depthFt]);
+  }, [lengthInput, dimensionsUnit, wizardStep, customiseFromWorkspace, state.depthFt]);
 
   const heightInMeters = useMemo(() => {
-    if (wizardStep >= 3 && state.heightFt) return state.heightFt * 0.3048;
+    if (wizardStep >= 3 && !customiseFromWorkspace && state.heightFt) return state.heightFt * 0.3048;
     const val = parseFloat(heightInput) || 0;
     return dimensionsUnit === 'cm' ? val / 100 : val;
-  }, [heightInput, dimensionsUnit, wizardStep, state.heightFt]);
+  }, [heightInput, dimensionsUnit, wizardStep, customiseFromWorkspace, state.heightFt]);
 
   const handleWizardNext = async () => {
     if (wizardStep === 1) {
@@ -5610,7 +5671,7 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
         name: item.name,
         cost: item.cost,
         position_x: item.position[0],
-        position_y: item.position[1],
+        position_y: isBathtub(item.type, item.name) ? 0 : item.position[1],
         position_z: item.position[2],
         rotation_y: item.rotation,
         modelUrl: item.model
@@ -5797,14 +5858,16 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
   const handleAddItem = (type: string) => {
     const catalogToUse = catalog;
     const cat = catalogToUse.find(i => i.type === type);
+    if (!cat) return;
+    const isWallMounted = type === 'bathtub' ? false : (type === 'shower' ? true : !!cat.isWallMounted);
     setIsPlacingItem({
       id: `${type}_${Date.now()}`,
       type,
       name: cat.name,
       cost: cat.cost,
-      position: [0, cat.isWallMounted ? 1.37 : 0, 0],
+      position: [0, isWallMounted ? 1.37 : 0, 0],
       rotation: 0,
-      isWallMounted: cat.isWallMounted,
+      isWallMounted,
     });
     setActiveCategory(null);
   };
@@ -5842,114 +5905,7 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
     );
   };
 
-  if (isCustomisingRoom) {
-    return (
-      <div className="fixed inset-0 z-50 bg-[#ececec] overflow-hidden flex flex-col items-center justify-center">
-        <div className="w-full h-full relative">
-          <Canvas
-            camera={{ position: [0, 6.5, 0], fov: 42 }}
-            gl={{ antialias: true }}
-            style={{ width: '100%', height: '100%' }}
-            shadows={false}
-          >
-            <color attach="background" args={["#ececec"]} />
-            <ambientLight intensity={0.65} />
-            <directionalLight position={[5, 10, 5]} intensity={1.0} castShadow={false} />
-            <Suspense fallback={null}>
-              <CameraController wizardStep={2} controlsRef={wizardControlsRef} />
-              <RoomPreview3D
-                shape={selectedShape}
-                width={widthInMeters}
-                length={lengthInMeters}
-                height={heightInMeters}
-                unit={dimensionsUnit}
-                rotate={false}
-                onStartDrag={() => setOrbitEnabled(false)}
-                onEndDrag={() => setOrbitEnabled(true)}
-                onVertexDrag={handleVertexDrag}
-                onWallDrag={handleWallDrag}
-                previewZoomTrigger={previewZoomTrigger}
-                setPreviewZoomTrigger={setPreviewZoomTrigger}
-                selectedRoomType={selectedRoomType}
-                wizardStep={2}
-                wallOpenings={wizardWallOpenings}
-                onAddWallOpening={handleAddWallOpening}
-                onUpdateWallOpeningOffset={handleUpdateWallOpeningOffset}
-                onRemoveWallOpening={handleRemoveWallOpening}
-                activePlacement={activePlacement}
-                setActivePlacement={setActivePlacement}
-                placedItems={placedItems}
-                setPlacedItems={setPlacedItems}
-                isPlacingItem={isPlacingItem}
-                setIsPlacingItem={setIsPlacingItem}
-                selectedItemId={selectedItemId}
-                setSelectedItemId={setSelectedItemId}
-                recordHistory={recordHistory}
-                measurementSettings={measurementSettings}
-                isMeasuring={isMeasuring}
-                setIsMeasuring={setIsMeasuring}
-                savedMeasurements={savedMeasurements}
-                setSavedMeasurements={setSavedMeasurements}
-                measureStartPoint={measureStartPoint}
-                setMeasureStartPoint={setMeasureStartPoint}
-                measureTempEndPoint={measureTempEndPoint}
-                setMeasureTempEndPoint={setMeasureTempEndPoint}
-              />
-              <OrbitControls ref={wizardControlsRef} enabled={orbitEnabled} enableRotate={false} enableDamping dampingFactor={0.05} maxPolarAngle={Math.PI / 2.1} />
-            </Suspense>
-          </Canvas>
 
-          {/* Floating Zoom Controls for Preview */}
-          {selectedShape && (
-            <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-20">
-              <button
-                onClick={() => setPreviewZoomTrigger('in')}
-                className="w-10 h-10 bg-white hover:bg-gray-50 border border-gray-250 shadow-md rounded-full flex items-center justify-center text-[#1A1A1A] transition-all hover:scale-105 active:scale-95"
-                title="Zoom In"
-              >
-                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setPreviewZoomTrigger('out')}
-                className="w-10 h-10 bg-white hover:bg-gray-50 border border-gray-255 shadow-md rounded-full flex items-center justify-center text-[#1A1A1A] transition-all hover:scale-105 active:scale-95"
-                title="Zoom Out"
-              >
-                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M5 12h14" />
-                </svg>
-              </button>
-            </div>
-          )}
-
-          {/* Floating Done Button at the bottom center */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
-            <button
-              onClick={() => {
-                const wFt = cmToFeet(widthInMeters * 100);
-                const dFt = cmToFeet(lengthInMeters * 100);
-                const hFt = cmToFeet(heightInMeters * 100);
-                setState((prev) => ({
-                  ...prev,
-                  widthFt: wFt,
-                  depthFt: dFt,
-                  heightFt: hFt,
-                }));
-                setIsCustomisingRoom(false);
-              }}
-              className="bg-black hover:bg-[#222] text-white px-7 py-2.5 rounded-full shadow-2xl flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider transition-all hover:scale-105 active:scale-95 border border-black/10"
-            >
-              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              Done
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (wizardStep < 5) {
     return (
@@ -6087,12 +6043,14 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
               ) : wizardStep === 2 ? (
                 <div className="space-y-6">
                   <div>
-                    <span className="text-[10px] font-bold tracking-widest text-[#D4C5B9] uppercase block">Step 2 of 4</span>
+                    <span className="text-[10px] font-bold tracking-widest text-[#D4C5B9] uppercase block">
+                      {customiseFromWorkspace ? 'Room Customizer' : 'Step 2 of 4'}
+                    </span>
                     <h1 className="text-2xl font-semibold tracking-tight text-[#1A1A1A] mt-1">
-                      Adjust your dimensions
+                      {customiseFromWorkspace ? 'Room Dimensions' : 'Adjust your dimensions'}
                     </h1>
                     <p className="text-xs text-gray-500 font-light mt-1 max-w-sm leading-relaxed">
-                      Edit the floor plan on the right to match your room's wall dimensions.
+                      {customiseFromWorkspace ? 'Drag the walls/corners in the 2D floor plan, or type in the inputs below to resize your room.' : "Edit the floor plan on the right to match your room's wall dimensions."}
                     </p>
                   </div>
 
@@ -6495,7 +6453,7 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
 
           {/* Footer */}
           <div className="p-6 border-t border-gray-100 flex gap-3 bg-white">
-            {wizardStep > 1 && (
+            {wizardStep > 1 && !customiseFromWorkspace && (
               <button
                 onClick={() => transitionToStep(wizardStep - 1)}
                 className="flex-1 py-3.5 bg-white border border-black hover:bg-black hover:text-white text-black text-[10px] font-bold tracking-widest uppercase rounded-xl transition-all shadow-sm text-center"
@@ -6503,26 +6461,53 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
                 Go Back
               </button>
             )}
-            <button
-              onClick={handleWizardNext}
-              disabled={
-                (wizardStep === 1 && !selectedShape) ||
-                (wizardStep === 2 && Object.keys(validationErrors).some((k) => !!(validationErrors as any)[k])) ||
-                isSubmitting
-              }
-              className={`flex-1 py-3.5 bg-black hover:bg-[#222] text-white text-[10px] font-bold tracking-widest uppercase rounded-xl transition-all shadow-md flex items-center justify-center gap-2 ${((wizardStep === 1 && !selectedShape) ||
-                (wizardStep === 2 && Object.keys(validationErrors).some((k) => !!(validationErrors as any)[k])) ||
-                isSubmitting)
-                ? 'opacity-40 cursor-not-allowed bg-gray-400 shadow-none'
-                : ''
+            {customiseFromWorkspace ? (
+              <button
+                onClick={() => {
+                  if (Object.keys(validationErrors).some((k) => !!(validationErrors as any)[k])) return;
+                  const wFt = cmToFeet(widthInMeters * 100);
+                  const dFt = cmToFeet(lengthInMeters * 100);
+                  const hFt = cmToFeet(heightInMeters * 100);
+                  setState((prev) => ({
+                    ...prev,
+                    widthFt: wFt,
+                    depthFt: dFt,
+                    heightFt: hFt,
+                  }));
+                  setWizardStep(5);
+                  setCustomiseFromWorkspace(false);
+                }}
+                disabled={Object.keys(validationErrors).some((k) => !!(validationErrors as any)[k])}
+                className={`flex-1 py-3.5 bg-black hover:bg-[#222] text-white text-[10px] font-bold tracking-widest uppercase rounded-xl transition-all shadow-md flex items-center justify-center gap-2 ${
+                  Object.keys(validationErrors).some((k) => !!(validationErrors as any)[k])
+                    ? 'opacity-40 cursor-not-allowed bg-gray-400 shadow-none'
+                    : ''
                 }`}
-            >
-              {isSubmitting ? (
-                <span className="w-4 h-4 border-2 border-white/35 border-t-white rounded-full animate-spin" />
-              ) : (
-                wizardStep === 4 ? 'Enter Workspace' : 'Next'
-              )}
-            </button>
+              >
+                Done
+              </button>
+            ) : (
+              <button
+                onClick={handleWizardNext}
+                disabled={
+                  (wizardStep === 1 && !selectedShape) ||
+                  (wizardStep === 2 && Object.keys(validationErrors).some((k) => !!(validationErrors as any)[k])) ||
+                  isSubmitting
+                }
+                className={`flex-1 py-3.5 bg-black hover:bg-[#222] text-white text-[10px] font-bold tracking-widest uppercase rounded-xl transition-all shadow-md flex items-center justify-center gap-2 ${((wizardStep === 1 && !selectedShape) ||
+                  (wizardStep === 2 && Object.keys(validationErrors).some((k) => !!(validationErrors as any)[k])) ||
+                  isSubmitting)
+                  ? 'opacity-40 cursor-not-allowed bg-gray-400 shadow-none'
+                  : ''
+                  }`}
+              >
+                {isSubmitting ? (
+                  <span className="w-4 h-4 border-2 border-white/35 border-t-white rounded-full animate-spin" />
+                ) : (
+                  wizardStep === 4 ? 'Enter Workspace' : 'Next'
+                )}
+              </button>
+            )}
           </div>
         </div>
 
@@ -6752,8 +6737,8 @@ function BathroomPlannerPageInner({ catalog, categories, CustomFurniture }: { ca
         {/* Customise room */}
         <button
           id="btn-customise"
-          onClick={() => setIsCustomisingRoom(true)}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold uppercase rounded-full tracking-wider transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
+          onClick={openCustomiseFromWorkspace}
+          className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold uppercase rounded-full tracking-wider transition-all ${wizardStep === 2 && customiseFromWorkspace ? 'bg-black text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
         >
           <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
