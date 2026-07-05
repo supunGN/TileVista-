@@ -101,7 +101,7 @@ export const ProductList: React.FC<ProductListProps> = ({ categorySlug }) => {
 
             <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
               <span className="text-[10px] text-gray-400 font-mono tracking-wider uppercase">
-                Showing {items.length > 0 ? startIndex + 1 : 0}–{Math.min(startIndex + ITEMS_PER_PAGE, items.length)} of {items.length} products
+                Showing {items.length > 0 ? startIndex + 1 : 0}&ndash;{Math.min(startIndex + ITEMS_PER_PAGE, items.length)} of {items.length} products
               </span>
               {totalPages > 1 && (
                 <span className="text-[10px] text-gray-400 font-mono tracking-wider uppercase">
@@ -114,7 +114,7 @@ export const ProductList: React.FC<ProductListProps> = ({ categorySlug }) => {
 
             <div className="flex flex-col md:flex-row items-center justify-between border-t border-gray-150 pt-4 mt-12 gap-4">
               <span className="text-xs text-gray-500 font-medium">
-                Showing {items.length > 0 ? startIndex + 1 : 0}–{Math.min(startIndex + ITEMS_PER_PAGE, items.length)} of {items.length} products
+                Showing {items.length > 0 ? startIndex + 1 : 0}&ndash;{Math.min(startIndex + ITEMS_PER_PAGE, items.length)} of {items.length} products
               </span>
               <Pagination 
                 currentPage={currentPage}
